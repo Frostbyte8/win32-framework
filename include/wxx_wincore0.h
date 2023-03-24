@@ -134,7 +134,7 @@ namespace Win32xx
         virtual BOOL Attach(HWND wnd);
         virtual BOOL AttachDlgItem(UINT id, HWND parent);
         virtual void CenterWindow() const;
-        virtual HWND Create(HWND parent = 0);
+        virtual HWND Create(HWND parent = 0,  DWORD wsExStyle = 0, DWORD wsStyle = 0);
         virtual HWND CreateEx(DWORD exStyle, LPCTSTR className, LPCTSTR windowName,
                               DWORD style, int x, int y, int width, int height, HWND parent,
                               HMENU idOrMenu, LPVOID lparam = NULL);
