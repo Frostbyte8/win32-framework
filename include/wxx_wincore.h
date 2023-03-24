@@ -270,7 +270,7 @@ namespace Win32xx
     // to register a new window class for the window, otherwise a default window class is used.
     // Override PreCreate to specify the CREATESTRUCT parameters, otherwise default parameters
     // are used. A failure to create a window throws an exception.
-    inline HWND CWnd::Create(HWND parent /* = 0 */)
+    inline HWND CWnd::Create(HWND parent /* = 0 */, DWORD wsExStyle /* = 0 */, DWORD wsStyle /* = 0 */)
     {
         WNDCLASS wc;
         ZeroMemory(&wc, sizeof(wc));
@@ -305,6 +305,23 @@ namespace Win32xx
         PreCreate(cs);
 
         DWORD style = static_cast<DWORD>(cs.style & ~WS_VISIBLE);
+        
+        // [FB] Some controls can only have their style set on creation, so to aid in that
+        // if we have specified a style, use it here. This is to avoid subclassing when
+        // we really don't need to, such as Edit and Combobox controls.
+        
+        DWORD exStyle = static_cast<DWORD>(cs.dwExStyle);
+
+        if(wsStyle) 
+        {
+            style |= wsStyle;
+        }
+
+        if(wsExStyle) 
+        {
+            exStyle |= wsExStyle;
+        }
+        
         HWND wnd;
 
         // Create the window.
