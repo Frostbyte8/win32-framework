@@ -218,6 +218,9 @@ namespace Win32xx
         int  InsertString(int index, LPCTSTR string) const;
         void ResetContent() const;
         int  SelectString(int startAfter, LPCTSTR string) const;
+        
+        // [FB] Helper Functions
+        void ClearStrings() const;
 
     protected:
         // Overridables
@@ -1107,6 +1110,19 @@ namespace Win32xx
             return static_cast<int>(SendMessage(LB_SELITEMRANGEEX, wparam, lparam));
         }
     }
+    
+    // [FB] Clears the Listbox of all Strings via calling DeleteString until the list
+	// is empty.
+	inline void CListBox::ClearStrings() const
+	{
+		assert(IsWindow());
+		if(GetCount()) 
+		{
+			while(DeleteString(0) != 0) 
+			{
+			}
+		}
+	}
 
     // Sets the item that the mouse last selected to a specified item.
     // Refer to LB_SETANCHORINDEX in the Windows API documentation for more information.
