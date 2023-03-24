@@ -113,6 +113,8 @@ namespace Win32xx
     const int DS_DOCKED_TOPMOST      = 0x40000; // Topmost outer docking
     const int DS_DOCKED_BOTTOMMOST   = 0x80000; // Bottommost outer docking
 
+    const int DS_DEFAULT_CURSORS     = 0x100000; // Use IDC_SIZEWE and IDC_SIZENS instead ones from a resource file.
+
     // Class declarations
     class CDockContainer;
     class CDocker;
@@ -723,15 +725,41 @@ namespace Win32xx
         {
             HCURSOR cursor;
             DWORD side = GetDocker().GetDockStyle() & 0xF;
+            
             if ((side == DS_DOCKED_LEFT) || (side == DS_DOCKED_RIGHT))
-                cursor = GetApp()->LoadCursor(IDW_SPLITH);
+            {
+                if(useDefaultCursor)
+                {
+                    cursor = ::LoadCursor(NULL, IDC_SIZEWE);
+                }
+                else
+                {
+                    cursor = GetApp()->LoadCursor(IDW_SPLITH);
+                }
+            }
             else
-                cursor = GetApp()->LoadCursor(IDW_SPLITV);
-
-            if (cursor) SetCursor(cursor);
-            else TRACE("**WARNING** Missing cursor resource for slider bar\n");
+            {
+                if(useDefaultCursor)
+                {
+                    cursor = ::LoadCursor(NULL, IDC_SIZENS);
+                }
+                else
+                {
+                    cursor = GetApp()->LoadCursor(IDW_SPLITV);
+                }
+            }
+            
+            if (cursor) 
+            {
+                SetCursor(cursor);
+            }
+            else 
+            {
+                TRACE("**WARNING** Missing cursor resource for slider bar\n");
+            }
 
             return TRUE;
+            
         }
         else
             SetCursor(LoadCursor(0, IDC_ARROW));
