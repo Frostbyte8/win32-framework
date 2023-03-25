@@ -726,6 +726,8 @@ namespace Win32xx
             HCURSOR cursor;
             DWORD side = GetDocker().GetDockStyle() & 0xF;
             
+			const DWORD useDefaultCursor = GetDocker().GetDockStyle() & DS_DEFAULT_CURSORS;
+			
             if ((side == DS_DOCKED_LEFT) || (side == DS_DOCKED_RIGHT))
             {
                 if(useDefaultCursor)
