@@ -93,6 +93,9 @@ namespace Win32xx
         void SetScrollPosition(POINT pt);
         void SetScrollSizes(CSize totalSize = CSize(0,0), CSize pageSize = CSize(0,0), CSize lineSize = CSize(0,0));
         void SetScrollBkgnd(CBrush bkgndBrush) { m_bkgndBrush = bkgndBrush; }
+        void SetScrollAlwaysOn(const bool& HSB, const bool& VSB) {
+            forceShowHSB = HSB; forceShowVSB = VSB;
+        }
 
     protected:
         virtual void    FillOutsideRect(CDC& dc, HBRUSH brush);
@@ -117,6 +120,12 @@ namespace Win32xx
         CSize m_pageSize;
         CSize m_lineSize;
         CBrush m_bkgndBrush;
+
+        // [FB] These keep the scrollbars on even when the view is small.
+
+        bool forceShowHSB;
+        bool forceShowVSB;
+        
     };
 
 }
@@ -132,7 +141,7 @@ namespace Win32xx
     // Definitions for the CScrollView class
     //
 
-    inline CScrollView::CScrollView()
+    inline CScrollView::CScrollView() : forceShowVSB(false), forceShowHSB(false)
     {
         m_bkgndBrush.CreateSolidBrush(RGB(255, 255, 255));
     }
@@ -504,8 +513,8 @@ namespace Win32xx
                 si.fMask = SIF_RANGE | SIF_PAGE | SIF_POS;
                 si.nMin = 0;
 
-                bool isHBAlwaysOn = (totalRect.Width() > viewRect.Width());         // Horizontal Bar always on
-                bool isVBAlwaysOn = (totalRect.Height() > viewRect.Height());       // Vertical Bar always on
+                bool isHBAlwaysOn = forceShowHSB ? true : (totalRect.Width() > viewRect.Width());         // Horizontal Bar always on
+                bool isVBAlwaysOn = forceShowVSB ? true : (totalRect.Height() > viewRect.Height());       // Vertical Bar always on
 
                 // Horizontal Bars are always shown if the total width is greater than the window's width.
                 // They are also shown if the vertical bar is shown, and the total width is greater than
