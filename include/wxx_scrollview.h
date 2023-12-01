@@ -513,8 +513,8 @@ namespace Win32xx
                 si.fMask = SIF_RANGE | SIF_PAGE | SIF_POS;
                 si.nMin = 0;
 
-                bool isHBAlwaysOn = forceShowHSB ? true : (totalRect.Width() > viewRect.Width());         // Horizontal Bar always on
-                bool isVBAlwaysOn = forceShowVSB ? true : (totalRect.Height() > viewRect.Height());       // Vertical Bar always on
+                bool isHBAlwaysOn = (totalRect.Width() > viewRect.Width());         // Horizontal Bar always on
+                bool isVBAlwaysOn = (totalRect.Height() > viewRect.Height());       // Vertical Bar always on
 
                 // Horizontal Bars are always shown if the total width is greater than the window's width.
                 // They are also shown if the vertical bar is shown, and the total width is greater than
@@ -526,11 +526,25 @@ namespace Win32xx
                     si.nPos = m_currentPos.x;
                     SetScrollInfo(SB_HORZ, si, TRUE);
                     ShowScrollBar(SB_HORZ, TRUE);
+
+                    if(forceShowHSB) 
+                    {
+                        EnableScrollBar(SB_HORZ, ESB_ENABLE_BOTH);
+                    }
                 }
                 else
                 {
+                    if(forceShowHSB) 
+                    {
+                        ShowScrollBar(SB_HORZ, TRUE);
+                        EnableScrollBar(SB_HORZ, ESB_DISABLE_BOTH);
+                    }
+                    else 
+                    {
+                        ShowScrollBar(SB_HORZ, FALSE);
+                    }
                     m_currentPos.x = 0;
-                    ShowScrollBar(SB_HORZ, FALSE);
+                    
                 }
 
                 // Vertical Bars are always shown if the total height is greater than the window's height.
@@ -543,11 +557,26 @@ namespace Win32xx
                     si.nPos = m_currentPos.y;
                     SetScrollInfo(SB_VERT, si, TRUE);
                     ShowScrollBar(SB_VERT, TRUE);
+
+                    if(forceShowHSB) 
+                    {
+                        EnableScrollBar(SB_VERT, ESB_ENABLE_BOTH);
+                    }
+
                 }
                 else
                 {
+                    if(forceShowVSB)
+                    {
+                        ShowScrollBar(SB_VERT, TRUE);
+                        EnableScrollBar(SB_VERT, ESB_DISABLE_BOTH);
+                    }
+                    else 
+                    {
+                        ShowScrollBar(SB_VERT, FALSE);
+                    }
+
                     m_currentPos.y = 0;
-                    ShowScrollBar(SB_VERT, FALSE);
                 }
 
                 // Perform any additional scrolling required by window resizing
