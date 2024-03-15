@@ -79,6 +79,16 @@ int CMainMDIFrame::OnCreate(CREATESTRUCT& cs)
     return CMDIFrame::OnCreate(cs);
 }
 
+// Limit the minimum size of the window.
+LRESULT CMainMDIFrame::OnGetMinMaxInfo(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    LPMINMAXINFO lpMMI = (LPMINMAXINFO)lparam;
+    const CSize minimumSize(600, 400);
+    lpMMI->ptMinTrackSize.x = DpiScaleInt(minimumSize.cx);
+    lpMMI->ptMinTrackSize.y = DpiScaleInt(minimumSize.cy);
+    return FinalWindowProc(msg, wparam, lparam);
+}
+
 // Called after the window is created.
 // Called after OnCreate.
 void CMainMDIFrame::OnInitialUpdate()
@@ -137,11 +147,24 @@ BOOL CMainMDIFrame::OnMDITile()
     return TRUE;
 }
 
+// Called when the cursor is in an inactive window and the user presses a mouse button.
+LRESULT CMainMDIFrame::OnMouseActivate(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    // Redraw all MDI children to update docker caption.
+    std::vector<MDIChildPtr>::const_iterator iter;
+    for (iter = GetAllMDIChildren().begin(); iter < GetAllMDIChildren().end(); ++iter)
+    {
+        (*iter)->RedrawWindow();
+    }
+
+    return FinalWindowProc(msg, wparam, lparam);
+}
+
 // Configure the images for menu items.
 void CMainMDIFrame::SetupMenuIcons()
 {
     std::vector<UINT> data = GetToolBarData();
-    if (GetMenuIconHeight() >= 24)
+    if ((GetMenuIconHeight() >= 24) && (GetWindowDpi(*this) != 192))
         SetMenuIcons(data, RGB(192, 192, 192), IDW_MAIN, IDB_TOOLBAR24_DIS);
     else
         SetMenuIcons(data, RGB(192, 192, 192), IDB_TOOLBAR16);
@@ -173,16 +196,8 @@ LRESULT CMainMDIFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
     {
         switch (msg)
         {
-        case WM_MOUSEACTIVATE:  // MDI child is activated with a mouse click.
-        {
-            // Redraw all MDI children to update docker caption.
-            std::vector<MDIChildPtr>::const_iterator iter;
-            for (iter = GetAllMDIChildren().begin(); iter < GetAllMDIChildren().end(); ++iter)
-            {
-                (*iter)->RedrawWindow();
-            }
-        }
-        break;
+        case WM_GETMINMAXINFO:    return OnGetMinMaxInfo(msg, wparam, lparam);
+        case WM_MOUSEACTIVATE:    return OnMouseActivate(msg, wparam, lparam);
         }
 
         // Pass unhandled messages on for default processing.

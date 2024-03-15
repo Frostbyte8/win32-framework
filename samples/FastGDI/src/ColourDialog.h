@@ -6,7 +6,7 @@
 
 
 /////////////////////////////////////////////////////
-// CColourDialog manages a dialog which allows the
+// CColourDialog manages a dialog that allows the
 // user to choose the color adjustment for the image.
 class CColourDialog : public CDialog
 {
@@ -26,8 +26,8 @@ protected:
     virtual INT_PTR DialogProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CColourDialog(const CColourDialog&);                // Disable copy construction
-    CColourDialog& operator = (const CColourDialog&);   // Disable assignment operator
+    CColourDialog(const CColourDialog&);               // Disable copy construction
+    CColourDialog& operator=(const CColourDialog&);    // Disable assignment operator
 
     void    CreateImagePreviews();
     BOOL    OnGrayScale();

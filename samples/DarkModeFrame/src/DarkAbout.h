@@ -19,7 +19,7 @@ class CDarkAbout : public CDialog
 public:
     CDarkAbout();
     virtual ~CDarkAbout();
-    void SetDarkMode(bool darkMode);
+    void SetDarkMode(bool isDarkMode);
 
 protected:
     // Virtual functions that override base class functions
@@ -27,14 +27,14 @@ protected:
     virtual INT_PTR DialogProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CDarkAbout(const CDarkAbout&);                // Disable copy construction
-    CDarkAbout& operator = (const CDarkAbout&);   // Disable assignment operator
+    CDarkAbout(const CDarkAbout&);               // Disable copy construction
+    CDarkAbout& operator=(const CDarkAbout&);    // Disable assignment operator
 
     LRESULT OnDrawItem(WPARAM, LPARAM);
     LRESULT OnCtlColors(UINT, WPARAM, LPARAM);
     void    SetButtonOwnerDraw(bool isOwnerDraw);
 
-    bool m_darkMode;
+    bool m_isDarkMode;
 };
 
 

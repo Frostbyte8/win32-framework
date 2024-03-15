@@ -10,7 +10,7 @@
 
 ///////////////////////////////////////////////////////////
 // CMainFrame manages the application's main window.
-// The main window is a frame which has a menubar, toolbar,
+// The main window is a frame that has a menubar, toolbar,
 // statusbar and view window.
 class CMainFrame : public CFrame
 {
@@ -19,20 +19,24 @@ public:
     virtual ~CMainFrame();
     virtual HWND Create(HWND parent = 0);
 
+    void DpiScaleToolBar();
+
 protected:
     // Virtual functions that override base class functions
     virtual BOOL OnCommand(WPARAM wparam, LPARAM lparam);
     virtual int  OnCreate(CREATESTRUCT& cs);
+    virtual LRESULT OnDpiChanged(UINT msg, WPARAM wparam, LPARAM lparam);
     virtual void SetupMenuIcons();
     virtual void SetupToolBar();
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CMainFrame(const CMainFrame&);                // Disable copy construction
-    CMainFrame& operator = (const CMainFrame&);   // Disable assignment operator
+    CMainFrame(const CMainFrame&);               // Disable copy construction
+    CMainFrame& operator=(const CMainFrame&);    // Disable assignment operator
 
     // Message handlers
     LRESULT OnFileLoaded(LPCTSTR fileName);
+    LRESULT OnWindowPosChanged(UINT msg, WPARAM wparam, LPARAM lparam);
 
     // Command handlers
     BOOL OnFileExit();
@@ -43,6 +47,9 @@ private:
 
     // Member variables
     CView m_view;
+    CRect m_viewRect;
+    CPoint m_scrollPos;
+    bool m_isDPIChanging;
 };
 
 #endif //MAINFRM_H

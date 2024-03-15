@@ -14,7 +14,6 @@
 // Constructor.
 CMainFrame::CMainFrame()
 {
-    m_useProportionalResize = false;
     m_use3DBorder = true;
     m_disableUndocking = false;
     m_disableResize = false;
@@ -46,15 +45,15 @@ void CMainFrame::LoadDefaultDockers()
 {
     // Note: The  DockIDs are used for saving/restoring the dockers state in the registry
 
-    CDocker* pDockLeft = AddDockedChild(new CDockClasses, DS_DOCKED_LEFT, 200, ID_DOCK_CLASSES1);
-    CDocker* pDockRight = AddDockedChild(new CDockClasses, DS_DOCKED_RIGHT, 200, ID_DOCK_CLASSES2);
-    CDocker* pDockTop = AddDockedChild(new CDockText, DS_DOCKED_TOP, 100, ID_DOCK_TEXT1);
-    CDocker* pDockBottom = AddDockedChild(new CDockText, DS_DOCKED_BOTTOM, 100, ID_DOCK_TEXT2);
+    CDocker* pDockLeft = AddDockedChild(new CDockClasses, DS_DOCKED_LEFT, DpiScaleInt(200), ID_DOCK_CLASSES1);
+    CDocker* pDockRight = AddDockedChild(new CDockClasses, DS_DOCKED_RIGHT, DpiScaleInt(200), ID_DOCK_CLASSES2);
+    CDocker* pDockTop = AddDockedChild(new CDockText, DS_DOCKED_TOP, DpiScaleInt(100), ID_DOCK_TEXT1);
+    CDocker* pDockBottom = AddDockedChild(new CDockText, DS_DOCKED_BOTTOM, DpiScaleInt(100), ID_DOCK_TEXT2);
 
-    pDockLeft->AddDockedChild(new CDockFiles, DS_DOCKED_BOTTOM, 150, ID_DOCK_FILES1);
-    pDockRight->AddDockedChild(new CDockFiles, DS_DOCKED_BOTTOM, 150, ID_DOCK_FILES2);
-    pDockTop->AddDockedChild(new CDockSimple, DS_DOCKED_RIGHT, 100, ID_DOCK_SIMPLE1);
-    pDockBottom->AddDockedChild(new CDockSimple, DS_DOCKED_RIGHT, 100, ID_DOCK_SIMPLE2);
+    pDockLeft->AddDockedChild(new CDockFiles, DS_DOCKED_BOTTOM, DpiScaleInt(150), ID_DOCK_FILES1);
+    pDockRight->AddDockedChild(new CDockFiles, DS_DOCKED_BOTTOM, DpiScaleInt(150), ID_DOCK_FILES2);
+    pDockTop->AddDockedChild(new CDockSimple, DS_DOCKED_RIGHT, DpiScaleInt(100), ID_DOCK_SIMPLE1);
+    pDockBottom->AddDockedChild(new CDockSimple, DS_DOCKED_RIGHT, DpiScaleInt(100), ID_DOCK_SIMPLE2);
 
     // Adjust dockstyles as per menu selections
     SetDockStyles();
@@ -115,7 +114,6 @@ BOOL CMainFrame::OnCommand(WPARAM wparam, LPARAM)
     case IDM_FILE_EXIT:         return OnFileExit();
     case IDM_DOCK_DEFAULT:      return OnDockDefault();
     case IDM_DOCK_CLOSEALL:     return OnDockCloseAll();
-    case IDM_PROP_RESIZE:       return OnPropResize();
     case IDM_3DBORDER:          return On3DBorder();
     case IDM_NO_UNDOCK:         return OnNoUndocking();
     case IDM_NO_RESIZE:         return OnNoResize();
@@ -160,11 +158,15 @@ BOOL CMainFrame::OnDockCloseAll()
 // Loads a default arrangement of dockers.
 BOOL CMainFrame::OnDockDefault()
 {
-    SetRedraw(FALSE);   // Suppress drawing to the frame window
+    // Suppress redraw to render the docking changes smoothly.
+    SetRedraw(FALSE);
+
     CloseAllDockers();
     LoadDefaultDockers();
-    SetRedraw(TRUE);    // Re-enable drawing to the frame window
-    RedrawWindow(RDW_INVALIDATE|RDW_FRAME|RDW_UPDATENOW|RDW_ALLCHILDREN);
+
+    // Enable redraw and redraw the frame.
+    SetRedraw(TRUE);
+    RedrawWindow();
     return TRUE;
 }
 
@@ -175,16 +177,24 @@ BOOL CMainFrame::OnFileExit()
     return TRUE;
 }
 
+// Limit the minimum size of the window.
+LRESULT CMainFrame::OnGetMinMaxInfo(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    LPMINMAXINFO lpMMI = (LPMINMAXINFO)lparam;
+    const CSize minimumSize(600, 400);
+    lpMMI->ptMinTrackSize.x = DpiScaleInt(minimumSize.cx);
+    lpMMI->ptMinTrackSize.y = DpiScaleInt(minimumSize.cy);
+    return FinalWindowProc(msg, wparam, lparam);
+}
+
 // Called after the window is created.
 void CMainFrame::OnInitialUpdate()
 {
-    SetDockStyle(DS_CLIENTEDGE);
-
-    // Load dock settings
+    // Load dock settings.
     if (!LoadDockRegistrySettings(GetRegistryKeyName()))
         LoadDefaultDockers();
 
-    // Adjust dockstyles as per menu selections
+    // Adjust dockstyles as per menu selections.
     SetDockStyles();
 
     // PreCreate initially set the window as invisible, so show it now.
@@ -196,9 +206,6 @@ void CMainFrame::OnMenuUpdate(UINT id)
 {
     switch(id)
     {
-    case IDM_PROP_RESIZE:
-        GetFrameMenu().CheckMenuItem(id, MF_BYCOMMAND | (m_useProportionalResize ? MF_CHECKED : MF_UNCHECKED));
-        break;
     case IDM_3DBORDER:
         GetFrameMenu().CheckMenuItem(id, MF_BYCOMMAND | (m_use3DBorder ? MF_CHECKED : MF_UNCHECKED));
         break;
@@ -264,14 +271,6 @@ BOOL CMainFrame::OnNoUndocking()
     return TRUE;
 }
 
-// Toggle proportional resizing.
-BOOL CMainFrame::OnPropResize()
-{
-    m_useProportionalResize = !m_useProportionalResize;
-    SetDockStyles();
-    return TRUE;
-}
-
 // Specify the CREATESTRUCT parameters before the window is created.
 void CMainFrame::PreCreate(CREATESTRUCT& cs)
 {
@@ -304,7 +303,6 @@ void CMainFrame::SetDockStyles()
         style &= 0xF000F;
 
         // Add styles selected from the menu
-        if (m_useProportionalResize)    style |= DS_NO_FIXED_RESIZE;
         if (m_use3DBorder)              style |= DS_CLIENTEDGE;
         if (m_disableUndocking)         style |= DS_NO_UNDOCK;
         if (m_disableResize)            style |= DS_NO_RESIZE;
@@ -320,7 +318,7 @@ void CMainFrame::SetDockStyles()
 void CMainFrame::SetupMenuIcons()
 {
     std::vector<UINT> data = GetToolBarData();
-    if (GetMenuIconHeight() >= 24)
+    if ((GetMenuIconHeight() >= 24) && (GetWindowDpi(*this) != 192))
         SetMenuIcons(data, RGB(192, 192, 192), IDW_MAIN);
     else
         SetMenuIcons(data, RGB(192, 192, 192), IDB_TOOLBAR16);
@@ -350,6 +348,11 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
 {
     try
     {
+        switch (msg)
+        {
+        case WM_GETMINMAXINFO:    return OnGetMinMaxInfo(msg, wparam, lparam);
+        }
+
         return WndProcDefault(msg, wparam, lparam);
     }
 

@@ -63,9 +63,9 @@ LRESULT CHyperlink::OnLButtonUp(UINT msg, WPARAM wparam, LPARAM lparam)
 
 void CHyperlink::OpenUrl()
 {
-    TCHAR szUrl[ MAX_PATH + 1 ] = _T("http://sourceforge.net/projects/win32-framework/");
+    CString url("http://sourceforge.net/projects/win32-framework/");
 
-    HINSTANCE result = ShellExecute(0, _T("open"), szUrl, NULL, NULL, SW_SHOWNORMAL);
+    HINSTANCE result = ShellExecute(0, _T("open"), url, NULL, NULL, SW_SHOWNORMAL);
 
     if (reinterpret_cast<INT_PTR>(result) > 32)
     {
@@ -84,6 +84,7 @@ LRESULT CHyperlink::OnMessageReflect(UINT msg, WPARAM wparam, LPARAM)
         CDC dc(reinterpret_cast<HDC>(wparam));
         dc.SetTextColor( m_isUrlVisited? m_visitedColor : m_notVisitedColor);
         dc.SetBkMode(TRANSPARENT);
+        m_urlFont = DpiScaleFont(m_urlFont, 9);
         dc.SelectObject(m_urlFont);
         dc.DrawText(m_urlName, -1, GetClientRect(), DT_VCENTER | DT_SINGLELINE);
 

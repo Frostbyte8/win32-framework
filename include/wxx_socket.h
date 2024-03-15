@@ -1,4 +1,4 @@
-// Win32++   Version 9.2
+// Win32++   Version 9.5
 // Release Date: TBA
 //
 //      David Nash
@@ -6,7 +6,7 @@
 //      url: https://sourceforge.net/projects/win32-framework
 //
 //
-// Copyright (c) 2005-2022  David Nash
+// Copyright (c) 2005-2024  David Nash
 //
 // Permission is hereby granted, free of charge, to
 // any person obtaining a copy of this software and
@@ -206,8 +206,8 @@ namespace Win32xx
         operator SOCKET() const {return m_socket;}
 
     private:
-        CSocket(const CSocket&);                // Disable copy construction
-        CSocket& operator = (const CSocket&);   // Disable assignment operator
+        CSocket(const CSocket&);               // Disable copy construction
+        CSocket& operator=(const CSocket&);    // Disable assignment operator
         static UINT WINAPI EventThread(LPVOID pThis);
 
         SOCKET m_socket;
@@ -233,14 +233,14 @@ namespace Win32xx
         if (::WSAStartup(MAKEWORD(2,2), &wsaData) != 0)
             throw CNotSupportedException(GetApp()->MsgSocWSAStartup());
 
-        m_ws2_32 = ::GetModuleHandle(_T("WS2_32.dll"));
+        m_ws2_32 = ::GetModuleHandle(_T("ws2_32.dll"));
         if (m_ws2_32 == 0)
             throw CNotSupportedException(GetApp()->MsgSocWS2Dll());
 
         m_pfnGetAddrInfo = reinterpret_cast<GETADDRINFO*>(
-            reinterpret_cast<void*>(GetProcAddress(m_ws2_32, "getaddrinfo")));
+            reinterpret_cast<void*>(::GetProcAddress(m_ws2_32, "getaddrinfo")));
         m_pfnFreeAddrInfo = reinterpret_cast<FREEADDRINFO*>(
-            reinterpret_cast<void*>(GetProcAddress(m_ws2_32, "freeaddrinfo")));
+            reinterpret_cast<void*>(::GetProcAddress(m_ws2_32, "freeaddrinfo")));
 
         WorkThreadPtr threadPtr(new CWorkThread(EventThread, this));
         m_threadPtr = threadPtr;
@@ -268,7 +268,7 @@ namespace Win32xx
         m_socket = INVALID_SOCKET;
 
         if (m_stopRequest.GetHandle())
-            CloseHandle(m_stopRequest);
+            ::CloseHandle(m_stopRequest);
 
         // Terminate the  Windows Socket services
         ::WSACleanup();
@@ -653,7 +653,7 @@ namespace Win32xx
 
 #ifdef GetAddrInfo
 
-        if (m_pfnGetAddrInfo != 0 && m_pfnFreeAddrInfo != 0)
+        if (m_pfnGetAddrInfo != NULL && m_pfnFreeAddrInfo != NULL)
             isIPV6Supported = TRUE;
 
 #endif
@@ -834,7 +834,7 @@ namespace Win32xx
 
     }
 
-    // This function starts the thread which monitors the socket for events.
+    // This function starts the thread that monitors the socket for events.
     inline void CSocket::StartEvents()
     {
         StopEvents();   // Ensure the thread isn't already running

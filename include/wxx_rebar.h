@@ -1,4 +1,4 @@
-// Win32++   Version 9.2
+// Win32++   Version 9.5
 // Release Date: TBA
 //
 //      David Nash
@@ -6,7 +6,7 @@
 //      url: https://sourceforge.net/projects/win32-framework
 //
 //
-// Copyright (c) 2005-2022  David Nash
+// Copyright (c) 2005-2024  David Nash
 //
 // Permission is hereby granted, free of charge, to
 // any person obtaining a copy of this software and
@@ -108,7 +108,7 @@ namespace Win32xx
 
     private:
         CReBar(const CReBar&);              // Disable copy construction
-        CReBar& operator = (const CReBar&); // Disable assignment operator
+        CReBar& operator=(const CReBar&);   // Disable assignment operator
 
         BOOL m_isDragging;
         HWND m_menuBar;
@@ -510,8 +510,8 @@ namespace Win32xx
         UINT cx = static_cast<UINT>(size.cx);
         UINT cy = static_cast<UINT>(size.cy);
         GetBandInfo(band, rbbi);
-        rbbi.cx         = cx + 2;
-        rbbi.cxMinChild = cx + 2;
+        rbbi.cx         = cx;
+        rbbi.cxMinChild = cx;
         rbbi.cyMinChild = cy;
         rbbi.cyMaxChild = cy;
 

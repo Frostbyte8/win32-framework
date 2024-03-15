@@ -88,22 +88,13 @@ void CMainFrame::DetermineEncoding(CFile& file)
 
             // look UTF Byte Order Mark (BOM)
             if (buffer[0] == 0xef && buffer[1] == 0xbb && buffer[2] == 0xbf)
-                    encoding = UTF8;
+                encoding = UTF8;
 
             // check for UTF-16 LE with Byte Order Mark (BOM)
             int tests = IS_TEXT_UNICODE_SIGNATURE;
             int textLength = static_cast<int>(testlen);
             if (::IsTextUnicode(&buffer.front(), textLength, &tests) != 0)
-                encoding = UTF16LE_BOM;
-            else
-            {
-                // check for UTF-16 LE w/o BOM
-                tests = IS_TEXT_UNICODE_STATISTICS;
-                if (::IsTextUnicode(&buffer.front(), textLength, &tests) != 0)
-                {
-                    encoding = UTF16LE;
-                }
-            }
+                encoding = UTF16LE;
         }
         catch (const CFileException& e)
         {
@@ -238,42 +229,42 @@ int CMainFrame::OnCreate(CREATESTRUCT& cs)
     // UseThemes(FALSE);             // Don't use themes.
     // UseToolBar(FALSE);            // Don't use a ToolBar.
 
-
-    // Create the PrintPreview dialog. It is initially hidden.
-    m_preview.Create(*this);
-
-    // Get the name of the default or currently chosen printer
-    CPrintDialogEx printDialog;
-    if (printDialog.GetDefaults())
-    {
-        CString status = _T("Printer: ") + printDialog.GetDeviceName();
-        SetStatusText(status);
-    }
-    else
-        SetStatusText(_T("No printer found"));
-
     // call the base class function
     return  CFrame::OnCreate(cs);
 }
 
-// Called in response to the EN_DROPFILES notification.
-void CMainFrame::OnDropFiles(HDROP hDropInfo)
+// Called when the effective dots per inch (dpi) for a window has changed.
+// This occurs when:
+//  - The window is moved to a new monitor that has a different DPI.
+//  - The DPI of the monitor hosting the window changes.
+LRESULT CMainFrame::OnDpiChanged(UINT msg, WPARAM wparam, LPARAM lparam)
 {
-    UINT length = DragQueryFile(hDropInfo, 0, 0, 0);
+    CFrame::OnDpiChanged(msg, wparam, lparam);
+    UpdateToolbar();
+    RecalcLayout();
+    return 0;
+}
+
+// Called in response to the EN_DROPFILES notification.
+void CMainFrame::OnDropFiles(HDROP dropInfo)
+{
+    UINT length = ::DragQueryFile(dropInfo, 0, 0, 0);
+    int bufferLength = static_cast<int>(length);
     if (length > 0)
     {
         CString fileName;
-        int bufferSize = static_cast<int>(length);
-        DragQueryFile(hDropInfo, 0, fileName.GetBuffer(bufferSize), length + 1);
+        ::DragQueryFile(dropInfo, 0, fileName.GetBuffer(bufferLength), length + 1);
         fileName.ReleaseBuffer();
 
-        ReadFile(fileName);
-        m_pathName = fileName;
-        SetWindowTitle();
-        AddMRUEntry(fileName);
+        if (ReadFile(fileName))
+        {
+            m_pathName = fileName;
+            SetWindowTitle();
+            AddMRUEntry(fileName);
+        }
     }
 
-    DragFinish(hDropInfo);
+    ::DragFinish(dropInfo);
 }
 
 // Delete (cut) the current selection, if any.
@@ -328,7 +319,7 @@ BOOL CMainFrame::OnEditUndo()
 BOOL CMainFrame::OnEncodeANSI()
 {
     SetEncoding(ANSI);
-    int menuItem = GetMenuItemPos(GetFrameMenu(), _T("Encoding"));
+    int menuItem = GetFrameMenu().FindMenuItem(_T("&Encoding"));
     if (menuItem >= 0)
     {
         CMenu ThemeMenu = GetFrameMenu().GetSubMenu(menuItem);
@@ -342,7 +333,7 @@ BOOL CMainFrame::OnEncodeANSI()
 BOOL CMainFrame::OnEncodeUTF8()
 {
     SetEncoding(UTF8);
-    int menuItem = GetMenuItemPos(GetFrameMenu(), _T("Encoding"));
+    int menuItem = GetFrameMenu().FindMenuItem(_T("&Encoding"));
     if (menuItem >= 0)
     {
         CMenu ThemeMenu = GetFrameMenu().GetSubMenu(menuItem);
@@ -356,7 +347,7 @@ BOOL CMainFrame::OnEncodeUTF8()
 BOOL CMainFrame::OnEncodeUTF16()
 {
     SetEncoding(UTF16LE);
-    int menuItem = GetMenuItemPos(GetFrameMenu(), _T("Encoding"));
+    int menuItem = GetFrameMenu().FindMenuItem(_T("&Encoding"));
     if (menuItem >= 0)
     {
         CMenu ThemeMenu = GetFrameMenu().GetSubMenu(menuItem);
@@ -454,10 +445,14 @@ BOOL CMainFrame::OnFilePreview()
         CPrintDialogEx printDialog;
         CDC printerDC = printDialog.GetPrinterDC();
 
-        // Setup the print preview.
-        m_preview.SetSource(m_richView);   // CPrintPreview calls m_richView::PrintPage
+        // Create the preview window if required.
+        if (!m_preview.IsWindow())
+            m_preview.Create(*this);
 
-        // Set the preview's owner (for messages), and number of pages.
+        // Specify the source of the PrintPage function.
+        m_preview.SetSource(m_richView);
+
+        // Set the preview's owner for notification messages, and number of pages.
         UINT maxPage = m_richView.CollatePages(printerDC);
         m_preview.DoPrintPreview(*this, maxPage);
 
@@ -585,7 +580,7 @@ void CMainFrame::OnInitialUpdate()
     SetWindowTitle();
 
     // Select the ANSI radio button
-    int menuItem = GetMenuItemPos(GetFrameMenu(), _T("Encoding"));
+    int menuItem = GetFrameMenu().FindMenuItem(_T("&Encoding"));
     if (menuItem >= 0)
     {
         CMenu ThemeMenu = GetFrameMenu().GetSubMenu(menuItem);
@@ -682,8 +677,8 @@ LRESULT CMainFrame::OnNotify(WPARAM wparam, LPARAM lparam)
     case EN_DROPFILES:
     {
         ENDROPFILES* enDrop = reinterpret_cast<ENDROPFILES*>(lparam);
-        HDROP hDropInfo = reinterpret_cast<HDROP>(enDrop->hDrop);
-        OnDropFiles(hDropInfo);
+        HDROP dropInfo = reinterpret_cast<HDROP>(enDrop->hDrop);
+        OnDropFiles(dropInfo);
     }
     return TRUE;
     }
@@ -745,6 +740,7 @@ LRESULT CMainFrame::OnPreviewClose()
     // Show the menu and toolbar
     ShowMenu(GetFrameMenu() != 0);
     ShowToolBar(m_isToolbarShown);
+    UpdateSettings();
 
     // Restore focus to the window focused before DoPrintPreview was called.
     RestoreFocus();
@@ -801,7 +797,7 @@ LRESULT CMainFrame::OnPreviewSetup()
 // Update the radio buttons in the menu.
 BOOL CMainFrame::OnUpdateRangeOfIDs(UINT idFirst, UINT idLast, UINT id)
 {
-    int menuItem = GetMenuItemPos(GetFrameMenu(), _T("Encoding"));
+    int menuItem = GetFrameMenu().FindMenuItem(_T("&Encoding"));
     CMenu radioMenu = GetFrameMenu().GetSubMenu(menuItem);
     UINT enc = m_encoding + IDM_ENC_ANSI;
     if (enc == id)
@@ -839,11 +835,11 @@ BOOL CMainFrame::ReadFile(LPCTSTR fileName)
         // try to determine the file encoding: Note that ANSI and UTF-8 are
         // handled by default, and only UTF-16 LE is accommodated by RichEdit.
         DetermineEncoding(file);
-        if (m_encoding == UTF16LE_BOM || m_encoding == UTF16LE)
+        if (m_encoding == UTF16LE)
             stream_mode |= SF_UNICODE;
 
         // Skip the BOM for UTF16LE encoding
-        if (m_encoding == UTF16LE_BOM)
+        if (m_encoding == UTF16LE)
             file.Seek(2, FILE_BEGIN);
 
         // Skip the BOM for UTF8 encoding
@@ -894,7 +890,6 @@ void CMainFrame::SetEncoding(UINT encoding)
     case ANSI:         SetStatusText(_T("Encoding: ANSI"));            break;
     case UTF8:         SetStatusText(_T("Encoding: UTF-8"));           break;
     case UTF16LE:      SetStatusText(_T("Encoding: UTF-16"));          break;
-    case UTF16LE_BOM:  SetStatusText(_T("Encoding: UTF-16 with BOM")); break;
     }
 }
 
@@ -974,12 +969,12 @@ void CMainFrame::SetStatusParts()
     }
 }
 
-// Adds images to the popup menu items.
+// Specifies the images for menu item IDs matching the toolbar data.
 void CMainFrame::SetupMenuIcons()
 {
     std::vector<UINT> data = GetToolBarData();
-    if (GetMenuIconHeight() >= 24)
-        AddMenuIcons(data, RGB(192, 192, 192), IDW_MAIN);
+    if ((GetMenuIconHeight() >= 24) && (GetWindowDpi(*this) != 192))
+        AddMenuIcons(data, RGB(192, 192, 192), IDW_MAIN, IDB_TOOLBAR_DIS);
     else
         AddMenuIcons(data, RGB(192, 192, 192), IDW_MENUICONS);
 }
@@ -1000,6 +995,9 @@ void CMainFrame::SetupToolBar()
     AddToolBarButton( IDM_FILE_PRINT );
     AddToolBarButton( 0 );              // Separator
     AddToolBarButton( IDM_HELP_ABOUT );
+
+    // Use separate imagelists for normal, hot and disabled buttons.
+    SetToolBarImages(RGB(192, 192, 192), IDW_MAIN, IDB_TOOLBAR_HOT, IDB_TOOLBAR_DIS);
 }
 
 // Sets the frame's title.
@@ -1072,14 +1070,14 @@ BOOL CMainFrame::WriteFile(LPCTSTR szFileName)
         // set the EDITSTREAM mode
         int stream_mode = m_isRTF ? SF_RTF : SF_TEXT;
 
-        if (m_encoding == UTF16LE_BOM || m_encoding == UTF16LE)
+        if (m_encoding == UTF16LE)
             stream_mode |= SF_UNICODE;
 
         if (m_encoding == UTF8)
             stream_mode |= (CP_UTF8 << 16) | SF_USECODEPAGE;
 
-        // Write the BOM for UTF16LE_BOM encoding if it had one before.
-        if (m_encoding == UTF16LE_BOM)
+        // Write the BOM for UTF16LE.
+        if (m_encoding == UTF16LE)
         {
             byte buffer[2] = { 0xff, 0xfe };
             file.Write(buffer, 2);

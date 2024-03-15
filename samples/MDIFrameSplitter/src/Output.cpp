@@ -25,6 +25,9 @@ CViewOutput::~CViewOutput()
 // Called when the window handle (HWND) is attached to CViewOutput.
 void CViewOutput::OnAttach()
 {
+    CFont font;
+    font.CreatePointFont(100, _T("Courier New"));
+    SetFont(font);
     SetWindowText(_T("Output Window"));
 }
 
@@ -69,5 +72,4 @@ CContainOutput::CContainOutput()
     SetTabText(_T("Output"));
     SetTabIcon(IDI_TEXT);
 }
-
 

@@ -34,14 +34,15 @@ protected:
     // Virtual functions that override base class functions
     virtual int     OnCreate(CREATESTRUCT& cs);
     virtual void    OnDestroy();
+    virtual LRESULT OnDpiChanged(UINT, WPARAM, LPARAM);
     virtual LRESULT OnPaint(UINT, WPARAM, LPARAM);
     virtual void    PreCreate(CREATESTRUCT&cs);
     virtual void    PreRegisterClass(WNDCLASS& wc);
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CD2DView(const CD2DView&);                // Disable copy construction
-    CD2DView& operator = (const CD2DView&);   // Disable assignment operator
+    CD2DView(const CD2DView&);               // Disable copy construction
+    CD2DView& operator=(const CD2DView&);    // Disable assignment operator
 
     // Message handlers
     LRESULT OnDisplayChange(UINT, WPARAM, LPARAM);

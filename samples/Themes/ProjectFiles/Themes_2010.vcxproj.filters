@@ -36,9 +36,6 @@
     <ClInclude Include="..\src\View.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\MyCombo.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\include\default_resource.h">
       <Filter>Win32++</Filter>
     </ClInclude>
@@ -203,6 +200,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\include\wxx_thread.h">
       <Filter>Win32++</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MyCombo.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

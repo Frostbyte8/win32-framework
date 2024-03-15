@@ -28,7 +28,7 @@ CMainFrame::~CMainFrame()
 // Create the frame window.
 HWND CMainFrame::Create(HWND parent)
 {
-    //Set m_view as the view window of the frame
+    // Set m_view as the view window of the frame.
     SetView(m_view);
 
     // Set the registry key name, and load the initial window position
@@ -63,18 +63,18 @@ void CMainFrame::LoadDefaultDockers()
     DWORD style = DS_CLIENTEDGE; // The style added to each docker
 
     // Add the right most dockers
-    CDocker* pDockRight = AddDockedChild(new CDockClasses, DS_DOCKED_RIGHT | style, 200, ID_DOCK_CLASSES1);
-    pDockRight->AddDockedChild(new CDockFiles, DS_DOCKED_CONTAINER | style, 200, ID_DOCK_FILES1);
-    pDockRight->AddDockedChild(new CDockClasses, DS_DOCKED_CONTAINER | style, 200, ID_DOCK_CLASSES2);
-    pDockRight->AddDockedChild(new CDockFiles, DS_DOCKED_CONTAINER | style, 200, ID_DOCK_FILES2);
+    CDocker* pDockRight = AddDockedChild(new CDockClasses, DS_DOCKED_RIGHT | style, DpiScaleInt(200), ID_DOCK_CLASSES1);
+    pDockRight->AddDockedChild(new CDockFiles, DS_DOCKED_CONTAINER | style, DpiScaleInt(200), ID_DOCK_FILES1);
+    pDockRight->AddDockedChild(new CDockClasses, DS_DOCKED_CONTAINER | style, DpiScaleInt(200), ID_DOCK_CLASSES2);
+    pDockRight->AddDockedChild(new CDockFiles, DS_DOCKED_CONTAINER | style, DpiScaleInt(200), ID_DOCK_FILES2);
 
     // Add the bottom dockers
-    CDocker* pDockBottom = AddDockedChild(new CDockOutput, DS_DOCKED_BOTTOM | style, 100, ID_DOCK_OUTPUT1);
-    pDockBottom->AddDockedChild(new CDockOutput, DS_DOCKED_CONTAINER | style, 100, ID_DOCK_OUTPUT2);
+    CDocker* pDockBottom = AddDockedChild(new CDockOutput, DS_DOCKED_BOTTOM | style, DpiScaleInt(100), ID_DOCK_OUTPUT1);
+    pDockBottom->AddDockedChild(new CDockOutput, DS_DOCKED_CONTAINER | style, DpiScaleInt(100), ID_DOCK_OUTPUT2);
 
     // Add the frame's dockers
-    AddDockedChild(new CDockText, DS_DOCKED_CONTAINER | style, 100, ID_DOCK_TEXT1);
-    AddDockedChild(new CDockText, DS_DOCKED_CONTAINER | style, 100, ID_DOCK_TEXT2);
+    AddDockedChild(new CDockText, DS_DOCKED_CONTAINER | style, DpiScaleInt(100), ID_DOCK_TEXT1);
+    AddDockedChild(new CDockText, DS_DOCKED_CONTAINER | style, DpiScaleInt(100), ID_DOCK_TEXT2);
 }
 
 // Adds a new docker. The id specifies its type.
@@ -164,13 +164,17 @@ int CMainFrame::OnCreate(CREATESTRUCT& cs)
 // Replaces the current docking arrangement with the default.
 BOOL CMainFrame::OnDockDefault()
 {
+    // Suppress redraw to render the docking changes smoothly.
     SetRedraw(FALSE);
+
     CloseAllDockers();
     LoadDefaultDockers();
     HideSingleContainerTab(m_hideSingleTab);
     SetContainerTabsAtTop(m_isContainerTabsAtTop);
+
+    // Enable redraw and redraw the frame.
     SetRedraw(TRUE);
-    RedrawWindow(RDW_INVALIDATE|RDW_UPDATENOW|RDW_ERASE|RDW_ALLCHILDREN);
+    RedrawWindow();
     return TRUE;
 }
 
@@ -186,6 +190,16 @@ BOOL CMainFrame::OnFileExit()
 {
     Close();
     return TRUE;
+}
+
+// Limit the minimum size of the window.
+LRESULT CMainFrame::OnGetMinMaxInfo(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    LPMINMAXINFO lpMMI = (LPMINMAXINFO)lparam;
+    const CSize minimumSize(500, 350);
+    lpMMI->ptMinTrackSize.x = DpiScaleInt(minimumSize.cx);
+    lpMMI->ptMinTrackSize.y = DpiScaleInt(minimumSize.cy);
+    return FinalWindowProc(msg, wparam, lparam);
 }
 
 // Toggle the hiding of tabs for containers with a single tab.
@@ -271,7 +285,7 @@ void CMainFrame::SetContainerTabsAtTop(bool isAtTop)
 void CMainFrame::SetupMenuIcons()
 {
     std::vector<UINT> data = GetToolBarData();
-    if (GetMenuIconHeight() >= 24)
+    if ((GetMenuIconHeight() >= 24) && (GetWindowDpi(*this) != 192))
         SetMenuIcons(data, RGB(192, 192, 192), IDW_MAIN);
     else
         SetMenuIcons(data, RGB(192, 192, 192), IDB_TOOLBAR16);
@@ -301,6 +315,11 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
 {
     try
     {
+        switch (msg)
+        {
+        case WM_GETMINMAXINFO:   return OnGetMinMaxInfo(msg, wparam, lparam);
+        }
+
         return WndProcDefault(msg, wparam, lparam);
     }
 

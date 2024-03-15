@@ -16,6 +16,8 @@ class CView : public CWnd
 public:
     CView();
     virtual ~CView() {}
+    void PositionWindow();
+    void SetRoundRegion();
 
 protected:
     // Virtual functions that override base class functions
@@ -29,14 +31,15 @@ protected:
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CView(const CView&);                // Disable copy construction
-    CView& operator = (const CView&);   // Disable assignment operator
+    CView(const CView&);               // Disable copy construction
+    CView& operator=(const CView&);    // Disable assignment operator
 
     // Command handlers
     BOOL OnColor();
     BOOL OnExit();
 
     // Message handlers
+    LRESULT OnDpiChanged(UINT msg, WPARAM wparam, LPARAM lparam);
     LRESULT OnLButtonDown(UINT msg, WPARAM wparam, LPARAM lparam);
     LRESULT OnLButtonUp(UINT msg, WPARAM wparam, LPARAM lparam);
     LRESULT OnMouseMove(UINT msg, WPARAM wparam, LPARAM lparam);
@@ -44,8 +47,9 @@ private:
 
     // Member variables
     CBrush m_brush;
-    CPoint m_point;
+    CPoint m_grabPoint;
     CRect m_rect;
+    int m_oldDPI;
 };
 
 

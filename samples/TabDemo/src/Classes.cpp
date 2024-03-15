@@ -22,8 +22,10 @@ CViewClasses::~CViewClasses()
 void CViewClasses::OnAttach()
 {
     //set the image lists
-    m_normalImages.Create(16, 15, ILC_COLOR32 | ILC_MASK, 1, 0);
+    int scale = DpiScaleInt(1);
+    m_normalImages.Create(16 * scale, 15 * scale, ILC_COLOR32 | ILC_MASK, 1, 0);
     CBitmap image(IDB_CLASSVIEW);
+    image = DpiScaleUpBitmap(image);
     m_normalImages.Add(image, RGB(255, 0, 0) );
     SetImageList(m_normalImages, LVSIL_NORMAL);
 
@@ -52,4 +54,52 @@ void CViewClasses::OnAttach()
     // Expand some tree-view items.
     Expand(htiRoot, TVE_EXPAND);
     Expand(htiCTreeViewApp, TVE_EXPAND);
+}
+
+// Called in response to a WM_DPICHANGED_BEFORE message that is sent to child
+// windows after a DPI change. A WM_DPICHANGED_BEFORE is only received when the
+// application is DPI_AWARENESS_PER_MONITOR_AWARE.
+LRESULT CViewClasses::OnDpiChangedBeforeParent(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    SetDPIImages();
+    return FinalWindowProc(msg, wparam, lparam);
+}
+
+// Adjusts the treeview image sizes in response to window DPI changes.
+void CViewClasses::SetDPIImages()
+{
+    // Resize the image list.
+    CBitmap bmImage(IDB_CLASSVIEW);
+    bmImage = DpiScaleUpBitmap(bmImage);
+    int scale = bmImage.GetSize().cy / 15;
+    m_normalImages.Create(scale * 16, scale * 15, ILC_COLOR32 | ILC_MASK, 1, 0);
+    m_normalImages.Add(bmImage, RGB(255, 0, 0));
+    SetImageList(m_normalImages, LVSIL_NORMAL);
+
+    // Reset the item indentation.
+    int imageWidth = m_normalImages.GetIconSize().cx;
+    SetIndent(imageWidth);
+}
+
+// Process the tree-view's window messages.
+LRESULT CViewClasses::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    try
+    {
+        switch (msg)
+        {
+        case WM_DPICHANGED_BEFOREPARENT:  return OnDpiChangedBeforeParent(msg, wparam, lparam);
+        }
+
+        return WndProcDefault(msg, wparam, lparam);
+    }
+
+    // Catch all CException types.
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
+
+        return 0;
+    }
 }

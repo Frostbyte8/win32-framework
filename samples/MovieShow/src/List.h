@@ -33,6 +33,7 @@ public:
     virtual ~CViewList();
 
     void    AddItem(const MovieInfo& mi);
+    void    SetDPIImages();
     void    SetLastColumnWidth();
     void    SortColumn(int column, bool isSortDown);
     void    UpdateItemImage(int item);
@@ -48,17 +49,19 @@ protected:
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CViewList(const CViewList&);                // Disable copy construction
-    CViewList& operator = (const CViewList&);   // Disable assignment operator
+    CViewList(const CViewList&);               // Disable copy construction
+    CViewList& operator=(const CViewList&);    // Disable assignment operator
 
     static int CALLBACK CompareFunction(LPARAM lp1, LPARAM lp2, LPARAM pSortViewItems);
 
     // Message handlers
     LRESULT OnCustomDraw(LPNMCUSTOMDRAW pCustomDraw);
+    LRESULT OnDpiChangedBeforeParent(UINT msg, WPARAM wparam, LPARAM lparam);
     LRESULT OnItemActivate(LPNMLISTVIEW pListView);
     LRESULT OnItemChanged(LPNMLISTVIEW pListView);
     LRESULT OnLVColumnClick(LPNMLISTVIEW pListView);
     LRESULT OnRClick();
+    LRESULT OnWindowPosChanged(UINT msg, WPARAM wparam, LPARAM lparam);
 
     CString GetFileTime(FILETIME fileTime);
     void    SetColumn();
@@ -67,6 +70,7 @@ private:
     // Member variables
     CImageList m_normal;
     CImageList m_small;
+    int m_oldDPI;
 };
 
 

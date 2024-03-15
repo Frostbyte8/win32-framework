@@ -27,7 +27,6 @@ CMyDialog::CMyDialog(UINT resID) : CDialog(resID)
 
 CMyDialog::~CMyDialog()
 {
-    DestroyIcon(m_info);
 }
 
 void CMyDialog::OnDestroy()
@@ -157,6 +156,12 @@ BOOL CMyDialog::OnInitDialog()
     // Specify a tooltip using a RECT and a user ID.
     m_bubbleTT.AddTool(*this, leftRect,  1, _T("Client area, left side"));
     m_bubbleTT.AddTool(*this, rightRect, 2, _T("Client area, right side"));
+
+    // Ajust the pattern image size.
+    m_patternImage.LoadBitmap(IDB_BITMAP1);
+    m_patternImage = DpiScaleUpBitmap(m_patternImage);
+    LPARAM lparam = reinterpret_cast<LPARAM>(m_patternImage.GetHandle());
+    SendDlgItemMessage(IDC_STATIC1, STM_SETIMAGE, IMAGE_BITMAP, lparam);
 
     return TRUE;
 }

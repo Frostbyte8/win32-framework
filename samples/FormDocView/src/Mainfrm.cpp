@@ -41,35 +41,6 @@ BOOL CMainFrame::LoadRegistrySettings(LPCTSTR keyName)
     return TRUE;
 }
 
-// Close the frame window to end the application.
-BOOL CMainFrame::OnFileExit()
-{
-    Close();
-    return TRUE;
-}
-
-// Update the check state of the various menu items
-void CMainFrame::OnMenuUpdate(UINT id)
-{
-    switch (id)
-    {
-    case ID_CHECK_A:
-        OnUpdateCheckA(id);
-        break;
-    case ID_CHECK_B:
-        OnUpdateCheckB(id);
-        break;
-    case ID_CHECK_C:
-        OnUpdateCheckC(id);
-        break;
-    }
-
-    if ((id >= ID_RADIO_A) && (id <= ID_RADIO_C))
-        OnUpdateRangeOfIDs(ID_RADIO_A, ID_RADIO_C, id);
-
-    CFrame::OnMenuUpdate(id);
-}
-
 // Respond to the toolbar and menu.
 BOOL CMainFrame::OnCommand(WPARAM wparam, LPARAM)
 {
@@ -132,6 +103,35 @@ void CMainFrame::OnInitialUpdate()
     // Place any additional startup code here.
 }
 
+// Close the frame window to end the application.
+BOOL CMainFrame::OnFileExit()
+{
+    Close();
+    return TRUE;
+}
+
+// Update the check state of the various menu items
+void CMainFrame::OnMenuUpdate(UINT id)
+{
+    switch (id)
+    {
+    case ID_CHECK_A:
+        OnUpdateCheckA(id);
+        break;
+    case ID_CHECK_B:
+        OnUpdateCheckB(id);
+        break;
+    case ID_CHECK_C:
+        OnUpdateCheckC(id);
+        break;
+    }
+
+    if ((id >= ID_RADIO_A) && (id <= ID_RADIO_C))
+        OnUpdateRangeOfIDs(ID_RADIO_A, ID_RADIO_C, id);
+
+    CFrame::OnMenuUpdate(id);
+}
+
 // Updates the Check A menu item.
 void CMainFrame::OnUpdateCheckA(UINT id)
 {
@@ -156,7 +156,7 @@ void CMainFrame::OnUpdateCheckC(UINT id)
 // Updates the radio button menu selection.
 void CMainFrame::OnUpdateRangeOfIDs(UINT idFirst, UINT idLast, UINT id)
 {
-    int fileItem = GetMenuItemPos(GetFrameMenu(), _T("Select"));
+    int fileItem = GetFrameMenu().FindMenuItem(_T("&Select"));
     CMenu radioMenu = GetFrameMenu().GetSubMenu(fileItem);
     if (GetDoc().GetRadio() == id)
         radioMenu.CheckMenuRadioItem(idFirst, idLast, id, MF_BYCOMMAND);
@@ -175,7 +175,7 @@ BOOL CMainFrame::SaveRegistrySettings()
 void CMainFrame::SetupMenuIcons()
 {
     std::vector<UINT> data = GetToolBarData();
-    if (GetMenuIconHeight() >= 24)
+    if ((GetMenuIconHeight() >= 24) && (GetWindowDpi(*this) != 192))
         SetMenuIcons(data, RGB(192, 192, 192), IDW_MAIN);
     else
         SetMenuIcons(data, RGB(192, 192, 192), IDB_MENUICONS);

@@ -1,4 +1,4 @@
-// Win32++   Version 9.2
+// Win32++   Version 9.5
 // Release Date: TBA
 //
 //      David Nash
@@ -6,7 +6,7 @@
 //      url: https://sourceforge.net/projects/win32-framework
 //
 //
-// Copyright (c) 2005-2022  David Nash
+// Copyright (c) 2005-2024  David Nash
 //
 // Permission is hereby granted, free of charge, to
 // any person obtaining a copy of this software and
@@ -99,8 +99,8 @@ namespace Win32xx
         CMenu(UINT id);
         CMenu(HMENU menu);
         CMenu(const CMenu& rhs);
-        CMenu& operator = (const CMenu& rhs);
-        void operator = (const HMENU menu);
+        CMenu& operator=(const CMenu& rhs);
+        void operator=(const HMENU menu);
         virtual ~CMenu();
 
         // Initialization
@@ -136,6 +136,7 @@ namespace Win32xx
 #endif
 
         int GetMenuItemCount() const;
+        ULONG_PTR GetMenuItemData(UINT idOrPos, BOOL byPosition = FALSE) const;
         UINT GetMenuItemID(int pos) const;
         BOOL GetMenuItemInfo(UINT idOrPos, MENUITEMINFO& menuItemInfo, BOOL byPosition = FALSE) const;
         UINT GetMenuState(UINT idOrPos, UINT flags) const;
@@ -222,7 +223,7 @@ namespace Win32xx
     }
 
     // Note: A copy of a CMenu is a clone of the original.
-    inline CMenu& CMenu::operator = (const CMenu& rhs)
+    inline CMenu& CMenu::operator=(const CMenu& rhs)
     {
         if (this != &rhs)
         {
@@ -235,7 +236,7 @@ namespace Win32xx
         return *this;
     }
 
-    inline void CMenu::operator = (const HMENU menu)
+    inline void CMenu::operator=(const HMENU menu)
     {
         Attach(menu);
     }
@@ -349,7 +350,7 @@ namespace Win32xx
                 m_pData = new CMenu_Data;
             }
 
-            if (menu)
+            if (menu!= 0)
             {
                 // Add the menu to this CMenu
                 CMenu_Data* pCMenuData = GetApp()->GetCMenuData(menu);
@@ -432,7 +433,16 @@ namespace Win32xx
         assert(m_pData);
         assert(IsMenu(m_pData->menu));
 
-        ::DestroyMenu( Detach() );
+        CThreadLock mapLock(GetApp()->m_gdiLock);
+
+        if (m_pData && m_pData->menu != 0)
+        {
+            RemoveFromMap();
+
+            ::DestroyMenu(m_pData->menu);
+            m_pData->menu = 0;
+            m_pData->isManagedMenu = false;
+        }
     }
 
     // Detaches the HMENU from this CMenu object and all its copies.
@@ -565,6 +575,23 @@ namespace Win32xx
         return ::GetMenuItemCount(m_pData->menu);
     }
 
+    // Retrieves the data assigned to the specfied menu item.
+    // Refer to the description of the dwItemData member of MENUITEMINFO
+    // in the Windows API documentation for more information.
+    inline ULONG_PTR CMenu::GetMenuItemData(UINT idOrPos, BOOL byPosition /* = FALSE*/) const
+    {
+        MENUITEMINFO mii;
+        ZeroMemory(&mii, sizeof(mii));
+        mii.cbSize = GetSizeofMenuItemInfo();
+        mii.fMask = MIIM_TYPE | MIIM_DATA;
+        ULONG_PTR pData = 0;
+
+        if (GetMenuItemInfo(idOrPos, mii, byPosition))
+            pData = mii.dwItemData;
+
+        return pData;
+    }
+
     // Retrieves the menu item identifier of a menu item located at the specified position.
     // Refer to GetMenuItemID in the Windows API documentation for more information.
     inline UINT CMenu::GetMenuItemID(int pos) const
@@ -603,7 +630,7 @@ namespace Win32xx
     {
         assert(m_pData);
         assert(IsMenu(m_pData->menu));
-        assert(string != 0);
+        assert(string != NULL);
 
         return ::GetMenuString(m_pData->menu, idOrPos, string, maxCount, flags);
     }

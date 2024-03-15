@@ -3,7 +3,7 @@
 
 
 #include "stdafx.h"
-#include <uxtheme.h>
+#include <Uxtheme.h>
 #include "List.h"
 #include "resource.h"
 #include "MovieInfo.h"
@@ -15,7 +15,7 @@
 //
 
 // Constructor
-CViewList::CViewList()
+CViewList::CViewList() : m_oldDPI(0)
 {
 }
 
@@ -143,8 +143,8 @@ CString CViewList::GetFileTime(FILETIME fileTime)
     const int maxChars = 32;
     WCHAR time[maxChars];
     WCHAR date[maxChars];
-    ::GetDateFormat(LOCALE_USER_DEFAULT, DATE_SHORTDATE, &localSysTime, NULL, date, maxChars - 1);
-    ::GetTimeFormat(LOCALE_USER_DEFAULT, TIME_NOSECONDS, &localSysTime, NULL, time, maxChars - 1);
+    ::GetDateFormat(LOCALE_USER_DEFAULT, DATE_SHORTDATE, &localSysTime, nullptr, date, maxChars - 1);
+    ::GetTimeFormat(LOCALE_USER_DEFAULT, TIME_NOSECONDS, &localSysTime, nullptr, time, maxChars - 1);
 
     // Combine the date and time in a CString.
     CString str = date;
@@ -156,16 +156,7 @@ CString CViewList::GetFileTime(FILETIME fileTime)
 // Called when the listview window is attached to CViewList during Create.
 void CViewList::OnAttach()
 {
-    SetWindowTheme(L"Explorer", NULL);
-
-    // Set the image lists
-    m_small.Create(16, 16, ILC_COLOR32, 1, 0);
-    m_small.AddIcon(IDI_MOVIES);
-    m_small.AddIcon(IDI_VIOLIN);
-    m_small.AddIcon(IDI_BOXSET);
-    m_small.AddIcon(IDI_FAVOURITES);
-    m_small.AddIcon(IDI_EYE);
-    SetImageList(m_small, LVSIL_SMALL);
+    SetWindowTheme(L"Explorer", nullptr);
 
     // Set the report style
     DWORD dwStyle = GetStyle();
@@ -177,15 +168,78 @@ void CViewList::OnAttach()
     SetColumn();
 }
 
+// Call to perform custom drawing.
+LRESULT CViewList::OnCustomDraw(LPNMCUSTOMDRAW pCustomDraw)
+{
+    assert(pCustomDraw);
+
+    switch (pCustomDraw->dwDrawStage)
+    {
+    case CDDS_PREPAINT: // Before the paint cycle begins.
+        // Request notifications for individual header items.
+        return CDRF_NOTIFYITEMDRAW;
+
+    case CDDS_ITEMPREPAINT: // Before an item is drawn
+    {
+        // Get an appropriate color for the header
+        COLORREF color = GetSysColor(COLOR_BTNFACE);
+        HWND hFrame = GetAncestor();
+        ReBarTheme* pTheme = reinterpret_cast<ReBarTheme*>(::SendMessage(hFrame, UWM_GETRBTHEME, 0, 0));
+        if (pTheme && pTheme->UseThemes && pTheme->clrBand2 != 0)
+            color = pTheme->clrBkgnd2;
+
+        // Set the background color of the header
+        CBrush br(color);
+        ::FillRect(pCustomDraw->hdc, &pCustomDraw->rc, br);
+
+        // Also set the text background color
+        ::SetBkColor(pCustomDraw->hdc, color);
+
+        return CDRF_DODEFAULT;
+    }
+    }
+
+    return CDRF_DODEFAULT;
+}
+
 // Called when the listview window is destroyed.
 void CViewList::OnDestroy()
 {
     SetImageList(0, LVSIL_SMALL);
 }
 
+// Called in response to a WM_DPICHANGED_BEFOREPARENT message that is sent to child
+// windows after a DPI change. A WM_DPICHANGED_BEFOREPARENT is only received when the
+// application is DPI_AWARENESS_PER_MONITOR_AWARE.
+LRESULT CViewList::OnDpiChangedBeforeParent(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    // Adjust the column width in response to window DPI changes.
+    SetRedraw(FALSE);
+    int lastCol = Header_GetItemCount(GetHeader()) - 1;
+    std::vector<int> columnWidths;
+    int dpi = GetWindowDpi(*this);
+    for (int i = 0; i <= lastCol; ++i)
+    {
+        int width = GetColumnWidth(i) * dpi / m_oldDPI;
+        SetColumnWidth(i, width);
+    }
+
+    m_oldDPI = GetWindowDpi(*this);
+
+    // Adjust the images in response to window DPI changes.
+    SetDPIImages();
+
+    SetRedraw(TRUE);
+    RedrawWindow();
+
+    return FinalWindowProc(msg, wparam, lparam);
+}
+
 // Called after the listview window is created.
 void CViewList::OnInitialUpdate()
 {
+    m_oldDPI = GetWindowDpi(*this);
+    SetDPIImages();
 }
 
 // Called with a double click left mouse button or press the Enter key
@@ -237,40 +291,6 @@ LRESULT CViewList::OnLVColumnClick(LPNMLISTVIEW pListView)
     return 0;
 }
 
-// Call to perform custom drawing.
-LRESULT CViewList::OnCustomDraw(LPNMCUSTOMDRAW pCustomDraw)
-{
-    assert(pCustomDraw);
-
-    switch (pCustomDraw->dwDrawStage)
-    {
-    case CDDS_PREPAINT: // Before the paint cycle begins.
-        // Request notifications for individual header items.
-        return CDRF_NOTIFYITEMDRAW;
-
-    case CDDS_ITEMPREPAINT: // Before an item is drawn
-    {
-        // Get an appropriate color for the header
-        COLORREF color = GetSysColor(COLOR_BTNFACE);
-        HWND hFrame = GetAncestor();
-        ReBarTheme* pTheme = reinterpret_cast<ReBarTheme*>(::SendMessage(hFrame, UWM_GETRBTHEME, 0, 0));
-        if (pTheme && pTheme->UseThemes && pTheme->clrBand2 != 0)
-            color = pTheme->clrBkgnd2;
-
-        // Set the background color of the header
-        CBrush br(color);
-        ::FillRect(pCustomDraw->hdc, &pCustomDraw->rc, br);
-
-        // Also set the text background color
-        ::SetBkColor(pCustomDraw->hdc, color);
-
-        return CDRF_DODEFAULT;
-    }
-    }
-
-    return CDRF_DODEFAULT;
-}
-
 // Respond to notifications from child windows,
 LRESULT CViewList::OnNotify(WPARAM, LPARAM lparam)
 {
@@ -312,6 +332,15 @@ LRESULT CViewList::OnRClick()
     return 0;
 }
 
+// Called when the window is resized.
+LRESULT CViewList::OnWindowPosChanged(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    // Adjust the list view's columns when the window is resized.
+    SetLastColumnWidth();
+
+    return FinalWindowProc(msg, wparam, lparam);
+}
+
 // Sets the CREATESTRUCT parameters prior to the window's creation.
 void CViewList::PreCreate(CREATESTRUCT& cs)
 {
@@ -328,25 +357,39 @@ void CViewList::SetColumn()
     lvColumn.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
     lvColumn.fmt = LVCFMT_LEFT;
 
-    lvColumn.cx = 300;
+    lvColumn.cx = DpiScaleInt(200);
     lvColumn.pszText = const_cast<LPTSTR>(L"Movie Title");
     InsertColumn(0, lvColumn);
 
-    lvColumn.cx = 150;
+    lvColumn.cx = DpiScaleInt(100);
     lvColumn.pszText = const_cast<LPTSTR>(L"Release Date");
     InsertColumn(1, lvColumn);
 
-    lvColumn.cx = 150;
+    lvColumn.cx = DpiScaleInt(120);
     lvColumn.pszText = const_cast<LPTSTR>(L"Genre");
     InsertColumn(2, lvColumn);
 
-    lvColumn.cx = 200;
+    lvColumn.cx = DpiScaleInt(150);
     lvColumn.pszText = const_cast<LPTSTR>(L"File Name");
     InsertColumn(3, lvColumn);
 
-    lvColumn.cx = 200;
+    lvColumn.cx = DpiScaleInt(150);
     lvColumn.pszText = const_cast<LPTSTR>(L"File Date");
     InsertColumn(4, lvColumn);
+}
+
+// Adjusts the listview image sizes in response to window DPI changes.
+void CViewList::SetDPIImages()
+{
+    // Set the image lists
+    int size = DpiScaleInt(16);
+    m_small.Create(size, size, ILC_COLOR32, 1, 0);
+    m_small.AddIcon(IDI_MOVIES);
+    m_small.AddIcon(IDI_VIOLIN);
+    m_small.AddIcon(IDI_BOXSET);
+    m_small.AddIcon(IDI_FAVOURITES);
+    m_small.AddIcon(IDI_EYE);
+    SetImageList(m_small, LVSIL_SMALL);
 }
 
 // Sets the up and down sort arrows in the listview's header.
@@ -452,9 +495,11 @@ void CViewList::UpdateItemImage(int item)
 
 LRESULT CViewList::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
 {
-    // Adjust the list view's columns when the window is resized.
-    if (msg == WM_WINDOWPOSCHANGED)
-        SetLastColumnWidth();
+    switch (msg)
+    {
+    case WM_WINDOWPOSCHANGED:        return OnWindowPosChanged(msg, wparam, lparam);
+    case WM_DPICHANGED_BEFOREPARENT: return OnDpiChangedBeforeParent(msg, wparam, lparam);
+    }
 
     return WndProcDefault(msg, wparam, lparam);
 }

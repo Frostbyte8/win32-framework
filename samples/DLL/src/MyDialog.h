@@ -23,8 +23,8 @@ protected:
     virtual void OnOK();
 
 private:
-    CMyDialog(const CMyDialog&);                // Disable copy construction
-    CMyDialog& operator = (const CMyDialog&);   // Disable assignment operator
+    CMyDialog(const CMyDialog&);               // Disable copy construction
+    CMyDialog& operator=(const CMyDialog&);    // Disable assignment operator
 
     // Command handlers
     BOOL OnButton();
@@ -36,6 +36,7 @@ private:
     // Member variables
     CEdit     m_edit;
     CRichEdit m_richEdit;
+    CBitmap m_patternImage;
 };
 
 #endif //MYDIALOG_H

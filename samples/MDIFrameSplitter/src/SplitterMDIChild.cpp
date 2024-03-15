@@ -20,6 +20,14 @@ CSimpleView::CSimpleView() : m_color(RGB(0,0,255))
 // Called when part of the window needs to be redrawn.
 void CSimpleView::OnDraw(CDC& dc)
 {
+    // Use the message font for Windows 7 and higher.
+    if (GetWinVersion() >= 2601)
+    {
+        NONCLIENTMETRICS info = GetNonClientMetrics();
+        LOGFONT lf = info.lfMessageFont;
+        dc.CreateFontIndirect(lf);
+    }
+
     // Centre some text in our view window.
     CRect rc = GetClientRect();
     dc.SetTextColor(m_color);
@@ -103,10 +111,11 @@ int CSplitterMDIChild::OnCreate(CREATESTRUCT& cs)
 void CSplitterMDIChild::OnInitialUpdate()
 {
     // Add Child dockers.
-    DWORD style = DS_CLIENTEDGE | DS_NO_UNDOCK;
+    DWORD style = DS_CLIENTEDGE;// | DS_NO_UNDOCK;
     m_view.SetDockStyle(style);
-    CDocker* pDockLeft  = m_view.AddDockedChild(new CDockOutput, DS_DOCKED_LEFT  | style, 200, 0);
-    CDocker* pDockRight = m_view.AddDockedChild(new CDockOutput, DS_DOCKED_RIGHT | style, 200, 0);
+    int width = DpiScaleInt(200);
+    CDocker* pDockLeft  = m_view.AddDockedChild(new CDockOutput, DS_DOCKED_LEFT  | style, width, 0);
+    CDocker* pDockRight = m_view.AddDockedChild(new CDockOutput, DS_DOCKED_RIGHT | style, width, 0);
     pDockLeft->AddDockedChild(new CDockFiles, DS_DOCKED_CONTAINER | style, 0, 0);
     pDockRight->AddDockedChild(new CDockFiles, DS_DOCKED_CONTAINER | style, 0, 0);
 }

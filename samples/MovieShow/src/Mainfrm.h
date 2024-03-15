@@ -18,7 +18,7 @@
 
 ///////////////////////////////////////////////////////////
 // CMainFrame manages the application's main window.
-// The main window is a frame which has a menubar, toolbar,
+// The main window is a frame that has a menubar, toolbar,
 // statusbar and view window.
 class CMainFrame : public CDockFrame
 {
@@ -51,8 +51,8 @@ protected:
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CMainFrame(const CMainFrame&);                // Disable copy construction
-    CMainFrame& operator = (const CMainFrame&);   // Disable assignment operator
+    CMainFrame(const CMainFrame&);               // Disable copy construction
+    CMainFrame& operator=(const CMainFrame&);    // Disable assignment operator
 
     static UINT WINAPI ThreadProc(void* pVoid);
 
@@ -90,13 +90,12 @@ private:
     // Message handlers
     LRESULT OnBoxSetChanged();
     LRESULT OnBarEnd(LPDRAGPOS pDragPos);
-    LRESULT OnDPIChanged();
     LRESULT OnRClickListItem();
     LRESULT OnRClickTreeItem();
     LRESULT OnSelectListItem(const MovieInfo* pmi);
     LRESULT OnSelectTreeItem();
     LRESULT OnSysCommand(UINT msg, WPARAM wparam, LPARAM lparam);
-    LRESULT OnWindowPosChanged(UINT msg, WPARAM wparam, LPARAM lparam);
+    LRESULT OnWindowPosChanging(UINT msg, WPARAM wparam, LPARAM lparam);
     LRESULT PlayMovie(LPCTSTR path);
 
     // Command handlers

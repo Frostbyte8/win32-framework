@@ -98,11 +98,23 @@ BOOL CMainFrame::OnFileExit()
     return TRUE;
 }
 
+// Limit the minimum size of the window.
+LRESULT CMainFrame::OnGetMinMaxInfo(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    LPMINMAXINFO lpMMI = (LPMINMAXINFO)lparam;
+    const CSize minimumSize(400, 350);
+    lpMMI->ptMinTrackSize.x = DpiScaleInt(minimumSize.cx);
+    lpMMI->ptMinTrackSize.y = DpiScaleInt(minimumSize.cy);
+    return FinalWindowProc(msg, wparam, lparam);
+}
+
 // Called after the frame window is created.
 void CMainFrame::OnInitialUpdate()
 {
     if (LoadDockRegistrySettings(GetRegistryKeyName()))
     {
+        DWORD style = DS_NO_UNDOCK | DS_NO_CAPTION | DS_CLIENTEDGE;
+        SetDockStyle(style);
         m_pDockText = dynamic_cast<CDockText*>(GetDockFromID(ID_DOCK_TEXT));
         m_pDockTree = dynamic_cast<CDockTree*>(GetDockFromID(ID_DOCK_TREE));
         m_pDockList = dynamic_cast<CDockList*>(GetDockFromID(ID_DOCK_LIST));
@@ -118,6 +130,9 @@ void CMainFrame::OnInitialUpdate()
         // Load the default arrangement of the window panes.
         LoadDefaultWindowPanes();
     }
+
+    // PreCreate initially set the window as invisible, so show it now.
+    ShowWindow(GetInitValues().showCmd);
 }
 
 // Hides or shows the ListView window pane.
@@ -155,6 +170,16 @@ BOOL CMainFrame::OnViewText()
     }
 
     return TRUE;
+}
+
+// Specify the CREATESTRUCT parameters before the window is created.
+void CMainFrame::PreCreate(CREATESTRUCT& cs)
+{
+    // Call base class to set defaults
+    CDockFrame::PreCreate(cs);
+
+    // Hide the window initially by removing the WS_VISIBLE style
+    cs.style &= ~WS_VISIBLE;
 }
 
 // Save the docking configuration in the registry.
@@ -199,10 +224,10 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
 {
     try
     {
-    //  switch (msg)
-    //  {
-    //  Add case statements for each messages to be handled here.
-    //  }
+        switch (msg)
+        {
+        case WM_GETMINMAXINFO:    return OnGetMinMaxInfo(msg, wparam, lparam);
+        }
 
         // Pass unhandled messages on for default processing.
         return WndProcDefault(msg, wparam, lparam);

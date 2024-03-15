@@ -227,14 +227,6 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\..\..\include\frame.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\include\gdi.h"
-				>
-			</File>
-			<File
 				RelativePath="..\src\Mainfrm.h"
 				>
 			</File>
@@ -243,15 +235,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\include\rebar.h"
-				>
-			</File>
-			<File
 				RelativePath="..\src\resource.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\include\statusbar.h"
 				>
 			</File>
 			<File
@@ -264,10 +248,6 @@
 			</File>
 			<File
 				RelativePath="..\src\ThemesApp.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\include\toolbar.h"
 				>
 			</File>
 			<File

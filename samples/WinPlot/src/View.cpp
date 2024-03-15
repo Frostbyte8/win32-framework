@@ -128,11 +128,14 @@ void CView::DoPlot(CDC& dc)
 void CView::DrawLabel(CDC& dc)
 {
     // Select the font.
-    int pointSize = 20 + int(.2 * m_points.size());
-    dc.CreatePointFont(pointSize, _T("Candara"));
+    CFont font;
+    CRect rc = GetClientRect();
+    int pointSize = 4 + 2 * MIN(rc.Width(), rc.Height()) / GetWindowDpi(*this);
+    font.CreatePointFont(pointSize, _T("Candara"));
+    LOGFONT lf = DpiScaleLogfont(font.GetLogFont(), pointSize);
+    dc.CreateFontIndirect(lf);
 
     // Draw the text.
-    CRect rc = GetClientRect();
     CString str = "f(x) = ";
     str += m_inputDlg.GetFunction();
     CSize sz = dc.GetTextExtentPoint32(str);
@@ -163,8 +166,12 @@ void CView::PrepareDC(CDC& dc)
     dc.CreatePen(PS_SOLID, 3, RGB(195, 0, 0));
 
     // Select the font.
-    int pointSize = 20 + int(.15 * m_points.size());
-    dc.CreatePointFont(pointSize, _T("Microsoft Sans Serif"));
+    CFont font;
+    CRect rc = GetClientRect();
+    int pointSize = 4 + 3*MIN(rc.Width(), rc.Height()) /(2* GetWindowDpi(*this));
+    font.CreatePointFont(pointSize, _T("Microsoft Sans Serif"));
+    LOGFONT lf = DpiScaleLogfont(font.GetLogFont(), pointSize);
+    dc.CreateFontIndirect(lf);
 
     // Select the color.
     dc.SetTextColor(RGB(0, 0, 0));

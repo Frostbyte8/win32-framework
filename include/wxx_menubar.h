@@ -1,4 +1,4 @@
-// Win32++   Version 9.2
+// Win32++   Version 9.5
 // Release Date: TBA
 //
 //      David Nash
@@ -6,7 +6,7 @@
 //      url: https://sourceforge.net/projects/win32-framework
 //
 //
-// Copyright (c) 2005-2022  David Nash
+// Copyright (c) 2005-2024  David Nash
 //
 // Permission is hereby granted, free of charge, to
 // any person obtaining a copy of this software and
@@ -44,13 +44,7 @@
 #include "wxx_toolbar.h"
 
 
-#ifndef WM_UNINITMENUPOPUP
-  #define WM_UNINITMENUPOPUP        0x0125
-#endif
 
-#ifndef WM_MENURBUTTONUP
-  #define WM_MENURBUTTONUP      0x0122
-#endif
 
 
 namespace Win32xx
@@ -105,7 +99,7 @@ namespace Win32xx
 
     private:
         CMenuBar(const CMenuBar&);              // Disable copy construction
-        CMenuBar& operator = (const CMenuBar&); // Disable assignment operator
+        CMenuBar& operator=(const CMenuBar&);   // Disable assignment operator
 
         void Press(int buttonID, BOOL press) const
         {
@@ -142,7 +136,7 @@ namespace Win32xx
         HMENU m_popupMenu;      // handle to the popup menu
         HMENU m_selMenu;        // handle to the cascaded popup menu
         HMENU m_topMenu;        // handle to the top level menu
-        HWND  m_prevFocus;      // handle to window which had focus
+        HWND  m_prevFocus;      // handle to window that had focus
         CRect m_mdiRect[3];     // array of CRect for MDI buttons
         int   m_hotItem;        // hot item
         CPoint m_oldMousePos;   // old Mouse position
@@ -210,8 +204,8 @@ namespace Win32xx
 
         if (IsMDIChildMaxed())
         {
-            int cx = ::GetSystemMetrics(SM_CXSMICON);
-            int cy = ::GetSystemMetrics(SM_CYSMICON);
+            int cx = ::GetSystemMetrics(SM_CXSMICON) * GetWindowDpi(*this) / GetWindowDpi(HWND_DESKTOP);
+            int cy = ::GetSystemMetrics(SM_CYSMICON) * GetWindowDpi(*this) / GetWindowDpi(HWND_DESKTOP);
             CRect rc = GetClientRect();
             int gap = 4;
             rc.right -= gap;
@@ -247,91 +241,71 @@ namespace Win32xx
     {
         if (!IsRectEmpty(&m_mdiRect[button]))
         {
+            // Use the Marlett font to draw special characters
+            CFont marlett;
+            marlett.CreatePointFont(100, _T("Marlett"));
+            drawDC.SetBkMode(TRANSPARENT);
+            LOGFONT lf = DpiScaleLogfont(marlett.GetLogFont(), 10);
+            drawDC.CreateFontIndirect(lf);
+
+            COLORREF grey(GetSysColor(COLOR_BTNFACE));
+            COLORREF black(RGB(0, 0, 0));
+            COLORREF white(RGB(255, 255, 255));
+
             switch (state)
             {
             case 0:
-                // Draw a gray outline.
-                drawDC.CreatePen(PS_SOLID, 1, GetSysColor(COLOR_BTNFACE));
-                drawDC.MoveTo(m_mdiRect[button].left, m_mdiRect[button].bottom);
-                drawDC.LineTo(m_mdiRect[button].right, m_mdiRect[button].bottom);
-                drawDC.LineTo(m_mdiRect[button].right, m_mdiRect[button].top);
-                drawDC.LineTo(m_mdiRect[button].left, m_mdiRect[button].top);
-                drawDC.LineTo(m_mdiRect[button].left, m_mdiRect[button].bottom);
+                // Draw a grey box for the normal button to erase other highlighting.
+                drawDC.SetTextColor(grey);
+                drawDC.TextOut(m_mdiRect[button].left, m_mdiRect[button].top, _T("\x63"), 1);
+                drawDC.TextOut(m_mdiRect[button].left, m_mdiRect[button].top, _T("\x64"), 1);
                 break;
             case 1:
-                // Draw outline, white at top, black on bottom.
-                drawDC.CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
-                drawDC.MoveTo(m_mdiRect[button].left, m_mdiRect[button].bottom);
-                drawDC.LineTo(m_mdiRect[button].right, m_mdiRect[button].bottom);
-                drawDC.LineTo(m_mdiRect[button].right, m_mdiRect[button].top);
-                drawDC.CreatePen(PS_SOLID, 1, RGB(255, 255, 255));
-                drawDC.LineTo(m_mdiRect[button].left, m_mdiRect[button].top);
-                drawDC.LineTo(m_mdiRect[button].left, m_mdiRect[button].bottom);
+                // Draw popped up button, black on right and bottom.
+                drawDC.SetTextColor(white);
+                drawDC.TextOut(m_mdiRect[button].left, m_mdiRect[button].top, _T("\x63"), 1);
+                drawDC.SetTextColor(black);
+                drawDC.TextOut(m_mdiRect[button].left, m_mdiRect[button].top, _T("\x64"), 1);
                 break;
             case 2:
-                // Draw outline, black on top, white on bottom.
-                drawDC.CreatePen(PS_SOLID, 1, RGB(255, 255, 255));
-                drawDC.MoveTo(m_mdiRect[button].left, m_mdiRect[button].bottom);
-                drawDC.LineTo(m_mdiRect[button].right, m_mdiRect[button].bottom);
-                drawDC.LineTo(m_mdiRect[button].right, m_mdiRect[button].top);
-                drawDC.CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
-                drawDC.LineTo(m_mdiRect[button].left, m_mdiRect[button].top);
-                drawDC.LineTo(m_mdiRect[button].left, m_mdiRect[button].bottom);
+                // Draw pressed button, black on left and top.
+                drawDC.SetTextColor(black);
+                drawDC.TextOut(m_mdiRect[button].left, m_mdiRect[button].top, _T("\x63"), 1);
+                drawDC.SetTextColor(white);
+                drawDC.TextOut(m_mdiRect[button].left, m_mdiRect[button].top, _T("\x64"), 1);
                 break;
             }
-
-            drawDC.CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
 
             switch (button)
             {
             case MDI_MIN:
-                // Manually draw minimize button.
-                drawDC.MoveTo(m_mdiRect[0].left + 4, m_mdiRect[0].bottom -4);
-                drawDC.LineTo(m_mdiRect[0].right - 4, m_mdiRect[0].bottom - 4);
+            {
+                // Draw the minimize button.
+                CRect rc = m_mdiRect[0];
+                rc.OffsetRect(DpiScaleInt(1), 0);
 
-                drawDC.MoveTo(m_mdiRect[0].left + 4, m_mdiRect[0].bottom -5);
-                drawDC.LineTo(m_mdiRect[0].right - 4, m_mdiRect[0].bottom - 5);
+                drawDC.SetTextColor(black);
+                drawDC.TextOut(rc.left, rc.top, _T("\x30"), 1);
                 break;
+            }
             case MDI_RESTORE:
-                // Manually draw restore button.
-                drawDC.MoveTo(m_mdiRect[1].left + 3, m_mdiRect[1].top + 7);
-                drawDC.LineTo(m_mdiRect[1].left + 3, m_mdiRect[1].bottom -4);
-                drawDC.LineTo(m_mdiRect[1].right - 6, m_mdiRect[1].bottom -4);
-                drawDC.LineTo(m_mdiRect[1].right - 6, m_mdiRect[1].top + 7);
-                drawDC.LineTo(m_mdiRect[1].left + 3, m_mdiRect[1].top + 7);
+            {
+                // Draw the restore button.
+                CRect rc = m_mdiRect[1];
+                rc.OffsetRect(1, 0);
 
-                drawDC.MoveTo(m_mdiRect[1].left + 3, m_mdiRect[1].top + 8);
-                drawDC.LineTo(m_mdiRect[1].right - 6, m_mdiRect[1].top + 8);
-
-                drawDC.MoveTo(m_mdiRect[1].left + 5, m_mdiRect[1].top + 7);
-                drawDC.LineTo(m_mdiRect[1].left + 5, m_mdiRect[1].top + 4);
-                drawDC.LineTo(m_mdiRect[1].right - 4, m_mdiRect[1].top + 4);
-                drawDC.LineTo(m_mdiRect[1].right - 4, m_mdiRect[1].bottom -6);
-                drawDC.LineTo(m_mdiRect[1].right - 6, m_mdiRect[1].bottom -6);
-
-                drawDC.MoveTo(m_mdiRect[1].left + 5, m_mdiRect[1].top + 5);
-                drawDC.LineTo(m_mdiRect[1].right - 4, m_mdiRect[1].top + 5);
+                drawDC.SetTextColor(black);
+                drawDC.TextOut(rc.left, rc.top, _T("\x32"), 1);
                 break;
+            }
             case MDI_CLOSE:
-                // Manually draw close button.
-                drawDC.MoveTo(m_mdiRect[2].left + 4, m_mdiRect[2].top +5);
-                drawDC.LineTo(m_mdiRect[2].right - 4, m_mdiRect[2].bottom -3);
-
-                drawDC.MoveTo(m_mdiRect[2].left + 5, m_mdiRect[2].top +5);
-                drawDC.LineTo(m_mdiRect[2].right - 4, m_mdiRect[2].bottom -4);
-
-                drawDC.MoveTo(m_mdiRect[2].left + 4, m_mdiRect[2].top +6);
-                drawDC.LineTo(m_mdiRect[2].right - 5, m_mdiRect[2].bottom -3);
-
-                drawDC.MoveTo(m_mdiRect[2].right -5, m_mdiRect[2].top +5);
-                drawDC.LineTo(m_mdiRect[2].left + 3, m_mdiRect[2].bottom -3);
-
-                drawDC.MoveTo(m_mdiRect[2].right -5, m_mdiRect[2].top +6);
-                drawDC.LineTo(m_mdiRect[2].left + 4, m_mdiRect[2].bottom -3);
-
-                drawDC.MoveTo(m_mdiRect[2].right -6, m_mdiRect[2].top +5);
-                drawDC.LineTo(m_mdiRect[2].left + 3, m_mdiRect[2].bottom -4);
+            {
+                // Draw the close button (a Marlett "r" looks like "X").
+                drawDC.SetTextColor(black);
+                drawDC.TextOut(m_mdiRect[2].left, m_mdiRect[2].top, _T("\x72"), 1);
                 break;
+            }
+
             }
         }
     }
@@ -1124,10 +1098,15 @@ namespace Win32xx
             AddButtons(1, &tbb);
 
             // Add the menu title to the string table.
-            std::vector<TCHAR> menuName(WXX_MAX_STRING_SIZE +1, _T('\0') );
-            TCHAR* pMenuName = &menuName[0];
-            GetMenuString(menu, static_cast<UINT>(i), pMenuName, WXX_MAX_STRING_SIZE, MF_BYPOSITION);
-            SetButtonText(static_cast<UINT>(i + maxedOffset), pMenuName);
+            CString menuText;
+            GetMenuString(menu, static_cast<UINT>(i), menuText.GetBuffer(WXX_MAX_STRING_SIZE), WXX_MAX_STRING_SIZE, MF_BYPOSITION);
+            menuText.ReleaseBuffer();
+
+            // Add extra spaces to menuText for high DPI.
+            if (GetWindowDpi(*this) >= 150)
+                menuText = _T(" ") + menuText + _T(" ");
+
+            SetButtonText(static_cast<UINT>(i + maxedOffset), menuText);
         }
     }
 

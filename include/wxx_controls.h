@@ -1,4 +1,4 @@
-// Win32++   Version 9.2
+// Win32++   Version 9.5
 // Release Date: TBA
 //
 //      David Nash
@@ -6,7 +6,7 @@
 //      url: https://sourceforge.net/projects/win32-framework
 //
 //
-// Copyright (c) 2005-2022  David Nash
+// Copyright (c) 2005-2024  David Nash
 //
 // Permission is hereby granted, free of charge, to
 // any person obtaining a copy of this software and
@@ -81,7 +81,7 @@ namespace Win32xx
 
     private:
         CAnimation(const CAnimation&);              // Disable copy construction
-        CAnimation& operator = (const CAnimation&); // Disable assignment operator
+        CAnimation& operator=(const CAnimation&);   // Disable assignment operator
     };
 
 
@@ -148,8 +148,8 @@ namespace Win32xx
         virtual void PreRegisterClass(WNDCLASS& wc) { wc.lpszClassName = _T("ComboBox"); }
 
     private:
-        CComboBox(const CComboBox&);                // Disable copy construction
-        CComboBox& operator = (const CComboBox&);   // Disable assignment operator
+        CComboBox(const CComboBox&);               // Disable copy construction
+        CComboBox& operator=(const CComboBox&);    // Disable assignment operator
     };
 
 
@@ -180,8 +180,8 @@ namespace Win32xx
         virtual void PreRegisterClass(WNDCLASS& wc) { wc.lpszClassName = WC_COMBOBOXEX; }
 
     private:
-        CComboBoxEx(const CComboBoxEx&);                // Disable copy construction
-        CComboBoxEx& operator = (const CComboBoxEx&);   // Disable assignment operator
+        CComboBoxEx(const CComboBoxEx&);               // Disable copy construction
+        CComboBoxEx& operator=(const CComboBoxEx&);    // Disable assignment operator
     };
 
 
@@ -230,8 +230,8 @@ namespace Win32xx
         virtual void PreRegisterClass(WNDCLASS& wc) { wc.lpszClassName = WC_HEADER ; }
 
     private:
-        CHeader(const CHeader&);                // Disable copy construction
-        CHeader& operator = (const CHeader&);   // Disable assignment operator
+        CHeader(const CHeader&);               // Disable copy construction
+        CHeader& operator=(const CHeader&);    // Disable assignment operator
     };
 
 
@@ -255,8 +255,8 @@ namespace Win32xx
         virtual void PreRegisterClass(WNDCLASS& wc) { wc.lpszClassName = HOTKEY_CLASS; }
 
     private:
-        CHotKey(const CHotKey&);                // Disable copy construction
-        CHotKey& operator = (const CHotKey&);   // Disable assignment operator
+        CHotKey(const CHotKey&);               // Disable copy construction
+        CHotKey& operator=(const CHotKey&);    // Disable assignment operator
     };
 
 
@@ -286,7 +286,7 @@ namespace Win32xx
 
     private:
         CIPAddress(const CIPAddress&);              // Disable copy construction
-        CIPAddress& operator = (const CIPAddress&); // Disable assignment operator
+        CIPAddress& operator=(const CIPAddress&);   // Disable assignment operator
     };
 
 
@@ -330,7 +330,7 @@ namespace Win32xx
 
     private:
         CMonthCalendar(const CMonthCalendar&);              // Disable copy construction
-        CMonthCalendar& operator = (const CMonthCalendar&); // Disable assignment operator
+        CMonthCalendar& operator=(const CMonthCalendar&);   // Disable assignment operator
     };
 
     ///////////////////////////////////////////////////////////
@@ -361,8 +361,8 @@ namespace Win32xx
         virtual void PreRegisterClass(WNDCLASS& wc) { wc.lpszClassName = DATETIMEPICK_CLASS; }
 
     private:
-        CDateTime(const CDateTime&);                // Disable copy construction
-        CDateTime& operator = (const CDateTime&);   // Disable assignment operator
+        CDateTime(const CDateTime&);               // Disable copy construction
+        CDateTime& operator=(const CDateTime&);    // Disable assignment operator
     };
 
 
@@ -391,7 +391,7 @@ namespace Win32xx
 
     private:
         CProgressBar(const CProgressBar&);              // Disable copy construction
-        CProgressBar& operator = (const CProgressBar&); // Disable assignment operator
+        CProgressBar& operator=(const CProgressBar&);   // Disable assignment operator
     };
 
 
@@ -422,7 +422,7 @@ namespace Win32xx
 
     private:
         CScrollBar(const CScrollBar&);              // Disable copy construction
-        CScrollBar& operator = (const CScrollBar&); // Disable assignment operator
+        CScrollBar& operator=(const CScrollBar&);   // Disable assignment operator
     };
 
     ///////////////////////////////////////////////////////////////////
@@ -471,8 +471,8 @@ namespace Win32xx
         virtual void PreRegisterClass(WNDCLASS& wc) { wc.lpszClassName = TRACKBAR_CLASS; }
 
     private:
-        CSlider(const CSlider&);                // Disable copy construction
-        CSlider& operator = (const CSlider&);   // Disable assignment operator
+        CSlider(const CSlider&);               // Disable copy construction
+        CSlider& operator=(const CSlider&);    // Disable assignment operator
     };
 
     ////////////////////////////////////////////////////////////
@@ -504,8 +504,8 @@ namespace Win32xx
         virtual void PreRegisterClass(WNDCLASS& wc);
 
     private:
-        CSpinButton(const CSpinButton&);                // Disable copy construction
-        CSpinButton& operator = (const CSpinButton&);   // Disable assignment operator
+        CSpinButton(const CSpinButton&);               // Disable copy construction
+        CSpinButton& operator=(const CSpinButton&);    // Disable assignment operator
     };
 
 
@@ -571,7 +571,7 @@ namespace Win32xx
         virtual void PreRegisterClass(WNDCLASS& wc);
     private:
         CToolTip(const CToolTip&);              // Disable copy construction
-        CToolTip& operator = (const CToolTip&); // Disable assignment operator
+        CToolTip& operator=(const CToolTip&);   // Disable assignment operator
 
     };
 
@@ -1299,8 +1299,9 @@ namespace Win32xx
     inline CImageList CHeader::CreateDragImage(int index) const
     {
         assert(IsWindow());
-        HIMAGELIST images = Header_CreateDragImage(*this, index);
-        return CImageList(images);
+        CImageList images;
+        images.CreateDragImage(*this, index);
+        return images;
     }
 
     // Deletes an item from the header control.
@@ -2413,8 +2414,8 @@ namespace Win32xx
     }
 
     // Registers a tool with a ToolTip control.
-    // control specifies the window which triggers the tooltip.
-    // toolRect specifies the part of the window which triggers the tooltip.
+    // control specifies the window that triggers the tooltip.
+    // toolRect specifies the part of the window that triggers the tooltip.
     // textID specifies the ID of the text resource.
     // id is a user defined ID. It is required if the control has multiple tooltips.
     // Refer to TTM_ADDTOOL in the Windows API documentation for more information.
@@ -2430,7 +2431,7 @@ namespace Win32xx
     }
 
     // Registers a tool with a ToolTip control.
-    // control specifies the window which triggers the tooltip.
+    // control specifies the window that triggers the tooltip.
     // textID specifies the ID of the text resource
     // Refer to TTM_ADDTOOL in the Windows API documentation for more information.
     inline BOOL CToolTip::AddTool(HWND control, UINT textID) const
@@ -2445,8 +2446,8 @@ namespace Win32xx
     }
 
     // Registers a tool with a ToolTip control.
-    // control specifies the window which triggers the tooltip.
-    // toolRect specifies the part of the window which triggers the tooltip.
+    // control specifies the window that triggers the tooltip.
+    // toolRect specifies the part of the window that triggers the tooltip.
     // If text contains the value LPSTR_TEXTCALLBACK, TTN_NEEDTEXT notification
     // messages are sent to the parent window.
     // id is a user defined ID. It is required if the control has multiple tooltips.
@@ -2462,7 +2463,7 @@ namespace Win32xx
     }
 
     // Registers a tool with a ToolTip control.
-    // control specifies the window which triggers the tooltip.
+    // control specifies the window that triggers the tooltip.
     // If text contains the value LPSTR_TEXTCALLBACK, TTN_NEEDTEXT notification
     // messages are sent to the parent window.
     // Refer to TTM_ADDTOOL in the Windows API documentation for more information.

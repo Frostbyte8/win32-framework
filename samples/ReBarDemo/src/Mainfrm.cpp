@@ -33,6 +33,27 @@ HWND CMainFrame::Create(HWND parent)
     return CFrame::Create(parent);
 }
 
+// Resize the arrow toolbar's images and the rebar containing it.
+// Required for per-monitor DPI-aware.
+void CMainFrame::DpiScaleReBar()
+{
+    // Create the arrow toolbar's image list from 4 icons.
+    int scale = DpiScaleInt(1);
+    m_toolBarImages.Create(scale * 48, scale * 48, ILC_COLOR32 | ILC_MASK, 0, 0);
+    m_toolBarImages.AddIcon(IDI_TOP);
+    m_toolBarImages.AddIcon(IDI_LEFT);
+    m_toolBarImages.AddIcon(IDI_RIGHT);
+    m_toolBarImages.AddIcon(IDI_BOTTOM);
+
+    // Assign the image list to the arrow toolbar.
+    m_toolBar.SetImageList(m_toolBarImages);
+
+    // Resize the rebar band holding the arrow toolbar.
+    CSize sizeToolBar = m_toolBar.GetMaxSize();
+    int minxy = MIN(sizeToolBar.cx, sizeToolBar.cy);
+    m_reBar.ResizeBand(0, CSize(minxy, minxy));
+}
+
 // Retrieves the size view rectangle.
 CRect CMainFrame::GetViewRect() const
 {
@@ -65,50 +86,6 @@ void CMainFrame::OnBottom()
     dwStyle = m_reBar.GetStyle();
     dwStyle &= ~(CCS_VERT);
     dwStyle |= CCS_BOTTOM;
-    m_reBar.SetStyle(dwStyle);
-    RecalcLayout();
-}
-
-// Place the rebar on the left of the view.
-void CMainFrame::OnLeft()
-{
-    DWORD dwStyle = m_toolBar.GetStyle();
-    dwStyle &= ~(CCS_BOTTOM);
-    dwStyle |= CCS_LEFT;
-    SetWrapState(&m_toolBar, TRUE);
-    m_toolBar.SetStyle(dwStyle);
-
-    dwStyle = m_reBar.GetStyle();
-    dwStyle &= ~(CCS_BOTTOM);
-    dwStyle |= CCS_LEFT;
-    m_reBar.SetStyle(dwStyle);
-    RecalcLayout();
-}
-
-// Place the rebar on the right of the view.
-void CMainFrame::OnRight()
-{
-    DWORD dwStyle = m_toolBar.GetStyle();
-    dwStyle |= CCS_RIGHT;
-    SetWrapState(&m_toolBar, TRUE);
-    m_toolBar.SetStyle(dwStyle);
-
-    dwStyle = m_reBar.GetStyle();
-    dwStyle |= CCS_RIGHT;
-    m_reBar.SetStyle(dwStyle);
-    RecalcLayout();
-}
-
-// Place the rebar at top of the view.
-void CMainFrame::OnTop()
-{
-    DWORD dwStyle = m_toolBar.GetStyle();
-    dwStyle &= ~(CCS_VERT | CCS_BOTTOM);
-    SetWrapState(&m_toolBar, FALSE);
-    m_toolBar.SetStyle(dwStyle);
-
-    dwStyle = m_reBar.GetStyle();
-    dwStyle &= ~(CCS_VERT | CCS_BOTTOM);
     m_reBar.SetStyle(dwStyle);
     RecalcLayout();
 }
@@ -163,7 +140,8 @@ int CMainFrame::OnCreate(CREATESTRUCT& cs)
     style |= TBSTYLE_FLAT;
 
     // Create the ToolBar's image list from 4 icons
-    m_toolBarImages.Create(48, 48, ILC_COLOR32 | ILC_MASK, 0, 0);
+    int scale = DpiScaleInt(1);
+    m_toolBarImages.Create(scale * 48, scale * 48, ILC_COLOR32 | ILC_MASK, 0, 0);
     m_toolBarImages.AddIcon(IDI_TOP);
     m_toolBarImages.AddIcon(IDI_LEFT);
     m_toolBarImages.AddIcon(IDI_RIGHT);
@@ -198,6 +176,26 @@ int CMainFrame::OnCreate(CREATESTRUCT& cs)
     return 0;
 }
 
+// Called when the effective dots per inch (dpi) for a window has changed.
+// This occurs when:
+//  - The window is moved to a new monitor that has a different DPI.
+//  - The DPI of the monitor hosting the window changes.
+LRESULT CMainFrame::OnDpiChanged(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    // Turn redrawing off to make the tansition smoother.
+    SetRedraw(FALSE);
+
+    // Perform the DPI rescaling.
+    CFrame::OnDpiChanged(msg, wparam, lparam);
+    DpiScaleReBar();
+    RecalcLayout();
+
+    // Turn redrawing on and redraw the frame window.
+    SetRedraw(TRUE);
+    RedrawWindow();
+    return 0;
+}
+
 // Issue a close request to the frame to end the application.
 BOOL CMainFrame::OnFileExit()
 {
@@ -213,6 +211,51 @@ void CMainFrame::OnInitialUpdate()
     // Place any additional startup code here.
 
     TRACE("Frame created\n");
+    DpiScaleReBar();
+}
+
+// Place the rebar on the left of the view.
+void CMainFrame::OnLeft()
+{
+    DWORD dwStyle = m_toolBar.GetStyle();
+    dwStyle &= ~(CCS_BOTTOM);
+    dwStyle |= CCS_LEFT;
+    SetWrapState(&m_toolBar, TRUE);
+    m_toolBar.SetStyle(dwStyle);
+
+    dwStyle = m_reBar.GetStyle();
+    dwStyle &= ~(CCS_BOTTOM);
+    dwStyle |= CCS_LEFT;
+    m_reBar.SetStyle(dwStyle);
+    RecalcLayout();
+}
+
+// Place the rebar on the right of the view.
+void CMainFrame::OnRight()
+{
+    DWORD dwStyle = m_toolBar.GetStyle();
+    dwStyle |= CCS_RIGHT;
+    SetWrapState(&m_toolBar, TRUE);
+    m_toolBar.SetStyle(dwStyle);
+
+    dwStyle = m_reBar.GetStyle();
+    dwStyle |= CCS_RIGHT;
+    m_reBar.SetStyle(dwStyle);
+    RecalcLayout();
+}
+
+// Place the rebar at top of the view.
+void CMainFrame::OnTop()
+{
+    DWORD dwStyle = m_toolBar.GetStyle();
+    dwStyle &= ~(CCS_VERT | CCS_BOTTOM);
+    SetWrapState(&m_toolBar, FALSE);
+    m_toolBar.SetStyle(dwStyle);
+
+    dwStyle = m_reBar.GetStyle();
+    dwStyle &= ~(CCS_VERT | CCS_BOTTOM);
+    m_reBar.SetStyle(dwStyle);
+    RecalcLayout();
 }
 
 // Override CFrame::RecalcLayout to add the positioning of our rebar.
@@ -299,7 +342,7 @@ void CMainFrame::SetupMenuIcons()
 {
     // Use the MenuIcons bitmap for images in menu items.
     std::vector<UINT> data = GetToolBarData();
-    if (GetMenuIconHeight() >= 24)
+    if ((GetMenuIconHeight() >= 24) && (GetWindowDpi(*this) != 192))
         AddMenuIcons(data, RGB(192, 192, 192), IDW_MAIN);
     else
         AddMenuIcons(data, RGB(192, 192, 192), IDB_TOOLBAR16);

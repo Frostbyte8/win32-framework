@@ -63,13 +63,14 @@ protected:
     virtual BOOL    OnCommand(WPARAM wparam, LPARAM);
     virtual int     OnCreate(CREATESTRUCT& cs);
     virtual void    OnDestroy();
+    virtual LRESULT OnDpiChanged(UINT, WPARAM, LPARAM lparam);
     virtual LRESULT OnNotify(WPARAM wparam, LPARAM lparam);
     virtual void    PreCreate(CREATESTRUCT& cs);
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CMiniFrame(const CMiniFrame&) = delete;                // Disable copy construction
-    CMiniFrame& operator = (const CMiniFrame&) = delete;   // Disable assignment operator
+    CMiniFrame(const CMiniFrame&) = delete;               // Disable copy construction
+    CMiniFrame& operator=(const CMiniFrame&) = delete;    // Disable assignment operator
 
     void DrawBackground(CDC& dc) const;
     void DrawCloseButton(CDC& dc) const;
@@ -97,6 +98,7 @@ private:
     LRESULT OnNCRButtonDown(UINT msg, WPARAM wparam, LPARAM lparam);
     LRESULT OnPaint(UINT msg, WPARAM wparam, LPARAM lparam);
     LRESULT OnSize(UINT msg, WPARAM wparam, LPARAM lparam);
+    LRESULT OnSysCommand(UINT msg, WPARAM wparam, LPARAM lparam);
 
     // Member variables
     CDialog m_aboutDialog;              // Help about dialog.

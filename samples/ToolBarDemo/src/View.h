@@ -15,6 +15,8 @@ public:
     CView();
     virtual ~CView(){}
 
+    void DpiScaleToolBar();
+
 protected:
     // Virtual functions that override base class functions
     virtual BOOL OnCommand(WPARAM wparam, LPARAM lparam);
@@ -27,11 +29,15 @@ protected:
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CView(const CView&);                // Disable copy construction
-    CView& operator = (const CView&);   // Disable assignment operator
+    CView(const CView&);               // Disable copy construction
+    CView& operator=(const CView&);    // Disable assignment operator
 
     void RecalcLayout();
     void SetWrapState(bool isWrapped);
+
+    // MessageHandlers
+    LRESULT OnSize(UINT, WPARAM, LPARAM);
+    LRESULT OnDpiChangedBeforeParent(UINT, WPARAM, LPARAM);
 
     // Command handlers
     BOOL OnBottom();

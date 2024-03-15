@@ -11,7 +11,7 @@
 
 ///////////////////////////////////////////////////////////
 // CMainFrame manages the application's main window.
-// The main window is a frame which has a menubar, toolbar,
+// The main window is a frame that has a menubar, toolbar,
 // statusbar and view window.
 class CMainFrame : public CFrame
 {
@@ -30,8 +30,8 @@ protected:
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CMainFrame(const CMainFrame&);                // Disable copy construction
-    CMainFrame& operator = (const CMainFrame&);   // Disable assignment operator
+    CMainFrame(const CMainFrame&);               // Disable copy construction
+    CMainFrame& operator=(const CMainFrame&);    // Disable assignment operator
 
     // Command handlers
     BOOL OnFileExit();

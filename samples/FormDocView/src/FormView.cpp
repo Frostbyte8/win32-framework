@@ -27,10 +27,10 @@ INT_PTR CFormView::DialogProc(UINT msg, WPARAM wparam, LPARAM lparam)
     {
         m_resizer.HandleMessage(msg, wparam, lparam);
 
-    //  switch (uMsg)
-    //  {
-    //  Add case statements for each messages to be handled here
-    //  }
+        switch (msg)
+        {
+        case WM_SIZE:  return OnSize(msg, wparam, lparam);
+        }
 
         // Pass unhandled messages on to parent DialogProc.
         return DialogProcDefault(msg, wparam, lparam);
@@ -44,6 +44,14 @@ INT_PTR CFormView::DialogProc(UINT msg, WPARAM wparam, LPARAM lparam)
 
         return 0;
     }
+}
+
+void CFormView::DpiScaleImage()
+{
+    m_patternImage.LoadBitmap(IDB_BITMAP1);
+    m_patternImage = DpiScaleUpBitmap(m_patternImage);
+    LPARAM lparam = reinterpret_cast<LPARAM>(m_patternImage.GetHandle());
+    m_picture.SendMessage(STM_SETIMAGE, IMAGE_BITMAP, lparam);
 }
 
 // Returns a reference to CDoc.
@@ -172,13 +180,12 @@ void CFormView::OnOK()
 BOOL CFormView::OnCheckA()
 {
     TRACE("Check Box A\n");
-    bool isCheck = GetDoc().GetCheckA();
-    isCheck = !isCheck;  // Toggle
-    UINT checkFlag = isCheck ? BST_CHECKED : BST_UNCHECKED;
-    CheckDlgButton(ID_CHECK_A, checkFlag);
+    bool isCheck = (IsDlgButtonChecked(ID_CHECK_A) == BST_CHECKED);
     GetDoc().SetCheckA(isCheck);
 
-    SetDlgItemText(IDC_STATUS, _T("Check Box A toggled"));
+    CString str("Box A ");
+    LPCSTR checked = isCheck ? "checked" : "unchecked";
+    SetDlgItemText(IDC_STATUS, str + checked);
     return TRUE;
 }
 
@@ -186,13 +193,12 @@ BOOL CFormView::OnCheckA()
 BOOL CFormView::OnCheckB()
 {
     TRACE("Check Box B\n");
-    bool isCheck = GetDoc().GetCheckB();
-    isCheck = !isCheck;  // Toggle
-    UINT checkFlag = isCheck ? BST_CHECKED : BST_UNCHECKED;
-    CheckDlgButton(ID_CHECK_B, checkFlag);
+    bool isCheck = (IsDlgButtonChecked(ID_CHECK_B) == BST_CHECKED);
     GetDoc().SetCheckB(isCheck);
 
-    SetDlgItemText(IDC_STATUS, _T("Check Box B toggled"));
+    CString str("Box B ");
+    LPCSTR checked = isCheck ? "checked" : "unchecked";
+    SetDlgItemText(IDC_STATUS, str + checked);
     return TRUE;
 }
 
@@ -200,13 +206,12 @@ BOOL CFormView::OnCheckB()
 BOOL CFormView::OnCheckC()
 {
     TRACE("Check Box C\n");
-    bool isCheck = GetDoc().GetCheckC();
-    isCheck = !isCheck;  // Toggle
-    UINT checkFlag = isCheck ? BST_CHECKED : BST_UNCHECKED;
-    CheckDlgButton(ID_CHECK_C, checkFlag);
+    bool isCheck = (IsDlgButtonChecked(ID_CHECK_C) == BST_CHECKED);
     GetDoc().SetCheckC(isCheck);
 
-    SetDlgItemText(IDC_STATUS, _T("Check Box C toggled"));
+    CString str("Box C ");
+    LPCSTR checked = isCheck ? "checked" : "unchecked";
+    SetDlgItemText(IDC_STATUS, str + checked);
     return TRUE;
 }
 
@@ -225,3 +230,12 @@ BOOL CFormView::OnRangeOfIDs(UINT idFirst, UINT idLast, UINT idClicked)
     return TRUE;
 }
 
+INT_PTR CFormView::OnSize(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    // Perform default processing first.
+    FinalWindowProc(msg, wparam, lparam);
+
+    // Set the image size.
+    DpiScaleImage();
+    return 0;
+}

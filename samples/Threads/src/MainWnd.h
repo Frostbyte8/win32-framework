@@ -30,8 +30,8 @@ protected:
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CMainWindow(const CMainWindow&);                // Disable copy construction
-    CMainWindow& operator = (const CMainWindow&);   // Disable assignment operator
+    CMainWindow(const CMainWindow&);               // Disable copy construction
+    CMainWindow& operator=(const CMainWindow&);    // Disable assignment operator
 
     void AppendText(LPCTSTR text);
 
@@ -39,6 +39,7 @@ private:
     void    OnAllWindowsCreated();
     LRESULT OnAppendText(WPARAM wparam);
     LRESULT OnCloseThread(WPARAM wparam);
+    LRESULT OnDpiChanged(UINT, WPARAM, LPARAM lparam);
     LRESULT OnSize();
     LRESULT OnWindowCreated();
 

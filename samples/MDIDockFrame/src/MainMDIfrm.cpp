@@ -81,17 +81,27 @@ BOOL CMainMDIFrame::OnFilePrint()
     return TRUE;
 }
 
+// Limit the minimum size of the window.
+LRESULT CMainMDIFrame::OnGetMinMaxInfo(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    LPMINMAXINFO lpMMI = (LPMINMAXINFO)lparam;
+    const CSize minimumSize(500, 300);
+    lpMMI->ptMinTrackSize.x = DpiScaleInt(minimumSize.cx);
+    lpMMI->ptMinTrackSize.y = DpiScaleInt(minimumSize.cy);
+    return FinalWindowProc(msg, wparam, lparam);
+}
+
 // Called after the frame window is created.
 // Called after OnCreate.
 void CMainMDIFrame::OnInitialUpdate()
 {
     TRACE("MDI Frame started \n");
-    //The frame is now created.
-    //Place any additional startup code here.
+    // The frame is now created.
+    // Place any additional startup code here.
 
     // Add some Dockers to the MDI Frame
     DWORD dwStyle = DS_CLIENTEDGE; // The style added to each docker
-    int DockWidth = 150;
+    int DockWidth = DpiScaleInt(150);
     CDocker* pDock1 = AddDockedChild(new CDockFiles, DS_DOCKED_LEFT | dwStyle, DockWidth);
     CDocker* pDock2 = AddDockedChild(new CDockFiles, DS_DOCKED_RIGHT | dwStyle, DockWidth);
 
@@ -221,7 +231,7 @@ void CMainMDIFrame::SetupMenuIcons()
 {
     // Set the bitmap used for menu icons
     std::vector<UINT> data = GetToolBarData();
-    if (GetMenuIconHeight() >= 24)
+    if ((GetMenuIconHeight() >= 24) && (GetWindowDpi(*this) != 192))
         SetMenuIcons(data, RGB(192, 192, 192), IDW_MAIN);
     else
         SetMenuIcons(data, RGB(192, 192, 192), IDB_TOOLBAR16);
@@ -254,10 +264,10 @@ LRESULT CMainMDIFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
 {
     try
     {
-    //  switch (msg)
-    //  {
-    //  Add case statements for each messages to be handled here.
-    //  }
+        switch (msg)
+        {
+        case WM_GETMINMAXINFO:    return OnGetMinMaxInfo(msg, wparam, lparam);
+        }
 
         //  Pass unhandled messages on for default processing.
         return WndProcDefault(msg, wparam, lparam);

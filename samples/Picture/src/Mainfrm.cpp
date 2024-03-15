@@ -12,7 +12,7 @@
 //
 
 // Constructor.
-CMainFrame::CMainFrame()
+CMainFrame::CMainFrame() : m_isDPIChanging(false)
 {
 }
 
@@ -35,6 +35,17 @@ HWND CMainFrame::Create(HWND parent)
     LoadRegistryMRUSettings(4);
 
     return CFrame::Create(parent);
+}
+
+// Assigns the appropriately sized toolbar icons.
+// Required for per-monitor DPI-aware.
+void CMainFrame::DpiScaleToolBar()
+{
+    if (GetToolBar().IsWindow())
+    {
+        // Reset the toolbar images.
+        SetToolBarImages(RGB(192, 192, 192), IDW_MAIN, 0, 0);
+    }
 }
 
 // OnCommand responds to menu and and toolbar input.
@@ -81,8 +92,30 @@ int CMainFrame::OnCreate(CREATESTRUCT& cs)
     // UseThemes(FALSE);             // Don't use themes.
     // UseToolBar(FALSE);            // Don't use a ToolBar.
 
-    // call the base class function
+    // Call the base class function.
     return CFrame::OnCreate(cs);
+}
+
+// Called when the effective dots per inch (dpi) for a window has changed.
+// This occurs when:
+//  - The window is moved to a new monitor that has a different DPI.
+//  - The DPI of the monitor hosting the window changes.
+LRESULT CMainFrame::OnDpiChanged(UINT, WPARAM, LPARAM)
+{
+    // Save the view's rectangle and disable scrolling.
+    m_scrollPos = m_view.GetScrollPosition();
+    m_view.SetScrollSizes();
+    m_viewRect = m_view.GetClientRect();
+
+    // Update the frame.
+    m_isDPIChanging = true;
+    ResetMenuMetrics();
+    UpdateSettings();
+    DpiScaleToolBar();
+    SetupMenuIcons();
+    RecalcLayout();
+
+    return 0;
 }
 
 // Issue a close request to the frame to end the application.
@@ -186,11 +219,30 @@ BOOL CMainFrame::OnFileSaveAs()
     return TRUE;
 }
 
+// Called when the frame's position has changed.
+LRESULT CMainFrame::OnWindowPosChanged(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    // The DPI can change when the window is moved to a different monitor.
+    if (m_isDPIChanging)
+    {
+        // Adjust the frame size to fit the view.
+        AdjustFrameRect(m_viewRect);
+
+        // Restore the scrollbars and scroll position.
+        CSize size = CSize(m_view.GetImageRect().Width(), m_view.GetImageRect().Height());
+        m_view.SetScrollSizes(size);
+        m_view.SetScrollPosition(m_scrollPos);
+        m_isDPIChanging = false;
+    }
+
+    return FinalWindowProc(msg, wparam, lparam);
+}
+
 // Adds images to the popup menu items.
 void CMainFrame::SetupMenuIcons()
 {
     std::vector<UINT> data = GetToolBarData();
-    if (GetMenuIconHeight() >= 24)
+    if ((GetMenuIconHeight() >= 24) && (GetWindowDpi(*this) != 192))
         SetMenuIcons(data, RGB(192, 192, 192), IDW_MAIN);
     else
         SetMenuIcons(data, RGB(192, 192, 192), IDB_TOOLBAR16);
@@ -226,8 +278,8 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
     {
         switch (msg)
         {
-        // A message defined in PictureApp.h
-        case UWM_FILELOADED: return OnFileLoaded((LPCTSTR)lparam);
+        case UWM_FILELOADED:       return OnFileLoaded((LPCTSTR)lparam);
+        case WM_WINDOWPOSCHANGED:  return OnWindowPosChanged(msg, wparam, lparam);
         }
 
         // Pass unhandled messages on for default processing.

@@ -6,7 +6,7 @@
 #include "SplitterPanes.h"
 
 //////////////////////////////////
-// CDockTree function definitions.
+// CDockText function definitions.
 //
 
 // CDocktext constructor.
@@ -15,8 +15,13 @@ CDockText::CDockText()
     SetView(m_view);
 
     // Set the width of the splitter bar.
-    SetBarWidth(6);
+    SetBarWidth(4);
 }
+
+
+//////////////////////////////////
+// CDockTree function definitions.
+//
 
 // CDockTree constructor.
 CDockTree::CDockTree()
@@ -24,8 +29,13 @@ CDockTree::CDockTree()
     SetView(m_view);
 
     // Set the width of the splitter bar.
-    SetBarWidth(12);
+    SetBarWidth(8);
 }
+
+
+//////////////////////////////////
+// CDockList function definitions.
+//
 
 // CDockList constructor.
 CDockList::CDockList()
@@ -33,6 +43,5 @@ CDockList::CDockList()
     SetView(m_view);
 
     // Set the width of the splitter bar.
-    SetBarWidth(6);
+    SetBarWidth(4);
 }
-

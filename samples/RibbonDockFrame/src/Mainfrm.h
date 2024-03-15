@@ -11,7 +11,7 @@
 
 ////////////////////////////////////////////////////////
 // CMainFrame manages the application's main window.
-// The main window is a frame which has a statusbar and
+// The main window is a frame that has a statusbar and
 // view window. It uses a ribbon in place of the menubar
 // and toolbar. The frame window supports docking.
 class CMainFrame : public CRibbonDockFrame
@@ -27,14 +27,14 @@ protected:
     virtual STDMETHODIMP OnViewChanged(UINT32, UI_VIEWTYPE, IUnknown*, UI_VIEWVERB, INT32);
     virtual STDMETHODIMP UpdateProperty(UINT32, __in REFPROPERTYKEY, __in_opt  const PROPVARIANT*, __out PROPVARIANT*);
 
-    virtual BOOL OnCommand(WPARAM wparam, LPARAM lparam);
-    virtual void OnInitialUpdate();
-    virtual void SetupToolBar();
+    virtual BOOL    OnCommand(WPARAM wparam, LPARAM lparam);
+    virtual void    OnInitialUpdate();
+    virtual void    SetupToolBar();
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CMainFrame(const CMainFrame&);                // Disable copy construction
-    CMainFrame& operator = (const CMainFrame&);   // Disable assignment operator
+    CMainFrame(const CMainFrame&);               // Disable copy construction
+    CMainFrame& operator=(const CMainFrame&);    // Disable assignment operator
 
     // Command handlers
     void OnFileExit();
@@ -49,6 +49,7 @@ private:
     // Message handlers
     LRESULT OnDropFile(WPARAM wparam);
     LRESULT OnGetAllPoints();
+    LRESULT OnGetMinMaxInfo(UINT msg, WPARAM wparam, LPARAM lparam);
     LRESULT OnSendPoint(WPARAM wparam);
 
     IUIRibbon* GetIUIRibbon() const;

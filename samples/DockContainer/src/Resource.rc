@@ -25,7 +25,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 // RT_MANIFEST
 //
 
-1                       RT_MANIFEST             "../src/res/Win32++.manifest"
+1                     RT_MANIFEST           "../src/res/PerMonitorV2.manifest"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -87,7 +87,6 @@ IDW_SDRIGHT             BITMAP                  "../src/res/SDright.bmp"
 IDW_SDTOP               BITMAP                  "../src/res/SDtop.bmp"
 IDB_CLASSVIEW           BITMAP                  "../src/res/classview.bmp"
 IDB_FILEVIEW            BITMAP                  "../src/res/fileview.bmp"
-IDB_STATUS              BITMAP                  "../src/res/status.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //

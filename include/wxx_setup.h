@@ -1,4 +1,4 @@
-// Win32++   Version 9.2
+// Win32++   Version 9.5
 // Release Date: TBA
 //
 //      David Nash
@@ -6,7 +6,7 @@
 //      url: https://sourceforge.net/projects/win32-framework
 //
 //
-// Copyright (c) 2005-2022  David Nash
+// Copyright (c) 2005-2024  David Nash
 //
 // Permission is hereby granted, free of charge, to
 // any person obtaining a copy of this software and
@@ -157,7 +157,7 @@ using namespace Win32xx;
 #define MIN(a,b)        (((a) < (b)) ? (a) : (b))
 
 // Version macro
-#define _WIN32XX_VER 0x0910     // Win32++ version 9.1.0
+#define _WIN32XX_VER 0x0950     // Win32++ version 9.5.0
 
 // Define the TRACE Macro.
 // In debug mode, TRACE send text to the debug/output pane, or an external debugger
@@ -241,7 +241,7 @@ namespace Win32xx
     inline int GetComCtlVersion()
     {
         // Retrieve the Common Controls DLL handle.
-        HMODULE comCtl = ::GetModuleHandle(_T("COMCTL32.DLL"));
+        HMODULE comCtl = ::GetModuleHandle(_T("comctl32.dll"));
         if (comCtl == 0)
             return 0;
 
@@ -315,7 +315,7 @@ namespace Win32xx
         if (module)
         {
             RTLGETVERSION* pfn = reinterpret_cast<RTLGETVERSION*>(
-                reinterpret_cast<void*>(GetProcAddress(module, "RtlGetVersion")));
+                reinterpret_cast<void*>(::GetProcAddress(module, "RtlGetVersion")));
 
             if (pfn != NULL)
             {
@@ -375,9 +375,9 @@ namespace Win32xx
     inline void LoadCommonControls()
     {
         // Retrieve the Common Controls DLL handle.
-        HMODULE comCtl = ::GetModuleHandle(_T("COMCTL32.DLL"));
+        HMODULE comCtl = ::GetModuleHandle(_T("comctl32.dll"));
         if (comCtl == 0)
-            comCtl = ::GetModuleHandle(_T("COMMCTRL.DLL"));
+            comCtl = ::GetModuleHandle(_T("commctrl.dll"));
 
         if (comCtl)
         {
@@ -419,8 +419,8 @@ namespace Win32xx
     // Copies an ANSI string from src to dst.
     inline void StrCopyA(char* dst, const char* src, size_t dst_size)
     {
-        assert(dst != 0);
-        assert(src != 0);
+        assert(dst != NULL);
+        assert(src != NULL);
         assert(dst_size != 0);
 
         if (dst && src && dst_size != 0)
@@ -444,8 +444,8 @@ namespace Win32xx
     // Copies a wide string from src to dst.
     inline void StrCopyW(wchar_t* dst, const wchar_t* src, size_t dst_size)
     {
-        assert(dst != 0);
-        assert(src != 0);
+        assert(dst != NULL);
+        assert(src != NULL);
         assert(dst_size != 0);
 
         if (dst && src && dst_size != 0)

@@ -51,8 +51,8 @@ protected:
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CMainFrame(const CMainFrame&);                // Disable copy construction
-    CMainFrame& operator = (const CMainFrame&);   // Disable assignment operator
+    CMainFrame(const CMainFrame&);               // Disable copy construction
+    CMainFrame& operator=(const CMainFrame&);    // Disable assignment operator
 
     // Command handlers
     BOOL OnCloseMDIs();
@@ -68,6 +68,9 @@ private:
     BOOL OnFileNewTree();
     BOOL OnHideSingleTab();
     BOOL OnMDITabsAtTop();
+
+    // Message handlers
+    LRESULT OnGetMinMaxInfo(UINT msg, WPARAM wparam, LPARAM lparam);
 
     void HideSingleContainerTab(bool hideSingle);
     void LoadDefaultDockers();

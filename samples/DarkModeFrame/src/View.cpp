@@ -34,6 +34,12 @@ void CView::OnDraw(CDC& dc)
     else
         dc.SolidFill(RGB(255, 255, 255), rc);
 
+    NONCLIENTMETRICS info = GetNonClientMetrics();
+    LOGFONT lf = info.lfMessageFont;
+    int dpi = GetWindowDpi(*this);
+    lf.lfHeight = -MulDiv(10, dpi, POINTS_PER_INCH);
+    dc.CreateFontIndirect(lf);
+
     // Centre some text in our view window.
     dc.DrawText(_T("View Window"), -1, rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 }
@@ -94,7 +100,7 @@ void CView::PrintPage(CDC& dc, UINT)
         // Extract the device independent image data.
         BITMAPINFOHEADER* pBIH = reinterpret_cast<BITMAPINFOHEADER*>(pbmi.get());
         UINT scanLines = static_cast<UINT>(cyView);
-        memDC.GetDIBits(bmView, 0, scanLines, NULL, pbmi, DIB_RGB_COLORS);
+        memDC.GetDIBits(bmView, 0, scanLines, nullptr, pbmi, DIB_RGB_COLORS);
         std::vector<byte> byteArray(pBIH->biSizeImage, 0);
         byte* pByteArray = &byteArray.front();
         memDC.GetDIBits(bmView, 0, scanLines, pByteArray, pbmi, DIB_RGB_COLORS);

@@ -27,8 +27,8 @@ protected:
     virtual BOOL OnInitDialog();
 
 private:
-    CClientDialog(const CClientDialog&);                // Disable copy construction
-    CClientDialog& operator = (const CClientDialog&);   // Disable assignment operator
+    CClientDialog(const CClientDialog&);               // Disable copy construction
+    CClientDialog& operator=(const CClientDialog&);    // Disable assignment operator
 
     // Nested classes for this dialog's child windows
     // Nesting is optional. Its done to keep the IDE's class view tidy.
@@ -47,6 +47,7 @@ private:
 
     // Message handlers
     LRESULT OnActivate(UINT msg, WPARAM wparam, LPARAM lparam);
+    LRESULT OnDpiChanged(UINT, WPARAM, LPARAM);
     LRESULT OnSocketMessage(WPARAM wparam, LPARAM lparam);
 
     // Socket message handlers

@@ -82,10 +82,26 @@ void CView::OnDestroy()
     ::PostQuitMessage(0);
 }
 
+LRESULT CView::OnDpiChanged(UINT, WPARAM, LPARAM lparam)
+{
+    LPRECT prc = reinterpret_cast<LPRECT>(lparam);
+    SetWindowPos(0, *prc, SWP_SHOWWINDOW);
+
+    return 0;
+}
+
 void CView::OnDraw(CDC& dc)
 {
     // OnPaint is called automatically whenever a part of the
     // window needs to be repainted.
+
+    // Use the message font for Windows 7 and higher.
+    if (GetWinVersion() >= 2601)
+    {
+        NONCLIENTMETRICS info = GetNonClientMetrics();
+        LOGFONT lf = DpiScaleLogfont(info.lfMessageFont, 10);
+        dc.CreateFontIndirect(lf);
+    }
 
     // Centre some text in our view window
     CRect rc = GetClientRect();
@@ -171,10 +187,10 @@ void CView::PreCreate(CREATESTRUCT& cs)
     // Set some optional parameters for the window
     cs.dwExStyle = WS_EX_CLIENTEDGE;        // Extended style
     cs.lpszClass = _T("View Window");       // Window Class
-    cs.x = 50;                              // top x
-    cs.y = 50;                              // top y
-    cs.cx = 400;                            // width
-    cs.cy = 300;                            // height
+    cs.x = DpiScaleInt(50);                 // top x
+    cs.y = DpiScaleInt(50);                 // top y
+    cs.cx = DpiScaleInt(400);               // width
+    cs.cy = DpiScaleInt(300);               // height
     cs.hMenu = m_menu;
 }
 
@@ -200,6 +216,7 @@ LRESULT CView::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
     {
         switch (msg)
         {
+        case WM_DPICHANGED: return OnDpiChanged(msg, wparam, lparam);
         case WM_HELP:       return OnAbout();
         case WM_SIZE:       return OnSize(msg, wparam, lparam);
         case WM_SYSCOMMAND: return OnSysCommand(msg, wparam, lparam);

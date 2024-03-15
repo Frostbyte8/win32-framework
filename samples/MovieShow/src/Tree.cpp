@@ -71,6 +71,15 @@ void CViewTree::OnDestroy()
     SetImageList(0, LVSIL_SMALL);
 }
 
+// Called in response to a WM_DPICHANGED_BEFOREPARENT message that is sent to child
+// windows after a DPI change. A WM_DPICHANGED_BEFOREPARENT is only received when the
+// application is DPI_AWARENESS_PER_MONITOR_AWARE.
+LRESULT CViewTree::OnDpiChangedBeforeParent(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    SetDPIImages();
+    return FinalWindowProc(msg, wparam, lparam);
+}
+
 // Finalizes the editing of a Box Set child's label.
 BOOL CViewTree::OnEndLabelEdit(LPARAM lparam)
 {
@@ -123,23 +132,10 @@ BOOL CViewTree::OnEndLabelEdit(LPARAM lparam)
 }
 
 // Called after the treeview window is created.
-// Sets the icons for the treeview.
+// Sets the icons and style for the treeview.
 void CViewTree::OnInitialUpdate()
 {
-    //set the image lists
-    m_imlNormal.Create(24, 24, ILC_COLOR32, 1, 0);
-
-    m_imlNormal.AddIcon(IDI_LIBRARY);
-    m_imlNormal.AddIcon(IDI_MOVIES);
-    m_imlNormal.AddIcon(IDI_BOXSET);
-    m_imlNormal.AddIcon(IDI_CALENDAR);
-    m_imlNormal.AddIcon(IDI_FAVOURITES);
-    m_imlNormal.AddIcon(IDI_MASK);
-    m_imlNormal.AddIcon(IDI_VIOLIN);
-    m_imlNormal.AddIcon(IDI_SEARCH);
-    m_imlNormal.AddIcon(IDI_EYE);
-
-    SetImageList(m_imlNormal, LVSIL_NORMAL);
+    SetDPIImages();
 
     // Adjust style to show lines and [+] button
     DWORD dwStyle = GetStyle();
@@ -162,6 +158,21 @@ LRESULT CViewTree::OnNotifyReflect(WPARAM, LPARAM lparam)
     return 0;
 }
 
+// Called when the right mouse button is pressed.
+LRESULT CViewTree::OnRButtonDown(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    return DefWindowProc(msg, wparam, lparam);
+}
+
+// Called when the right mouse button is released.
+LRESULT CViewTree::OnRButtonUp(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    // Displays the popup menus for the box sets.
+    GetAncestor().SendMessage(UWM_ONRCLICKTREEITEM, 0, 0);
+
+    return DefWindowProc(msg, wparam, lparam);
+}
+
 // Called when a treeview item is selected
 BOOL CViewTree::OnSelChanged()
 {
@@ -175,6 +186,30 @@ void CViewTree::PreCreate(CREATESTRUCT& cs)
 {
     cs.dwExStyle = WS_EX_CLIENTEDGE;
     cs.style = TVS_NOTOOLTIPS | TVS_SHOWSELALWAYS | TVS_EDITLABELS | TVS_FULLROWSELECT | WS_CHILD;
+}
+
+// Adjusts the listview image sizes in response to window DPI changes.
+void CViewTree::SetDPIImages()
+{
+    //set the image lists
+    int size = DpiScaleInt(24);
+    m_imlNormal.Create(size, size, ILC_COLOR32, 1, 0);
+
+    m_imlNormal.AddIcon(IDI_LIBRARY);
+    m_imlNormal.AddIcon(IDI_MOVIES);
+    m_imlNormal.AddIcon(IDI_BOXSET);
+    m_imlNormal.AddIcon(IDI_CALENDAR);
+    m_imlNormal.AddIcon(IDI_FAVOURITES);
+    m_imlNormal.AddIcon(IDI_MASK);
+    m_imlNormal.AddIcon(IDI_VIOLIN);
+    m_imlNormal.AddIcon(IDI_SEARCH);
+    m_imlNormal.AddIcon(IDI_EYE);
+
+    SetImageList(m_imlNormal, LVSIL_NORMAL);
+
+    // Reset the item indentation.
+    int imageWidth = size;
+    SetIndent(imageWidth);
 }
 
 // Swaps the two specified treeview items.
@@ -215,12 +250,9 @@ LRESULT CViewTree::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
     {
         switch (msg)
         {
-        case WM_RBUTTONDOWN:
-            return DefWindowProc(msg, wparam, lparam);
-
-        case WM_RBUTTONUP:
-            GetAncestor().SendMessage(UWM_ONRCLICKTREEITEM, 0, 0);
-            return DefWindowProc(msg, wparam, lparam);
+        case WM_RBUTTONDOWN:            return OnRButtonDown(msg, wparam, lparam);
+        case WM_RBUTTONUP:              return OnRButtonUp(msg, wparam, lparam);
+        case WM_DPICHANGED_BEFOREPARENT: return OnDpiChangedBeforeParent(msg, wparam, lparam);
         }
 
         return WndProcDefault(msg, wparam, lparam);
@@ -248,4 +280,3 @@ CDockTree::CDockTree()
     // Set the width of the splitter bar
     SetBarWidth(8);
 }
-

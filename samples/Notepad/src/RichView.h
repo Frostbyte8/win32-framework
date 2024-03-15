@@ -26,13 +26,11 @@ protected:
     virtual void PreCreate(CREATESTRUCT& cs);
 
 private:
-    CRichView(const CRichView&);                // Disable copy construction
-    CRichView& operator = (const CRichView&);   // Disable assignment operator
+    CRichView(const CRichView&);               // Disable copy construction
+    CRichView& operator=(const CRichView&);    // Disable assignment operator
 
     CRect GetPageRect();
     CRect GetPrintRect();
-
-    CFont   m_font;
     std::vector<int> m_pageBreaks;
 };
 

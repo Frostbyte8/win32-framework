@@ -10,7 +10,7 @@
 
 ///////////////////////////////////////////////////////////
 // CMainFrame manages the application's main window.
-// The main window is a frame which has a menubar, toolbar,
+// The main window is a frame that has a menubar, toolbar,
 // statusbar and view window.
 class CMainFrame : public CFrame
 {
@@ -18,6 +18,7 @@ public:
     CMainFrame();
     virtual ~CMainFrame();
     virtual HWND Create(HWND parent = 0);
+
     BOOL OnFileExit();
 
 protected:
@@ -29,8 +30,8 @@ protected:
     virtual void SetupToolBar();
 
 private:
-    CMainFrame(const CMainFrame&);                // Disable copy construction
-    CMainFrame& operator = (const CMainFrame&);   // Disable assignment operator
+    CMainFrame(const CMainFrame&);               // Disable copy construction
+    CMainFrame& operator=(const CMainFrame&);    // Disable assignment operator
 
     CGDIPlusView m_view;
 };

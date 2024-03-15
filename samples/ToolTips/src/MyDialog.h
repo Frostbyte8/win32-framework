@@ -19,8 +19,8 @@ protected:
     virtual void PreCreate(CREATESTRUCT& cs);
 
 private:
-    CBalloonToolTip(const CBalloonToolTip&);                // Disable copy construction
-    CBalloonToolTip& operator = (const CBalloonToolTip&);   // Disable assignment operator
+    CBalloonToolTip(const CBalloonToolTip&);               // Disable copy construction
+    CBalloonToolTip& operator=(const CBalloonToolTip&);    // Disable assignment operator
 };
 
 
@@ -43,7 +43,7 @@ protected:
 
 private:
     CMyDialog(const CMyDialog&);                // Disable copy construction
-    CMyDialog& operator = (const CMyDialog&);   // Disable assignment operator
+    CMyDialog& operator=(const CMyDialog&);   // Disable assignment operator
 
     // Command handlers
     BOOL OnButton();
@@ -59,6 +59,7 @@ private:
     CToolTip m_toolTip;
     CString m_str;
     HICON m_info;      // Icon used by tooltips for the RichEdit and Edit controls
+    CBitmap m_patternImage;
 };
 
 

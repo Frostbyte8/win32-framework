@@ -44,27 +44,28 @@ protected:
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CMainFrame(const CMainFrame&);                // Disable copy construction
-    CMainFrame& operator = (const CMainFrame&);   // Disable assignment operator
+    CMainFrame(const CMainFrame&);               // Disable copy construction
+    CMainFrame& operator=(const CMainFrame&);    // Disable assignment operator
 
     // Command handlers
     BOOL On3DBorder();
     BOOL OnDockCloseAll();
     BOOL OnDockDefault();
     BOOL OnFileExit();
-    BOOL OnPropResize();
     BOOL OnNoUndocking();
     BOOL OnNoResize();
     BOOL OnNoDockLR();
     BOOL OnNoDockClose();
     BOOL OnNoDockCaption();
 
+    // Message handles
+    LRESULT OnGetMinMaxInfo(UINT msg, WPARAM wparam, LPARAM lparam);
+
     void LoadDefaultDockers();
     void SetDockStyles();
 
     // member variables
     CViewSimple m_view;
-    bool m_useProportionalResize;
     bool m_use3DBorder;
     bool m_disableUndocking;
     bool m_disableResize;

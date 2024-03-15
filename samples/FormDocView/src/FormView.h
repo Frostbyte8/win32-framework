@@ -5,7 +5,7 @@
 #define SDI_VIEW_H
 
 #include "FormDoc.h"
-
+#include "resource.h"
 
 //////////////////////////////////////////////
 // CFormView manages CMainFrame's view window.
@@ -15,6 +15,7 @@ class CFormView : public CDialog
 public:
     CFormView(UINT resID);
     virtual ~CFormView();
+    void DpiScaleImage();
     CFormDoc& GetDoc();
 
     // Command handlers
@@ -23,6 +24,9 @@ public:
     BOOL OnCheckB();
     BOOL OnCheckC();
     BOOL OnRangeOfIDs(UINT idFirst, UINT idLast, UINT idClicked);
+
+    // Message Handles
+    INT_PTR OnSize(UINT msg, WPARAM wparam, LPARAM lparam);
 
 protected:
     // Virtual functions that override base class functions
@@ -34,8 +38,8 @@ protected:
     virtual void OnOK();
 
 private:
-    CFormView(const CFormView&);                // Disable copy construction
-    CFormView& operator = (const CFormView&);   // Disable assignment operator
+    CFormView(const CFormView&);               // Disable copy construction
+    CFormView& operator=(const CFormView&);    // Disable assignment operator
 
     // Member variables for dialog controls.
     CButton   m_radioA;
@@ -52,6 +56,7 @@ private:
     CStatic   m_status;
     CButton   m_ok;
     CWnd      m_group;
+    CBitmap   m_patternImage;
 
     // Member variables
     CFormDoc m_doc;

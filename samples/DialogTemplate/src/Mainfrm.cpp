@@ -140,9 +140,6 @@ int CMainFrame::OnCreate(CREATESTRUCT& cs)
     // UseThemes(FALSE);             // Don't use themes
     // UseToolBar(FALSE);            // Don't use a ToolBar
 
-    // Create the PrintPreview dialog. It is initially hidden.
-    m_preview.Create(*this);
-
     // call the base class function
     return CDockFrame::OnCreate(cs);
 }
@@ -189,7 +186,7 @@ void CMainFrame::OnInitialUpdate()
 {
     // Add the docker for the tree view.
     DWORD style = DS_DOCKED_LEFT | DS_CLIENTEDGE | DS_NO_CLOSE | DS_NO_UNDOCK | DS_NO_CAPTION;
-    const int width = 250;
+    const int width = DpiScaleInt(250);
     m_pDockDialogsTree = static_cast<CDockDialogsTree*>
                          (AddDockedChild(new CDockDialogsTree, style, width));
 
@@ -228,6 +225,10 @@ BOOL CMainFrame::OnFilePreview()
         // Retrieve the device context of the default or currently chosen printer.
         CPrintDialog printDlg;
         CDC printerDC = printDlg.GetPrinterDC();
+
+        // Create the preview window if required.
+        if (!m_preview.IsWindow())
+            m_preview.Create(*this);
 
         // Setup the print preview.
         m_preview.SetSource(m_richView);   // CPrintPreview calls m_richView::PrintPage
@@ -310,6 +311,7 @@ BOOL CMainFrame::OnPreviewClose()
 {
     // Swap the view
     SetView(m_richView);
+    UpdateSettings();
 
     return TRUE;
 }

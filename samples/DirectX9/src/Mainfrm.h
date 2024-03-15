@@ -31,14 +31,15 @@ protected:
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CMainFrame(const CMainFrame&);                // Disable copy construction
-    CMainFrame& operator = (const CMainFrame&);   // Disable assignment operator
+    CMainFrame(const CMainFrame&);               // Disable copy construction
+    CMainFrame& operator=(const CMainFrame&);    // Disable assignment operator
 
     // Command handlers
     BOOL OnFileExit();
 
     // Member variables
     CDXView m_DXView;
+    CImageList m_normalImages;
 };
 
 #endif //MAINFRM_H

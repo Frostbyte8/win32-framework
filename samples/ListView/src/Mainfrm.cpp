@@ -33,6 +33,15 @@ HWND CMainFrame::Create(HWND parent)
     return CFrame::Create(parent);
 }
 
+// Adjust the list view column widths when the DPI changes.
+// Required for per-monitor DPI-aware.
+void CMainFrame::DpiScaleListView()
+{
+    m_listView.SetColumnWidth(0, DpiScaleInt(110));
+    m_listView.SetColumnWidth(1, DpiScaleInt(60));
+    m_listView.SetColumnWidth(2, DpiScaleInt(130));
+}
+
 // OnCommand responds to menu and and toolbar input.
 BOOL CMainFrame::OnCommand(WPARAM wparam, LPARAM)
 {
@@ -68,6 +77,19 @@ int CMainFrame::OnCreate(CREATESTRUCT& cs)
     return CFrame::OnCreate(cs);
 }
 
+// Called when the effective dots per inch (dpi) for a window has changed.
+// This occurs when:
+//  - The window is moved to a new monitor that has a different DPI.
+//  - The DPI of the monitor hosting the window changes.
+LRESULT CMainFrame::OnDpiChanged(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    CFrame::OnDpiChanged(msg, wparam, lparam);
+    DpiScaleListView();
+
+    RecalcLayout();
+    return 0;
+}
+
 // Issue a close request to the frame to end the program.
 void CMainFrame::OnFileExit()
 {
@@ -80,7 +102,7 @@ void CMainFrame::OnInitialUpdate()
     // The frame is now created.
     // Place any additional startup code here.
 
-    TRACE("Frame created\n");
+    DpiScaleListView();
 }
 
 // Specifies the images for some of the menu items.
@@ -88,7 +110,7 @@ void CMainFrame::SetupMenuIcons()
 {
     // Set the bitmap used for menu icons
     std::vector<UINT> data = GetToolBarData();
-    if (GetMenuIconHeight() >= 24)
+    if ((GetMenuIconHeight() >= 24) && (GetWindowDpi(*this) != 192))
         SetMenuIcons(data, RGB(192, 192, 192), IDW_MAIN);
     else
         SetMenuIcons(data, RGB(192, 192, 192), IDB_MENUICONS);

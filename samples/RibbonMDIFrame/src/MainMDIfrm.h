@@ -10,7 +10,7 @@
 
 ///////////////////////////////////////////////////////////
 // CMainMDIFrame manages the application's main window.
-// The main window is a MDI frame which has a statusbar.
+// The main window is a MDI frame that has a statusbar.
 // It uses a ribbon in place of the toolbar and menubar.
 class CMainMDIFrame : public CRibbonMDIFrame
 {
@@ -35,8 +35,8 @@ protected:
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CMainMDIFrame(const CMainMDIFrame&);                // Disable copy construction
-    CMainMDIFrame& operator = (const CMainMDIFrame&);   // Disable assignment operator
+    CMainMDIFrame(const CMainMDIFrame&);               // Disable copy construction
+    CMainMDIFrame& operator=(const CMainMDIFrame&);    // Disable assignment operator
 
     // Command handlers
     void OnFileExit();

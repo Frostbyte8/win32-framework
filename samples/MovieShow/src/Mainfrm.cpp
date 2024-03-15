@@ -42,14 +42,14 @@ int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
     UINT  num = 0;          // number of image encoders
     UINT  size = 0;         // size of the image encoder array in bytes
 
-    ImageCodecInfo* pImageCodecInfo = NULL;
+    ImageCodecInfo* pImageCodecInfo = nullptr;
 
     GetImageEncodersSize(&num, &size);
     if (size == 0)
         return -1;  // Failure
 
     pImageCodecInfo = (ImageCodecInfo*)(malloc(size));
-    if (pImageCodecInfo == NULL)
+    if (pImageCodecInfo == nullptr)
         return -1;  // Failure
 
     GetImageEncoders(num, size, pImageCodecInfo);
@@ -139,33 +139,32 @@ HWND CMainFrame::Create(HWND parent)
 // Saves the byte stream for the thumbnail in the specified vector.
 void CMainFrame::FillImageData(const CString& source, std::vector<BYTE>& dest)
 {
-    DWORD size = 0;
-    if (::CryptStringToBinary(source.c_str(), (DWORD)source.GetLength(), CRYPT_STRING_BASE64, NULL, &size, NULL, NULL))
+    DWORD bufferSize = 0;
+    if (::CryptStringToBinary(source.c_str(), source.GetLength(), CRYPT_STRING_BASE64, nullptr, &bufferSize, nullptr, nullptr))
     {
         // Use a vector for an array of BYTE
-        std::vector<BYTE> Dest(size, 0);
-        BYTE* pDest = &Dest.front();
-        ::CryptStringToBinary(source.c_str(), (DWORD)source.GetLength(), CRYPT_STRING_BASE64, pDest, &size, NULL, NULL);
+        std::vector<BYTE> sourceData(bufferSize, 0);
+        BYTE* pSource = &sourceData.front();
+        ::CryptStringToBinary(source.c_str(), (DWORD)source.GetLength(), CRYPT_STRING_BASE64, pSource, &bufferSize, nullptr, nullptr);
 
         // Convert the binary data to an IStream
-        HGLOBAL hMem = ::GlobalAlloc(GMEM_MOVEABLE, size);
-        if(hMem != 0)
+        CHGlobal globalMemory(bufferSize);
+        if (globalMemory.Get() != nullptr)
         {
-            LPVOID pImage = ::GlobalLock(hMem);
-            if (pImage != NULL)
+            CGlobalLock<CHGlobal> buffer(globalMemory);
+            if (buffer != nullptr)
             {
-                memcpy(pImage, pDest, size);
-                IStream* pStream = NULL;
-                if (S_OK == ::CreateStreamOnHGlobal(hMem, FALSE, &pStream))
+                memcpy(buffer, pSource, bufferSize);
+                IStream* pStream = nullptr;
+                if (S_OK == ::CreateStreamOnHGlobal(globalMemory, FALSE, &pStream))
                 {
-
                     // Acquire GDI+ Image from the IStream
                     Image image(pStream);
 
                     // Create a smaller thumbnail Image.
-                    Bitmap* img = (Bitmap*)image.GetThumbnailImage(280, 420, NULL, NULL);
+                    Bitmap* img = (Bitmap*)image.GetThumbnailImage(280, 420, nullptr, nullptr);
 
-                    IStream* stream = NULL;
+                    IStream* stream = nullptr;
                     HRESULT hr = ::CreateStreamOnHGlobal(0, TRUE, &stream);
                     if (!SUCCEEDED(hr))
                         return;
@@ -186,10 +185,7 @@ void CMainFrame::FillImageData(const CString& source, std::vector<BYTE>& dest)
 
                     // Cleanup
                     pStream->Release();
-                    GlobalUnlock(hMem);
                 }
-
-                GlobalFree(hMem);
             }
         }
     }
@@ -588,13 +584,14 @@ void CMainFrame::LoadMovies()
 
     CString DataPath = GetDataPath();
     CString DataFile = GetDataPath() + L"\\" + L"MovieData.bin";
-    SHCreateDirectoryEx(0, DataPath.c_str(), NULL);
+    SHCreateDirectoryEx(0, DataPath.c_str(), nullptr);
 
     if (PathFileExists(DataFile))
     {
         try
         {
             // Display the splash screen.
+            m_splashThread.GetSplash()->ShowText(L"", this);
             m_splashThread.GetSplash()->ShowText(L"Loading Library", this);
 
             CArchive ar(DataFile, CArchive::load);
@@ -661,7 +658,7 @@ void CMainFrame::LoadMovies()
 // Loads settings from the registry.
 BOOL CMainFrame::LoadRegistrySettings(LPCTSTR szKeyName)
 {
-    assert(NULL != szKeyName);
+    assert(szKeyName != nullptr);
 
     if (CDockFrame::LoadRegistrySettings(szKeyName))
     {
@@ -725,7 +722,7 @@ BOOL CMainFrame::OnAddFolder()
         {
             CString DataPath = GetDataPath();
             CString DataFile = GetDataPath() + L"\\" + L"MovieData.bin";
-            ::SHCreateDirectoryEx(0, DataPath.c_str(), NULL);
+            ::SHCreateDirectoryEx(0, DataPath.c_str(), nullptr);
 
             {
                 // Lock this code for thread safety
@@ -853,7 +850,7 @@ void CMainFrame::OnClose()
 
         CString DataPath = GetDataPath();
         CString DataFile = GetDataPath() + L"\\" + L"MovieData.bin";
-        ::SHCreateDirectoryEx(0, DataPath.c_str(), NULL);
+        ::SHCreateDirectoryEx(0, DataPath.c_str(), nullptr);
 
         try
         {
@@ -1019,6 +1016,8 @@ void CMainFrame::OnFilesLoaded()
 // Called after the frame is created, but before it is displayed.
 void CMainFrame::OnInitialUpdate()
 {
+    SetRedraw(FALSE);
+
     // Add the dialog.
     int width = m_dialogWidth ? m_dialogWidth : (GetViewRect().Width() / 3);
     DWORD dockStyle = DS_NO_UNDOCK | DS_NO_CAPTION;
@@ -1031,7 +1030,8 @@ void CMainFrame::OnInitialUpdate()
     // Fill the tree view and list view.
     LoadMovies();
     FillTreeItems();
-
+    SetRedraw(TRUE);
+    RedrawWindow();
     ForceToForeground();
 }
 
@@ -1141,7 +1141,7 @@ LRESULT CMainFrame::OnRClickListItem()
     CPoint screenPoint = GetCursorPos();
 
     // Start the popup menu.
-    m_popupMenu.TrackPopupMenuEx(TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_VERTICAL, screenPoint.x, screenPoint.y, *this, NULL/*&tpm*/);
+    m_popupMenu.TrackPopupMenuEx(TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_VERTICAL, screenPoint.x, screenPoint.y, *this, nullptr/*&tpm*/);
 
     return 0;
 }
@@ -1169,7 +1169,7 @@ LRESULT CMainFrame::OnRClickTreeItem()
         m_boxSetMenu = topMenu.GetSubMenu(0);
 
         // Start the popup menu.
-        m_boxSetMenu.TrackPopupMenuEx(TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_VERTICAL, screenPoint.x, screenPoint.y, *this, NULL/*&tpm*/);
+        m_boxSetMenu.TrackPopupMenuEx(TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_VERTICAL, screenPoint.x, screenPoint.y, *this, nullptr/*&tpm*/);
     }
 
     HTREEITEM parent = GetViewTree().GetParentItem(item);
@@ -1180,7 +1180,7 @@ LRESULT CMainFrame::OnRClickTreeItem()
         m_boxSetMenu = topMenu.GetSubMenu(0);
 
         // Start the popup menu
-        m_boxSetMenu.TrackPopupMenuEx(TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_VERTICAL, screenPoint.x, screenPoint.y, *this, NULL/*&tpm*/);
+        m_boxSetMenu.TrackPopupMenuEx(TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_VERTICAL, screenPoint.x, screenPoint.y, *this, nullptr/*&tpm*/);
     }
 
     return 0;
@@ -1335,16 +1335,11 @@ BOOL CMainFrame::OnSearch()
 // Updates the dialog with information about the movie.
 LRESULT CMainFrame::OnSelectListItem(const MovieInfo* pmi)
 {
-    CViewDialog& dialog = (CViewDialog&)m_pDockDialog->GetView();
     assert(pmi);
 
     // Set the fonts.
-    NONCLIENTMETRICS info = GetNonClientMetrics();
-    LOGFONT lf = info.lfMenuFont;
-    CFont textFont(lf);
-    dialog.GetActors().SetFont(textFont, FALSE);
-    dialog.GetInfo().SetFont(textFont, FALSE);
-
+    m_pDockDialog->GetViewDialog().SetDialogFonts();
+    CViewDialog& dialog = (CViewDialog&)m_pDockDialog->GetView();
     dialog.GetTitle().SetWindowText(pmi->movieName);
     dialog.GetYear().SetWindowText(pmi->releaseDate);
 
@@ -1490,7 +1485,7 @@ BOOL CMainFrame::OnWatchList()
 LRESULT CMainFrame::PlayMovie(LPCTSTR path)
 {
     if (PathFileExists(path))
-        ::ShellExecute(*this, L"open", path, NULL, NULL, SW_SHOW);
+        ::ShellExecute(*this, L"open", path, nullptr, nullptr, SW_SHOW);
     else
     {
         CString str = CString(L"Unable to play\n") + path;
@@ -1588,16 +1583,6 @@ void CMainFrame::SetupMenuIcons()
 // Configure the toolbar.
 void CMainFrame::SetupToolBar()
 {
-    // Create the normal ImageList for the toolbar
-    m_toolbarImages.Create(32, 32, ILC_COLOR32, 0, 0);
-    m_toolbarImages.AddIcon(IDI_ADDFOLDER);
-    m_toolbarImages.AddIcon(IDI_PLAY);
-    m_toolbarImages.AddIcon(IDI_FAVOURITES);
-    m_toolbarImages.AddIcon(IDI_EYE);
-    m_toolbarImages.AddIcon(IDI_SEARCH);
-    m_toolbarImages.AddIcon(IDI_HELPABOUT);
-    GetToolBar().SetImageList(m_toolbarImages);
-
     // Add toolbar buttons and set their Resource IDs
     AddToolBarButton(IDM_ADD_FOLDER);
     AddToolBarButton(0);                        // Separator
@@ -1607,6 +1592,19 @@ void CMainFrame::SetupToolBar()
     AddToolBarButton(IDM_SEARCH);
     AddToolBarButton(0);                        // Separator
     AddToolBarButton(IDM_HELP_ABOUT);
+
+    // Create the normal ImageList for the toolbar
+    int size = DpiScaleInt(32);
+    m_toolbarImages.Create(size, size, ILC_COLOR32, 0, 0);
+    m_toolbarImages.AddIcon(IDI_ADDFOLDER);
+    m_toolbarImages.AddIcon(IDI_PLAY);
+    m_toolbarImages.AddIcon(IDI_FAVOURITES);
+    m_toolbarImages.AddIcon(IDI_EYE);
+    m_toolbarImages.AddIcon(IDI_SEARCH);
+    m_toolbarImages.AddIcon(IDI_HELPABOUT);
+
+    // Assign the imagelist to the toolbar.
+    GetToolBar().SetImageList(m_toolbarImages);
 }
 
 // This function runs in a separate thread because loading the meta data from
@@ -1706,22 +1704,8 @@ UINT WINAPI CMainFrame::ThreadProc(void* pVoid)
     return 0;
 }
 
-LRESULT CMainFrame::OnDPIChanged()
-{
-    // Dialogs handle DPI changes rather badly. The easiest
-    // approach is to destroy and recreate the dialog.
-    m_pDockDialog->GetView().Destroy();
-    m_pDockDialog->GetView().Create(m_pDockDialog->GetDockClient());
-
-    // Re-select the list view item.
-    int item = m_viewList.GetNextItem(-1, LVNI_SELECTED);
-    m_viewList.SetItemState(item, 0, 0x000F);
-    m_viewList.SetItemState(item, LVIS_FOCUSED | LVIS_SELECTED, 0x000F);
-
-    return 0;
-}
-
-LRESULT CMainFrame::OnWindowPosChanged(UINT msg, WPARAM wparam, LPARAM lparam)
+// Called when the window's position is about to change.
+LRESULT CMainFrame::OnWindowPosChanging(UINT msg, WPARAM wparam, LPARAM lparam)
 {
     GetViewList().SetLastColumnWidth();
     return FinalWindowProc(msg, wparam, lparam);
@@ -1734,20 +1718,19 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
     {
         switch (msg)
         {
-        case WM_WINDOWPOSCHANGING: return OnWindowPosChanged(msg, wparam, lparam);
-        case WM_SYSCOMMAND:                 return OnSysCommand(msg, wparam, lparam);
-        case WM_DPICHANGED:                 return OnDPIChanged();
+        case WM_WINDOWPOSCHANGING:      return OnWindowPosChanging(msg, wparam, lparam);
+        case WM_SYSCOMMAND:             return OnSysCommand(msg, wparam, lparam);
 
         // User Messages called by CTreeList
-        case UWM_BOXSETCHANGED:             return OnBoxSetChanged();
-        case UWM_GETMOVIESDATA:             return (LRESULT)GetMoviesData();
-        case UWM_ONSELECTTREEITEM:          return OnSelectTreeItem();
-        case UWM_ONRCLICKTREEITEM:          return OnRClickTreeItem();
+        case UWM_BOXSETCHANGED:         return OnBoxSetChanged();
+        case UWM_GETMOVIESDATA:         return (LRESULT)GetMoviesData();
+        case UWM_ONSELECTTREEITEM:      return OnSelectTreeItem();
+        case UWM_ONRCLICKTREEITEM:      return OnRClickTreeItem();
 
         // Use Messages called by CViewList
-        case UWM_PLAYMOVIE:                 return PlayMovie((LPCTSTR)wparam);
-        case UWM_ONSELECTLISTITEM:          return OnSelectListItem((const MovieInfo*)wparam);
-        case UWM_ONRCLICKLISTITEM:          return OnRClickListItem();
+        case UWM_PLAYMOVIE:             return PlayMovie((LPCTSTR)wparam);
+        case UWM_ONSELECTLISTITEM:      return OnSelectListItem((const MovieInfo*)wparam);
+        case UWM_ONRCLICKLISTITEM:      return OnRClickListItem();
         }
 
         // Pass unhandled messages on for default processing.

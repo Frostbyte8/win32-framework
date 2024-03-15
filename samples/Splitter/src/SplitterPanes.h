@@ -9,7 +9,7 @@
 
 
 ////////////////////////////////////////////////////
-// CDockTest manages the docker which uses CViewText
+// CDockTest manages the docker that uses CViewText
 // as its view.
 class CDockText : public CDocker
 {
@@ -18,15 +18,15 @@ public:
     virtual ~CDockText() {}
 
 private:
-    CDockText(const CDockText&);                // Disable copy construction
-    CDockText& operator = (const CDockText&);   // Disable assignment operator
+    CDockText(const CDockText&);               // Disable copy construction
+    CDockText& operator=(const CDockText&);    // Disable assignment operator
 
     CViewText m_view;
 };
 
 
 ///////////////////////////////////////////////////////////
-// CDockTree manages the docker which uses CViewTree as its
+// CDockTree manages the docker that uses CViewTree as its
 // view.
 class CDockTree : public CDocker
 {
@@ -36,14 +36,14 @@ public:
 
 private:
     CDockTree(const CDockTree&);                // Disable copy construction
-    CDockTree& operator = (const CDockTree&);   // Disable assignment operator
+    CDockTree& operator=(const CDockTree&);   // Disable assignment operator
 
     CViewTree m_view;
 };
 
 
 ////////////////////////////////////////////////////
-// CDockList manages the docker which uses CViewList
+// CDockList manages the docker that uses CViewList
 // as its view.
 class CDockList : public CDocker
 {
@@ -53,7 +53,7 @@ public:
 
 private:
     CDockList(const CDockList&);                // Disable copy construction
-    CDockList& operator = (const CDockList&);   // Disable assignment operator
+    CDockList& operator=(const CDockList&);   // Disable assignment operator
 
     CViewList m_view;
 };

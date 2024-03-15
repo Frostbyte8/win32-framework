@@ -32,9 +32,10 @@ HWND CMainWindow::Create(HWND hParent /*= 0*/)
 
     // Create the main window
     CRect rc(20, 50, 400, 300);
+    CRect rcDPI = DpiScaleRect(rc);
 
     return CreateEx(WS_EX_TOPMOST, NULL, str, WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-        rc, hParent, 0);
+        rcDPI, hParent, 0);
 }
 
 // Creates several test windows.
@@ -75,6 +76,15 @@ void CMainWindow::OnDestroy()
 {
     // End the application
     ::PostQuitMessage(0);
+}
+
+LRESULT CMainWindow::OnDpiChanged(UINT, WPARAM, LPARAM lparam)
+{
+    LPRECT prc = reinterpret_cast<LPRECT>(lparam);
+    SetWindowPos(0, *prc, SWP_SHOWWINDOW);
+    m_edit.DPISetFont();
+
+    return 0;
 }
 
 // Called after the main window is created.
@@ -141,14 +151,14 @@ void CMainWindow::PerformanceTest() const
     SendText(str);
 
     // Choose a Window handle(HWND) to send the messages to
-    HWND hWnd = m_pTestWindows[(m_testWindows-1)/2]->GetHwnd();
+    HWND wnd = m_pTestWindows[(m_testWindows-1)/2]->GetHwnd();
 
     // Store the starting counter
     LONGLONG start = GetCounter();
 
     // Send the messages
     while(messages++ < m_testMessages)
-        result = ::SendMessage(hWnd, WM_TESTMESSAGE, 0, 0);
+        result = ::SendMessage(wnd, WM_TESTMESSAGE, 0, 0);
 
     // Calculate the time the messages took to send
     LONGLONG end = GetCounter();
@@ -181,6 +191,7 @@ LRESULT CMainWindow::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
     {
         switch (msg)
         {
+        case WM_DPICHANGED:     return OnDpiChanged(msg, wparam, lparam);
         case WM_SIZE:           return OnSize();
         case WM_WINDOWCREATED:  return OnWindowCreated();
         }

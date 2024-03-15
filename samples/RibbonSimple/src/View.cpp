@@ -99,10 +99,32 @@ void CView::OnDestroy()
     ::PostQuitMessage(0);
 }
 
+// Called when the effective dots per inch (dpi) for a window has changed.
+// This occurs when:
+//  - The window is moved to a new monitor that has a different DPI.
+//  - The DPI of the monitor hosting the window changes.
+LRESULT CView::OnDpiChanged(UINT, WPARAM, LPARAM lparam)
+{
+    LPRECT prc = reinterpret_cast<LPRECT>(lparam);
+    SetWindowPos(0, *prc, SWP_SHOWWINDOW);
+
+    return 0;
+}
+
 // OnPaint is called automatically whenever a part of the
 // window needs to be repainted.
 void CView::OnDraw(CDC& dc)
 {
+    // Use the message font for Windows 7 and higher.
+    if (GetWinVersion() >= 2601)
+    {
+        NONCLIENTMETRICS info = GetNonClientMetrics();
+        LOGFONT lf = info.lfMessageFont;
+        int dpi = GetWindowDpi(*this);
+        lf.lfHeight = -MulDiv(10, dpi, POINTS_PER_INCH);
+        dc.CreateFontIndirect(lf);
+    }
+
     // Centre some text in our view window
     CRect r = GetClientRect();
     r.top += GetRibbonHeight();
@@ -166,10 +188,10 @@ void CView::PreCreate(CREATESTRUCT& cs)
     // Set some optional parameters for the window
     cs.dwExStyle = WS_EX_CLIENTEDGE;        // Extended style
     cs.lpszClass = L"View Window";          // Window Class
-    cs.x = 50;                              // top x
-    cs.y = 50;                              // top y
-    cs.cx = 600;                            // width
-    cs.cy = 500;                            // height
+    cs.x = DpiScaleInt(50);                 // top x
+    cs.y = DpiScaleInt(50);                 // top y
+    cs.cx = DpiScaleInt(600);               // width
+    cs.cy = DpiScaleInt(500);               // height
 }
 
 // Recalculate the position of the child windows.
@@ -187,7 +209,8 @@ LRESULT CView::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
     {
         switch (msg)
         {
-        case WM_SIZE:   return OnSize();
+        case WM_DPICHANGED:  return OnDpiChanged(msg, wparam, lparam);
+        case WM_SIZE:        return OnSize();
         }
 
         // pass unhandled messages on for default processing

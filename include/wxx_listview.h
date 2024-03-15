@@ -1,4 +1,4 @@
-// Win32++   Version 9.2
+// Win32++   Version 9.5
 // Release Date: TBA
 //
 //      David Nash
@@ -6,7 +6,7 @@
 //      url: https://sourceforge.net/projects/win32-framework
 //
 //
-// Copyright (c) 2005-2022  David Nash
+// Copyright (c) 2005-2024  David Nash
 //
 // Permission is hereby granted, free of charge, to
 // any person obtaining a copy of this software and
@@ -153,7 +153,7 @@ namespace Win32xx
 
     private:
         CListView(const CListView&);              // Disable copy construction
-        CListView& operator = (const CListView&); // Disable assignment operator
+        CListView& operator=(const CListView&);   // Disable assignment operator
 
     };
 
@@ -185,8 +185,9 @@ namespace Win32xx
     inline CImageList CListView::CreateDragImage(int item, CPoint& pt) const
     {
         assert(IsWindow());
-        HIMAGELIST images = ListView_CreateDragImage(*this, item, &pt);
-        return CImageList(images);
+        CImageList images;
+        images.CreateDragImage(*this, item, pt);
+        return images;
     }
 
     // Removes all items from the list-view control.

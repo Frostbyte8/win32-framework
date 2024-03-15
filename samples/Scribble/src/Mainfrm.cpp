@@ -268,28 +268,28 @@ BOOL CMainFrame::OnFilePreview()
     {
         m_isToolbarShown = GetToolBar().IsWindow() && GetToolBar().IsWindowVisible();
 
-        // Get the device contect of the default or currently chosen printer
+        // Get the device contect of the default or currently chosen printer.
         CPrintDialog printDlg;
         CDC printerDC = printDlg.GetPrinterDC();
 
-        // Create the preview window if required
+        // Create the preview window if required.
         if (!m_preview.IsWindow())
             m_preview.Create(*this);
 
-        // Specify the source of the PrintPage function
+        // Specify the source of the PrintPage function.
         m_preview.SetSource(m_view);
 
-        // Set the preview's owner (for notification messages)
+        // Set the preview's owner for notification messages.
         m_preview.DoPrintPreview(*this);
 
         // Swap views
         SetView(m_preview);
 
-        // Hide the menu and toolbar
+        // Hide the menu and toolbar.
         ShowMenu(FALSE);
         ShowToolBar(FALSE);
 
-        // Update status
+        // Update status.
         CString status = _T("Printer: ") + printDlg.GetDeviceName();
         SetStatusText(status);
     }
@@ -373,6 +373,7 @@ LRESULT CMainFrame::OnPreviewClose()
     // Show the menu and toolbar
     ShowMenu(GetFrameMenu() != 0);
     ShowToolBar(m_isToolbarShown);
+    UpdateSettings();
 
     SetStatusText(LoadString(IDW_READY));
 
@@ -427,7 +428,7 @@ void CMainFrame::SetupMenuIcons()
 {
     // Use the MenuIcons bitmap for images in menu items.
     std::vector<UINT> data = GetToolBarData();
-    if (GetMenuIconHeight() >= 24)
+    if ((GetMenuIconHeight() >= 24) && (GetWindowDpi(*this) != 192))
         AddMenuIcons(data, RGB(192, 192, 192), IDW_MAIN);
     else
         AddMenuIcons(data, RGB(192, 192, 192), IDB_TOOLBAR16);

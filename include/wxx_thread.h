@@ -1,4 +1,4 @@
-// Win32++   Version 9.2
+// Win32++   Version 9.5
 // Release Date: TBA
 //
 //      David Nash
@@ -6,7 +6,7 @@
 //      url: https://sourceforge.net/projects/win32-framework
 //
 //
-// Copyright (c) 2005-2023  David Nash
+// Copyright (c) 2005-2024  David Nash
 //
 // Permission is hereby granted, free of charge, to
 // any person obtaining a copy of this software and
@@ -70,7 +70,7 @@ namespace Win32xx
 
     private:
         CThreadT(const CThreadT&);              // Disable copy construction
-        CThreadT& operator = (const CThreadT&); // Disable assignment operator
+        CThreadT& operator=(const CThreadT&);   // Disable assignment operator
 
         THREADPROC* m_pfnThreadProc;    // Thread callback function
         LPVOID m_pThreadParams;         // Thread parameter
@@ -95,7 +95,7 @@ namespace Win32xx
 
     private:
         CWorkThread(const CWorkThread&);              // Disable copy construction
-        CWorkThread& operator = (const CWorkThread&); // Disable assignment operator
+        CWorkThread& operator=(const CWorkThread&); // Disable assignment operator
     };
 
 
@@ -105,7 +105,7 @@ namespace Win32xx
 #endif // (_MSC_VER)
 
     /////////////////////////////////////////////////////////////
-    // CWinThread manages a thread which is capable of supporting
+    // CWinThread manages a thread that is capable of supporting
     // windows. It runs a message loop.
     class CWinThread : public WinThread
     {
@@ -115,7 +115,7 @@ namespace Win32xx
 
     private:
         CWinThread(const CWinThread&);              // Disable copy construction
-        CWinThread& operator = (const CWinThread&); // Disable assignment operator
+        CWinThread& operator=(const CWinThread&); // Disable assignment operator
 
         static  UINT WINAPI StaticThreadProc(LPVOID pCThread);
     };
@@ -183,7 +183,7 @@ namespace Win32xx
         if (m_thread)
         {
             assert(!IsRunning());
-            CloseHandle(m_thread);
+            ::CloseHandle(m_thread);
         }
 
         m_thread = reinterpret_cast<HANDLE>(::_beginthreadex(pSecurityAttributes, stack_size, m_pfnThreadProc,

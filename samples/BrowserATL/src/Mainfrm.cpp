@@ -22,14 +22,13 @@ CMainFrame::~CMainFrame()
 }
 
 // Adds a ComboBoxEx control to the rebar.
-void CMainFrame::AddComboBoxBand(UINT height)
+void CMainFrame::AddComboBoxBand()
 {
-    // Get the reference to the rebar object
-    CReBar& RB = GetReBar();
-    ReBarTheme RBTheme = GetReBarTheme();
-
     // Create the ComboboxEx window.
     m_combo.Create(GetReBar());
+
+    int padding = 2;
+    int height = m_combo.GetWindowRect().Height() + DpiScaleInt(padding);
 
     // Put the window in a new rebar band.
     REBARBANDINFO rbbi;
@@ -41,11 +40,11 @@ void CMainFrame::AddComboBoxBand(UINT height)
     rbbi.cxMinChild = 200;
     rbbi.fStyle     = RBBS_BREAK | RBBS_VARIABLEHEIGHT | RBBS_GRIPPERALWAYS;
     rbbi.clrFore    = GetSysColor(COLOR_BTNTEXT);
-    rbbi.clrBack    = RBTheme.clrBand1;
+    rbbi.clrBack    = GetReBarTheme().clrBand1;
     rbbi.hwndChild  = m_combo.GetHwnd();
     rbbi.lpText     = (LPWSTR)L"Address";
 
-    RB.InsertBand(-1, rbbi);
+    GetReBar().InsertBand(-1, rbbi);
 }
 
 HWND CMainFrame::Create(HWND parent)
@@ -244,6 +243,16 @@ BOOL CMainFrame::OnForward()
     return TRUE;
 }
 
+// Limit the minimum size of the window.
+LRESULT CMainFrame::OnGetMinMaxInfo(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    LPMINMAXINFO lpMMI = (LPMINMAXINFO)lparam;
+    const CSize minimumSize(600, 400);
+    lpMMI->ptMinTrackSize.x = DpiScaleInt(minimumSize.cx);
+    lpMMI->ptMinTrackSize.y = DpiScaleInt(minimumSize.cy);
+    return FinalWindowProc(msg, wparam, lparam);
+}
+
 // Display the help about dialog.
 BOOL CMainFrame::OnHelpAbout()
 {
@@ -267,8 +276,8 @@ void CMainFrame::OnInitialUpdate()
     // Suppress Java script errors.
     GetBrowser()->put_Silent(VARIANT_TRUE);
 
-    // Load the home page.
-    GetBrowser()->GoHome();
+    // Load the web page.
+    m_view.Navigate(_T("www.google.com"));
 }
 
 // Called when navigation completes on either a window or frameset element.
@@ -532,8 +541,7 @@ void CMainFrame::SetupToolBar()
     SetToolBarImages(RGB(255, 0, 255), IDB_TOOLBAR32_NORM, IDB_TOOLBAR32_HOT, IDB_TOOLBAR32_DIS);
 
     // Add the ComboBoxEx control.
-    int Height = 26;
-    AddComboBoxBand(Height);
+    AddComboBoxBand();
 }
 
 // Process the frame's window messages.
@@ -553,6 +561,7 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         case UWM_PROPERTYCHANGE:      OnPropertyChange((DISPPARAMS*)wparam);     break;
         case UWM_STATUSTEXTCHANGE:    OnStatusTextChange((DISPPARAMS*)wparam);   break;
         case UWM_TITLECHANGE:         OnTitleChange((DISPPARAMS*)wparam);        break;
+        case WM_GETMINMAXINFO:        return OnGetMinMaxInfo(msg, wparam, lparam);
         }
 
         // Pass unhandled messages on for default processing.

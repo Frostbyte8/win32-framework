@@ -15,15 +15,17 @@ class CViewText : public CRichEdit
 public:
     CViewText();
     virtual ~CViewText();
+    void SetDPIFont();
 
 protected:
     // Virtual functions that override base class functions
-    virtual void PreCreate(CREATESTRUCT& cs);
     virtual void OnAttach();
 
 private:
-    CViewText(const CViewText&);                // Disable copy construction
-    CViewText& operator = (const CViewText&);   // Disable assignment operator
+    CViewText(const CViewText&);               // Disable copy construction
+    CViewText& operator=(const CViewText&);    // Disable assignment operator
+
+    CFont m_font;
 };
 
 
@@ -38,7 +40,7 @@ public:
 
 private:
     CContainText(const CContainText&);                // Disable copy construction
-    CContainText& operator = (const CContainText&);   // Disable assignment operator
+    CContainText& operator=(const CContainText&);   // Disable assignment operator
 
     CViewText m_viewText;
 };
@@ -55,7 +57,7 @@ public:
 
 private:
     CDockText(const CDockText&);                // Disable copy construction
-    CDockText& operator = (const CDockText&);   // Disable assignment operator
+    CDockText& operator=(const CDockText&);   // Disable assignment operator
 
     CContainText m_view;
 };

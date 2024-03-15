@@ -8,7 +8,7 @@
 
 ///////////////////////////////////////////////////////////////
 // CMainMDIFrame manages the application's main window.
-// The main window is a MDI frame which has a menubar, toolbar,
+// The main window is a MDI frame that has a menubar, toolbar,
 // statusbar and view window. It supports docking.
 class CMainMDIFrame : public CMDIDockFrame
 {
@@ -27,8 +27,8 @@ protected:
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CMainMDIFrame(const CMainMDIFrame&);                // Disable copy construction
-    CMainMDIFrame& operator = (const CMainMDIFrame&);   // Disable assignment operator
+    CMainMDIFrame(const CMainMDIFrame&);               // Disable copy construction
+    CMainMDIFrame& operator=(const CMainMDIFrame&);    // Disable assignment operator
 
     // Command handlers
     BOOL OnFileMDIClose();
@@ -42,6 +42,9 @@ private:
     BOOL OnMDICloseAll();
     BOOL OnMDIIconArrange();
     BOOL OnMDITile();
+
+    // Message handlers
+    LRESULT OnGetMinMaxInfo(UINT msg, WPARAM wparam, LPARAM lparam);
 };
 
 #endif  //MAINMDIFRM_H

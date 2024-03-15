@@ -25,7 +25,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 // RT_MANIFEST
 //
 
-1                       RT_MANIFEST             "../src/res/Win32++.manifest"
+1                     RT_MANIFEST           "../src/res/PerMonitorV2.manifest"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -45,7 +45,6 @@ BEGIN
     END
     POPUP "&Docking"
     BEGIN
-        MENUITEM "&Proporotianal Resize",       IDM_PROP_RESIZE, CHECKED
         MENUITEM "&3D Border",                  IDM_3DBORDER, CHECKED
         MENUITEM "Prevent &Undocking",          IDM_NO_UNDOCK, CHECKED
         MENUITEM "Prevent &Resizing",           IDM_NO_RESIZE, CHECKED
@@ -58,7 +57,7 @@ BEGIN
     END
     POPUP "&Help"
     BEGIN
-        MENUITEM "&About\tF1",                      IDM_HELP_ABOUT
+        MENUITEM "&About\tF1",                  IDM_HELP_ABOUT
     END
 END
 
@@ -211,7 +210,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDM_PROP_RESIZE         "Toggle proportional resizing"
     IDM_3DBORDER            "Toggle the display of a 3D border"
     IDM_NO_UNDOCK           "Toggle the ability to undock a docker"
     IDM_NO_RESIZE           "Toggle the ability to resize dockers"

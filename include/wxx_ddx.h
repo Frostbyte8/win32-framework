@@ -1,4 +1,4 @@
-// Win32++   Version 9.2
+// Win32++   Version 9.5
 // Release Date: TBA
 //
 //      David Nash
@@ -6,7 +6,7 @@
 //      url: https://sourceforge.net/projects/win32-framework
 //
 //
-// Copyright (c) 2005-2022  David Nash
+// Copyright (c) 2005-2024  David Nash
 //
 // Permission is hereby granted, free of charge, to
 // any person obtaining a copy of this software and
@@ -1142,7 +1142,7 @@ namespace Win32xx
     }
 
     // This function is called when a CUserException is caught while
-    // validating the value in a control. This is a virtual function which can
+    // validating the value in a control. This is a virtual function that can
     // be overridden as required.
     inline void CDataExchange::Fail(LPCTSTR message) const
     {

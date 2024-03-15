@@ -37,12 +37,13 @@ protected:
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CMainWindow(const CMainWindow&);                // Disable copy construction
-    CMainWindow& operator = (const CMainWindow&);   // Disable assignment operator
+    CMainWindow(const CMainWindow&);               // Disable copy construction
+    CMainWindow& operator=(const CMainWindow&);    // Disable assignment operator
 
     // Message handlers
-    virtual LRESULT OnSize();
-    virtual LRESULT OnWindowCreated();
+    LRESULT OnDpiChanged(UINT, WPARAM, LPARAM lparam);
+    LRESULT OnSize();
+    LRESULT OnWindowCreated();
 
     LONGLONG GetCounter() const;
     void OnAllWindowsCreated();

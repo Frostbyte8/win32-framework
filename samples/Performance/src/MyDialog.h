@@ -7,7 +7,7 @@
 
 
 /////////////////////////////////////
-// CMyDialog manages the dialog which allows users to configure
+// CMyDialog manages the dialog that allows users to configure
 // the performance test.
 class CMyDialog : public CDialog
 {
@@ -22,8 +22,8 @@ protected:
     virtual void OnOK();
 
 private:
-    CMyDialog(const CMyDialog&);                // Disable copy construction
-    CMyDialog& operator = (const CMyDialog&);   // Disable assignment operator
+    CMyDialog(const CMyDialog&);               // Disable copy construction
+    CMyDialog& operator=(const CMyDialog&);    // Disable assignment operator
 };
 
 #endif //MYDIALOG_H

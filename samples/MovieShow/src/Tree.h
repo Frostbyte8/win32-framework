@@ -15,6 +15,7 @@ class CViewTree : public CTreeView
 public:
     CViewTree();
     virtual ~CViewTree();
+    void SetDPIImages();
     void Swap(HTREEITEM item1, HTREEITEM item2);
 
 protected:
@@ -26,10 +27,15 @@ protected:
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CViewTree(const CViewTree&);                // Disable copy construction
-    CViewTree& operator = (const CViewTree&);   // Disable assignment operator
+    CViewTree(const CViewTree&);               // Disable copy construction
+    CViewTree& operator=(const CViewTree&);    // Disable assignment operator
 
     bool      IsBoxSetUnique(LPCTSTR text, HTREEITEM item);
+
+    // Message handlers
+    LRESULT OnDpiChangedBeforeParent(UINT msg, WPARAM wparam, LPARAM lparam);
+    LRESULT OnRButtonDown(UINT msg, WPARAM wparam, LPARAM lparam);
+    LRESULT OnRButtonUp(UINT msg, WPARAM wparam, LPARAM lparam);
 
     // Notification message handlers
     BOOL OnBeginLabelEdit(LPARAM lparam);
@@ -54,7 +60,7 @@ public:
 
 private:
     CDockTree(const CDockTree&);                // Disable copy construction
-    CDockTree& operator = (const CDockTree&);   // Disable assignment operator
+    CDockTree& operator=(const CDockTree&);   // Disable assignment operator
 
     CViewTree m_treeView;
 };

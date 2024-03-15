@@ -23,13 +23,13 @@ protected:
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CMyPropertySheet(const CMyPropertySheet&);                // Disable copy construction
-    CMyPropertySheet& operator = (const CMyPropertySheet&);   // Disable assignment operator
+    CMyPropertySheet(const CMyPropertySheet&);               // Disable copy construction
+    CMyPropertySheet& operator=(const CMyPropertySheet&);    // Disable assignment operator
 };
 
 
 /////////////////////////////////////////////////////////
-// CButtonPage manages a property page which displays a
+// CButtonPage manages a property page that displays a
 // number of buttons. A property page behaves much like a
 // dialog.
 class CButtonPage : public CPropertyPage
@@ -51,12 +51,12 @@ protected:
 
 private:
     CButtonPage(const CButtonPage&);                // Disable copy construction
-    CButtonPage& operator = (const CButtonPage&);   // Disable assignment operator
+    CButtonPage& operator=(const CButtonPage&);   // Disable assignment operator
 };
 
 
 //////////////////////////////////////////////////////
-// CComboPage manages a property page which displays a
+// CComboPage manages a property page that displays a
 // number of combo boxes. A property page behaves much
 // like a dialog.
 class CComboPage : public CPropertyPage
@@ -74,7 +74,7 @@ protected:
 
 private:
     CComboPage(const CComboPage&);                // Disable copy construction
-    CComboPage& operator = (const CComboPage&);   // Disable assignment operator
+    CComboPage& operator=(const CComboPage&);   // Disable assignment operator
 };
 
 

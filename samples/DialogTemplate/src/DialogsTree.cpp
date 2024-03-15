@@ -36,38 +36,37 @@ void CDialogsTree::FillTree(const std::vector<ResourceInfo>& allInfo, LPCTSTR fi
     HTREEITEM prevItem = rootItem;
 
     std::vector<ResourceInfo>::const_iterator it;
-    int index = 0;
     for (it = allInfo.begin(); it != allInfo.end(); ++it)
     {
-        ResourceInfo info = *it;
         CString prevType;
         ResourceInfo* prevInfo = (ResourceInfo*)GetItemData(prevItem);
         if (prevInfo != 0)
         {
             prevType = prevInfo->typeName;
         }
-        if (info.typeName == ToCString(5))
+
+        CString dialogName("5");
+        if ((*it).typeName == dialogName)
         {
             CString itemName;
-            itemName << info.resourceName << "   " << info.languageID;
+            itemName << (*it).resourceName << "   " << (*it).languageID;
             currentItem = InsertItem(itemName, 1, 1, rootItem);
-            SetItemData(currentItem, (DWORD_PTR) &allInfo[index]);
+            SetItemData(currentItem, (DWORD_PTR)&(*it));
         }
 
         prevItem = currentItem;
-        index++;
     }
 
     // Expand some tree-view items
     Expand(rootItem, TVE_EXPAND);
-
 }
 
 // Called when a window handle (HWND) is attached to CDialogsTree.
 void CDialogsTree::OnAttach()
 {
     //set the the tree-view's image list
-    m_normalImages.Create(24, 24, ILC_COLOR32, 1, 0);
+    int size = DpiScaleInt(24);
+    m_normalImages.Create(size, size, ILC_COLOR32, 1, 0);
     m_normalImages.AddIcon(IDI_WINDOWS);
     m_normalImages.AddIcon(IDW_MAIN);
     SetImageList(m_normalImages, LVSIL_NORMAL);

@@ -30,6 +30,9 @@ void CView::OnDraw(CDC& dc)
     memDC.SolidFill(RGB(255, 255, 255), rc);
 
     // Centre some text in our view window.
+    NONCLIENTMETRICS info = GetNonClientMetrics();
+    LOGFONT lf = DpiScaleLogfont(info.lfMessageFont, 10);
+    memDC.CreateFontIndirect(lf);
     memDC.DrawText(_T("View Window"), -1, rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
     // Copy from the memory dc to our drawing dc.
@@ -99,7 +102,7 @@ void CView::PrintPage(CDC& dc, UINT)
 
         // Extract the device independent image data.
         BITMAPINFOHEADER* pBIH = reinterpret_cast<BITMAPINFOHEADER*>(pbmi.get());
-        memDC.GetDIBits(bmView, 0, cyView, NULL, pbmi, DIB_RGB_COLORS);
+        memDC.GetDIBits(bmView, 0, cyView, nullptr, pbmi, DIB_RGB_COLORS);
         std::vector<byte> byteArray(pBIH->biSizeImage, 0);
         byte* pByteArray = &byteArray.front();
         memDC.GetDIBits(bmView, 0, cyView, pByteArray, pbmi, DIB_RGB_COLORS);

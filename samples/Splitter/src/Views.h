@@ -20,28 +20,30 @@ protected:
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CViewSimple(const CViewSimple&);                // Disable copy construction
-    CViewSimple& operator = (const CViewSimple&);   // Disable assignment operator
+    CViewSimple(const CViewSimple&);               // Disable copy construction
+    CViewSimple& operator=(const CViewSimple&);    // Disable assignment operator
 };
 
 
 //////////////////////////////////////////////
-// CViewText manages an edit control.
+// CViewText manages a rich edit control.
 // It is used as the view window by CDockText.
-class CViewText : public CWnd
+class CViewText : public CRichEdit
 {
 public:
     CViewText() {}
     virtual ~CViewText() {}
+    void SetDPIFont();
 
 protected:
     // Virtual functions that override base class functions
     virtual void OnAttach();
-    virtual void PreCreate(CREATESTRUCT& cs);
 
 private:
     CViewText(const CViewText&);                // Disable copy construction
-    CViewText& operator = (const CViewText&);   // Disable assignment operator
+    CViewText& operator=(const CViewText&);   // Disable assignment operator
+
+    CFont m_font;
 };
 
 
@@ -53,14 +55,19 @@ class CViewTree : public CTreeView
 public:
     CViewTree();
     virtual ~CViewTree();
+    void SetDPIImages();
 
 protected:
     // Virtual functions that override base class functions
     virtual void OnAttach();
+    virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
     CViewTree(const CViewTree&);                // Disable copy construction
-    CViewTree& operator = (const CViewTree&);   // Disable assignment operator
+    CViewTree& operator=(const CViewTree&);   // Disable assignment operator
+
+    // Message handlers
+    LRESULT OnDpiChangedBeforeParent(UINT msg, WPARAM wparam, LPARAM lparam);
 
     CImageList m_smallImages;
 };
@@ -75,14 +82,20 @@ public:
     virtual ~CViewList();
     void InsertItems();
     void SetColumns();
+    void SetDPIColumnWidths();
+    void SetDPIImages();
 
 protected:
     // Virtual functions that override base class functions
     virtual void OnAttach();
+    LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
     CViewList(const CViewList&);                // Disable copy construction
-    CViewList& operator = (const CViewList&);   // Disable assignment operator
+    CViewList& operator=(const CViewList&);   // Disable assignment operator
+
+    // Message handlers
+    LRESULT OnDpiChangedBeforeParent(UINT msg, WPARAM wparam, LPARAM lparam);
 
     CImageList m_smallImages;
 };

@@ -1,4 +1,4 @@
-// Win32++   Version 9.2
+// Win32++   Version 9.5
 // Release Date: TBA
 //
 //      David Nash
@@ -6,7 +6,7 @@
 //      url: https://sourceforge.net/projects/win32-framework
 //
 //
-// Copyright (c) 2005-2022  David Nash
+// Copyright (c) 2005-2024  David Nash
 //
 // Permission is hereby granted, free of charge, to
 // any person obtaining a copy of this software and
@@ -57,17 +57,7 @@
 
 #include "wxx_appcore0.h"
 
-#ifndef WHEEL_DELTA
-  #define WHEEL_DELTA                     120
-#endif
 
-#ifndef GET_WHEEL_DELTA_WPARAM
-  #define GET_WHEEL_DELTA_WPARAM(wparam)  ((short)HIWORD(wparam))
-#endif
-
-#ifndef WM_MOUSEWHEEL
-  #define WM_MOUSEWHEEL                   0x020A
-#endif
 
 namespace Win32xx
 {
@@ -112,7 +102,7 @@ namespace Win32xx
 
     private:
         CScrollView(const CScrollView&);               // Disable copy construction
-        CScrollView& operator = (const CScrollView&);  // Disable assignment operator
+        CScrollView& operator=(const CScrollView&);    // Disable assignment operator
         void UpdateBars();
 
         CPoint m_currentPos;
@@ -580,8 +570,10 @@ namespace Win32xx
                 }
 
                 // Perform any additional scrolling required by window resizing
-                int cxScroll = IsVScrollVisible() ? ::GetSystemMetrics(SM_CXVSCROLL) : 0;
-                int cyScroll = IsHScrollVisible() ? ::GetSystemMetrics(SM_CYHSCROLL) : 0;
+                int cxScroll = ::GetSystemMetrics(SM_CXVSCROLL) * GetWindowDpi(*this) / GetWindowDpi(HWND_DESKTOP);
+                int cyScroll = ::GetSystemMetrics(SM_CYHSCROLL) * GetWindowDpi(*this) / GetWindowDpi(HWND_DESKTOP);
+                cxScroll = IsVScrollVisible() ? cxScroll : 0;
+                cyScroll = IsHScrollVisible() ? cyScroll : 0;
                 int xNewPos = MIN(m_currentPos.x, totalRect.Width() - viewRect.Width() + cxScroll);
                 xNewPos = MAX(xNewPos, 0);
                 int xDelta = xNewPos - m_currentPos.x;

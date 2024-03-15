@@ -13,6 +13,33 @@ CView::CView()
 {
 }
 
+void CView::DpiScaleToolBar()
+{
+    // Create the ToolBar's image list from 4 icons
+    int scale = 48 * (GetWindowDpi(*this) / USER_DEFAULT_SCREEN_DPI);
+    m_toolBarImages.DeleteImageList();
+    m_toolBarImages.Create(scale, scale, ILC_COLOR32 | ILC_MASK, 0, 0);
+    m_toolBarImages.AddIcon(IDI_TOP);
+    m_toolBarImages.AddIcon(IDI_LEFT);
+    m_toolBarImages.AddIcon(IDI_RIGHT);
+    m_toolBarImages.AddIcon(IDI_BOTTOM);
+
+    m_toolBar.SetImageList(m_toolBarImages);
+    RecalcLayout();
+}
+
+// Position the toolbar on the bottom.
+BOOL CView::OnBottom()
+{
+    DWORD style = m_toolBar.GetStyle();
+
+    style &= ~(CCS_VERT);
+    style |= CCS_BOTTOM;
+    m_toolBar.SetStyle(style);
+    RecalcLayout();
+    return TRUE;
+}
+
 // Process menu or toolbar input
 BOOL CView::OnCommand(WPARAM wparam, LPARAM)
 {
@@ -29,66 +56,14 @@ BOOL CView::OnCommand(WPARAM wparam, LPARAM)
     return FALSE;
 }
 
-// Position the toolbar on the bottom.
-BOOL CView::OnBottom()
-{
-    DWORD style = m_toolBar.GetStyle();
-
-    style &= ~(CCS_VERT);
-    style |= CCS_BOTTOM;
-    m_toolBar.SetStyle(style);
-    RecalcLayout();
-    return TRUE;
-}
-
-// Position the toolbar on the left.
-BOOL CView::OnLeft()
-{
-    DWORD style = m_toolBar.GetStyle();
-
-    style &= ~(CCS_BOTTOM);
-    style |= CCS_LEFT;
-    m_toolBar.SetStyle(style);
-    RecalcLayout();
-    return TRUE;
-}
-
-// Position the toolbar on the right.
-BOOL CView::OnRight()
-{
-    DWORD style = m_toolBar.GetStyle();
-
-    style |= CCS_RIGHT;
-    m_toolBar.SetStyle(style);
-    RecalcLayout();
-    return TRUE;
-}
-
-// Position the toolbar at the top.
-BOOL CView::OnTop()
-{
-    DWORD style = m_toolBar.GetStyle();
-
-    style &= ~(CCS_VERT | CCS_BOTTOM);
-    m_toolBar.SetStyle(style);
-    RecalcLayout();
-    return TRUE;
-}
-
 // Called during frame creation.
 int CView::OnCreate(CREATESTRUCT&)
 {
-    // Create the ToolBar's image list from 4 icons
-    m_toolBarImages.Create(48, 48, ILC_COLOR32 | ILC_MASK, 0, 0);
-    m_toolBarImages.AddIcon(IDI_TOP);
-    m_toolBarImages.AddIcon(IDI_LEFT);
-    m_toolBarImages.AddIcon(IDI_RIGHT);
-    m_toolBarImages.AddIcon(IDI_BOTTOM);
-
     // Create the ToolBar
     m_toolBar.Create(*this);
-    m_toolBar.SetImageList(m_toolBarImages);
+    DpiScaleToolBar();
 
+    // Declare a style that supports vertical toolbars.
     DWORD style = WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | TBSTYLE_TOOLTIPS
                     | TBSTYLE_FLAT | CCS_NORESIZE | CCS_NOPARENTALIGN | CCS_NODIVIDER ;
 
@@ -106,6 +81,16 @@ int CView::OnCreate(CREATESTRUCT&)
     m_toolBar.AddButtons(4, buttonInfo);
 
     return 0;
+}
+
+// Called in response to a WM_DPICHANGED_BEFOREPARENT message that is sent to child
+// windows after a DPI change. A WM_DPICHANGED_BEFOREPARENT is only received when the
+// application is DPI_AWARENESS_PER_MONITOR_AWARE.
+LRESULT CView::OnDpiChangedBeforeParent(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    DpiScaleToolBar();
+
+    return FinalWindowProc(msg, wparam, lparam);
 }
 
 // OnDraw is called when part or all of the window needs to be redrawn.
@@ -133,6 +118,14 @@ void CView::OnDraw(CDC& dc)
 
     ScreenToClient(clientRect);
 
+    // Use the message font for Windows 7 and higher.
+    if (GetWinVersion() >= 2601)
+    {
+        NONCLIENTMETRICS info = GetNonClientMetrics();
+        LOGFONT lf = DpiScaleLogfont(info.lfMessageFont, 10);
+        dc.CreateFontIndirect(lf);
+    }
+
     // Display some text in our view window
     CString text = "\nPress the arrows to change the inner toolbar's orientation,";
     text += "\n or choose customize toolbar from the ToolBar menu item to modify the toolbar in the frame.";
@@ -145,6 +138,19 @@ void CView::OnInitialUpdate()
     TRACE("View window created\n");
 }
 
+// Position the toolbar on the left.
+BOOL CView::OnLeft()
+{
+    DWORD style = m_toolBar.GetStyle();
+
+    style &= ~(CCS_BOTTOM);
+    style |= CCS_LEFT;
+    m_toolBar.SetStyle(style);
+    RecalcLayout();
+    return TRUE;
+}
+
+
 // Called when a notification is received from a child window.
 inline LRESULT CView::OnNotify(WPARAM wparam, LPARAM lparam)
 {
@@ -156,6 +162,36 @@ inline LRESULT CView::OnNotify(WPARAM wparam, LPARAM lparam)
     }
 
     return 0;
+}
+
+// Position the toolbar on the right.
+BOOL CView::OnRight()
+{
+    DWORD style = m_toolBar.GetStyle();
+
+    style |= CCS_RIGHT;
+    m_toolBar.SetStyle(style);
+    RecalcLayout();
+    return TRUE;
+}
+
+// Called after the window's size has changed.
+LRESULT CView::OnSize(UINT, WPARAM, LPARAM)
+{
+    RecalcLayout();
+    Invalidate();
+    return 0;
+}
+
+// Position the toolbar at the top.
+BOOL CView::OnTop()
+{
+    DWORD style = m_toolBar.GetStyle();
+
+    style &= ~(CCS_VERT | CCS_BOTTOM);
+    m_toolBar.SetStyle(style);
+    RecalcLayout();
+    return TRUE;
 }
 
 // Here we set the defaults used by the create function for the view window
@@ -243,10 +279,8 @@ LRESULT CView::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
     {
         switch (msg)
         {
-        case WM_SIZE:
-            RecalcLayout();
-            Invalidate();
-            break;
+        case WM_SIZE:                     return OnSize(msg, wparam, lparam);
+        case WM_DPICHANGED_BEFOREPARENT:  return OnDpiChangedBeforeParent(msg, wparam, lparam);
         }
 
         // Pass unhandled messages on for default processing.

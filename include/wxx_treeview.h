@@ -1,4 +1,4 @@
-// Win32++   Version 9.2
+// Win32++   Version 9.5
 // Release Date: TBA
 //
 //      David Nash
@@ -6,7 +6,7 @@
 //      url: https://sourceforge.net/projects/win32-framework
 //
 //
-// Copyright (c) 2005-2022  David Nash
+// Copyright (c) 2005-2024  David Nash
 //
 // Permission is hereby granted, free of charge, to
 // any person obtaining a copy of this software and
@@ -134,8 +134,8 @@ namespace Win32xx
         BOOL    SortChildrenCB(TVSORTCB* pSortFn, BOOL recurse) const;
 
     private:
-        CTreeView(const CTreeView&);                // Disable copy construction
-        CTreeView& operator = (const CTreeView&); // Disable assignment operator
+        CTreeView(const CTreeView&);              // Disable copy construction
+        CTreeView& operator=(const CTreeView&);   // Disable assignment operator
 
     };
 
@@ -148,13 +148,13 @@ namespace Win32xx
 
     // Creates a dragging bitmap for the specified item in a tree-view control.
     // It also creates an image list for the bitmap and adds the bitmap to the image list.
-    // An application can display the image when dragging the item by using the image list functions.
     // Refer to TreeView_CreateDragImage in the Windows API documentation for more information.
     inline CImageList CTreeView::CreateDragImage(HTREEITEM item) const
     {
         assert(IsWindow());
-        HIMAGELIST images = TreeView_CreateDragImage(*this, item);
-        return CImageList(images);
+        CImageList images;
+        images.CreateDragImage(*this, item);
+        return images;
     }
 
     // Deletes all items from a tree-view control.

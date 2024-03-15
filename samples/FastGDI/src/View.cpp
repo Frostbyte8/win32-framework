@@ -209,11 +209,24 @@ void CView::OnDraw(CDC& dc)
 {
     if (m_image.GetHandle())
     {
-        dc.SelectObject(m_image);
+        CMemDC memDC(dc);
+        CSize size = m_image.GetSize();
+        memDC.CreateCompatibleBitmap(dc, size.cx, size.cy);
+        memDC.SelectObject(m_image);
+        dc.BitBlt(0, 0, size.cx, size.cy, memDC, 0, 0, SRCCOPY);
     }
     else
     {
         // There is no image, so display a hint to get one
+
+            // Use the message font for Windows 7 and higher.
+        if (GetWinVersion() >= 2601)
+        {
+            NONCLIENTMETRICS info = GetNonClientMetrics();
+            LOGFONT lf = DpiScaleLogfont(info.lfMessageFont, 10);
+            dc.CreateFontIndirect(lf);
+        }
+
         CRect rc = GetClientRect();
         dc.DrawText(_T("Use the Menu or ToolBar to open a Bitmap File"), -1, rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
     }

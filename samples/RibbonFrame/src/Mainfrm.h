@@ -10,7 +10,7 @@
 
 ////////////////////////////////////////////////////////
 // CMainFrame manages the application's main window.
-// The main window is a frame which has a statusbar and
+// The main window is a frame that has a statusbar and
 // view window. It uses a ribbon in place of the menubar
 // and toolbar.
 class CMainFrame : public CRibbonFrame
@@ -31,8 +31,8 @@ protected:
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CMainFrame(const CMainFrame&);                // Disable copy construction
-    CMainFrame& operator = (const CMainFrame&);   // Disable assignment operator
+    CMainFrame(const CMainFrame&);               // Disable copy construction
+    CMainFrame& operator=(const CMainFrame&);    // Disable assignment operator
 
     // Command handlers
     LRESULT OnDropFile(WPARAM wparam);

@@ -22,13 +22,14 @@ public:
 protected:
     // Virtual functions that override base class functions
     virtual void    OnClose();
+    virtual LRESULT OnDpiChanged(UINT, WPARAM, LPARAM);
     virtual BOOL    OnInitDialog();
     virtual INT_PTR DialogProc(UINT msg, WPARAM wparam, LPARAM lparam);
     virtual BOOL    OnCommand(WPARAM wparam, LPARAM lparam);
 
 private:
-    CClientDialog(const CClientDialog&);                // Disable copy construction
-    CClientDialog& operator = (const CClientDialog&);   // Disable assignment operator
+    CClientDialog(const CClientDialog&);               // Disable copy construction
+    CClientDialog& operator=(const CClientDialog&);    // Disable assignment operator
 
     // Nested classes for this dialog's child windows
     // Nesting is optional. Its done to keep the IDE's class view tidy.

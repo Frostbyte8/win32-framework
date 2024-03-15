@@ -223,4 +223,3 @@ CDockDialog::CDockDialog()
     // Set the width of the splitter bar
     SetBarWidth(8);
 }
-

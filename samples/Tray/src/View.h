@@ -27,8 +27,8 @@ protected:
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CView(const CView&);                // Disable copy construction
-    CView& operator = (const CView&);   // Disable assignment operator
+    CView(const CView&);               // Disable copy construction
+    CView& operator=(const CView&);    // Disable assignment operator
 
     BOOL Minimize();
     void Restore();
@@ -37,6 +37,7 @@ private:
     BOOL    OnFileExit();
 
     // Message handlers
+    LRESULT OnDpiChanged(UINT, WPARAM, LPARAM lparam);
     LRESULT OnSize(UINT msg, WPARAM wparam, LPARAM lparam);
     LRESULT OnSysCommand(UINT msg, WPARAM wparam, LPARAM lparam);
     LRESULT OnTrayIcon(UINT msg, WPARAM wparam, LPARAM lparam);

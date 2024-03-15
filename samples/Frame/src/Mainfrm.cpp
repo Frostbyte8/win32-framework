@@ -6,6 +6,7 @@
 #include "Mainfrm.h"
 #include "resource.h"
 
+
 //////////////////////////////////
 // CMainFrame function definitions
 //
@@ -91,15 +92,6 @@ BOOL CMainFrame::OnFileExit()
     return TRUE;
 }
 
-// Called after the window is created.
-void CMainFrame::OnInitialUpdate()
-{
-    // The frame is now created.
-    // Place any additional startup code here.
-
-    TRACE("Frame created\n");
-}
-
 // Create the File Open dialog to choose the file to load.
 BOOL CMainFrame::OnFileOpen()
 {
@@ -141,18 +133,18 @@ BOOL CMainFrame::OnFilePreview()
     {
         m_isToolbarShown = GetToolBar().IsWindow() && GetToolBar().IsWindowVisible();
 
-        // Get the device contect of the default or currently chosen printer
+        // Get the device context of the default or currently chosen printer
         CPrintDialog printDlg;
         CDC printerDC = printDlg.GetPrinterDC();
 
-        // Create the preview window if required
+        // Create the preview window if required.
         if (!m_preview.IsWindow())
             m_preview.Create(*this);
 
-        // Specify the source of the PrintPage function
+        // Specify the source of the PrintPage function.
         m_preview.SetSource(m_view);
 
-        // Set the preview's owner (for messages)
+        // Set the preview's owner for notification messages.
         m_preview.DoPrintPreview(*this);
 
         // Swap views
@@ -202,6 +194,25 @@ BOOL CMainFrame::OnFilePrint()
     return TRUE;
 }
 
+// Limit the minimum size of the window.
+LRESULT CMainFrame::OnGetMinMaxInfo(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    LPMINMAXINFO lpMMI = (LPMINMAXINFO)lparam;
+    const CSize minimumSize(300, 250);
+    lpMMI->ptMinTrackSize.x = DpiScaleInt(minimumSize.cx);
+    lpMMI->ptMinTrackSize.y = DpiScaleInt(minimumSize.cy);
+    return FinalWindowProc(msg, wparam, lparam);
+}
+
+// Called after the window is created.
+void CMainFrame::OnInitialUpdate()
+{
+    // The frame is now created.
+    // Place any additional startup code here.
+
+    TRACE("Frame created\n");
+}
+
 // Process notification messages (WM_NOTIFY) sent by child windows
 LRESULT CMainFrame::OnNotify(WPARAM wparam, LPARAM lparam)
 {
@@ -224,6 +235,7 @@ LRESULT CMainFrame::OnPreviewClose()
     // Show the menu and toolbar
     ShowMenu(GetFrameMenu() != 0);
     ShowToolBar(m_isToolbarShown);
+    UpdateSettings();
 
     SetStatusText(LoadString(IDW_READY));
 
@@ -269,21 +281,20 @@ LRESULT CMainFrame::OnPreviewSetup()
 // parameters used before the frame window is created.
 void CMainFrame::PreCreate(CREATESTRUCT& cs)
 {
-    // The WS_EX_LAYOUTRTL style requires Windows 2000 or above in targetver.h
-    // cs.dwExStyle = WS_EX_LAYOUTRTL;      // Set Right-To-Left Window Layout
-    // cs.style &= ~WS_VISIBLE; // Remove the WS_VISIBLE style. The frame will be initially hidden.
-
-    // Call base clase to set defaults
+    // Call base class to set defaults
     CFrame::PreCreate(cs);
+
+    // The WS_EX_LAYOUTRTL style requires Windows 2000 or above in targetver.h
+    // cs.dwExStyle = WS_EX_LAYOUTRTL;  // Set Right-To-Left Window Layout
+    // cs.style &= ~WS_VISIBLE;         // Remove the WS_VISIBLE style. The frame will be initially hidden.
 }
 
-// Specifies the images for some of the menu items.
+// Specifies the images for menu item IDs matching the toolbar data.
 void CMainFrame::SetupMenuIcons()
 {
-    // Set the bitmap used for menu icons
     std::vector<UINT> data = GetToolBarData();
-    if (GetMenuIconHeight() >= 24)
-        SetMenuIcons(data, RGB(192, 192, 192), IDW_MAIN);
+    if ((GetMenuIconHeight() >= 24) && (GetWindowDpi(*this) != 192))
+        SetMenuIcons(data, RGB(192, 192, 192), IDW_MAIN, IDB_TOOLBAR_DIS);
     else
         SetMenuIcons(data, RGB(192, 192, 192), IDB_MENUICONS);
 }
@@ -305,6 +316,10 @@ void CMainFrame::SetupToolBar()
 
     AddToolBarButton( 0 );                      // Separator
     AddToolBarButton( IDM_HELP_ABOUT );
+
+    // The following is optional.
+    // Use separate imagelists for normal, hot and disabled buttons.
+    SetToolBarImages(RGB(192, 192, 192), IDW_MAIN, IDB_TOOLBAR_HOT, IDB_TOOLBAR_DIS);
 }
 
 // Process the frame's window messages.
@@ -314,6 +329,7 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
     {
         switch (msg)
         {
+        case WM_GETMINMAXINFO:    return OnGetMinMaxInfo(msg, wparam, lparam);
         case UWM_PREVIEWCLOSE:    return OnPreviewClose();
         case UWM_PREVIEWPRINT:    return OnPreviewPrint();
         case UWM_PREVIEWSETUP:    return OnPreviewSetup();

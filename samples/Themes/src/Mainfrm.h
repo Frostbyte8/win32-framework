@@ -10,9 +10,17 @@
 #include "resource.h"
 
 
+struct BandData
+{
+    UINT index;
+    UINT id;
+//    UINT style;
+//    UINT size;
+};
+
 ///////////////////////////////////////////////////////////
 // CMainFrame manages the application's main window.
-// The main window is a frame which has a menubar, toolbar,
+// The main window is a frame that has a menubar, toolbar,
 // statusbar and view window.
 class CMainFrame : public CFrame
 {
@@ -23,26 +31,29 @@ public:
 
 protected:
     // Virtual functions that override base class functions
-    virtual BOOL LoadRegistrySettings(LPCTSTR keyName);
-    virtual BOOL OnCommand(WPARAM wparam, LPARAM lparam);
-    virtual int  OnCreate(CREATESTRUCT& cs);
-    virtual void OnInitialUpdate();
-    virtual void OnMenuUpdate(UINT id);
-    virtual LRESULT OnNotify(WPARAM wparam, LPARAM lparam);
-    virtual LRESULT OnSysColorChange(UINT, WPARAM, LPARAM);
-    virtual BOOL SaveRegistrySettings();
-    virtual void SetupMenuIcons();
-    virtual void SetupToolBar();
-    virtual void SetTheme();
+    virtual BOOL    LoadRegistrySettings(LPCTSTR keyName);
+    virtual BOOL    OnCommand(WPARAM wparam, LPARAM lparam);
+    virtual int     OnCreate(CREATESTRUCT& cs);
+    virtual LRESULT OnDpiChanged(UINT msg, WPARAM wparam, LPARAM lparam);
+    virtual void    OnInitialUpdate();
+    virtual void    OnMenuUpdate(UINT id);
+    virtual BOOL    SaveRegistrySettings();
+    virtual void    SetupMenuIcons();
+    virtual void    SetupToolBar();
+    virtual void    SetTheme();
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CMainFrame(const CMainFrame&);                // Disable copy construction
-    CMainFrame& operator = (const CMainFrame&);   // Disable assignment operator
+    CMainFrame(const CMainFrame&);               // Disable copy construction
+    CMainFrame& operator=(const CMainFrame&);    // Disable assignment operator
 
-    void AddCombo();
+    LRESULT AddCombo();
+    void ArrangeBands();
     BOOL ChooseColor(UINT color);
+    void SetMenuBarColors(COLORREF hot1, COLORREF hot2, COLORREF pressed1, COLORREF pressed2, COLORREF outline, COLORREF text);
     void SetReBarColors(COLORREF backGround1, COLORREF backGround2, COLORREF band1, COLORREF band2);
+    void SetStatusBarColors(COLORREF bkgnd1, COLORREF bkgnd2, COLORREF text);
+    void SetToolBarColors(COLORREF hot1, COLORREF hot2, COLORREF pressed1, COLORREF pressed2, COLORREF outline);
     void ShowArrows(bool isShown);
     void ShowCards(bool isShown);
 
@@ -59,16 +70,17 @@ private:
     BOOL OnViewArrows();
     BOOL OnViewCards();
 
+    // Message handlers
+    LRESULT OnArrangeBands(UINT msg, WPARAM wparam, LPARAM lparam);
+    LRESULT OnGetDpiScaledSize(UINT msg, WPARAM wparam, LPARAM lparam);
+    LRESULT OnGetMinMaxInfo(UINT msg, WPARAM wparam, LPARAM lparam);
+
     // Member variables
     CView m_view;
     CToolBar m_arrows;
     CToolBar m_cards;
     CMyCombo m_comboBoxEx;
-    std::vector<UINT> m_bandIDs;
-    std::vector<UINT> m_bandStyles;
-    std::vector<UINT> m_bandSizes;
-    CImageList m_arrowImages;
-    CImageList m_cardImages;
+    std::vector<BandData> m_bandData;
 
     DWORD m_color;
     bool m_useThemes;
@@ -81,6 +93,7 @@ private:
     bool m_useLines;
     bool m_showArrows;
     bool m_showCards;
+    int  m_selectedItem;      // Currently selected ComboBoxEx item.
 };
 
 

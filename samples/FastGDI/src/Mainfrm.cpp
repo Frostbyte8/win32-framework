@@ -11,7 +11,7 @@
 //
 
 // Constructor for CMainFrame.
-CMainFrame::CMainFrame() : m_isToolbarShown(true)
+CMainFrame::CMainFrame() : m_isDPIChanging(false), m_isToolbarShown(true)
 {
 }
 
@@ -34,6 +34,17 @@ HWND CMainFrame::Create(HWND parent)
     LoadRegistryMRUSettings(4);
 
     return CFrame::Create(parent);
+}
+
+// Assigns the appropriately sized toolbar icons.
+// Required for per-monitor DPI-aware.
+void CMainFrame::DpiScaleToolBar()
+{
+    if (GetToolBar().IsWindow())
+    {
+        // Reset the toolbar images.
+        SetToolBarImages(RGB(192, 192, 192), IDW_MAIN, 0, 0);
+    }
 }
 
 // Displays the Color Adjust dialog to choose the red, blue and green adjustments.
@@ -119,6 +130,28 @@ int CMainFrame::OnCreate(CREATESTRUCT& cs)
 
     // call the base class function
     return CFrame::OnCreate(cs);
+}
+
+// Called when the effective dots per inch (dpi) for a window has changed.
+// This occurs when:
+//  - The window is moved to a new monitor that has a different DPI.
+//  - The DPI of the monitor hosting the window changes.
+LRESULT CMainFrame::OnDpiChanged(UINT, WPARAM, LPARAM)
+{
+    // Save the view's rectangle and disable scrolling.
+    m_scrollPos = m_view.GetScrollPosition();
+    m_view.SetScrollSizes();
+    m_viewRect = m_view.GetClientRect();
+
+    // Update the frame.
+    m_isDPIChanging = true;
+    ResetMenuMetrics();
+    UpdateSettings();
+    DpiScaleToolBar();
+    SetupMenuIcons();
+    RecalcLayout();
+
+    return 0;
 }
 
 // Issue a close request to the frame to end the application.
@@ -239,7 +272,7 @@ BOOL CMainFrame::OnFilePreview()
     {
         m_isToolbarShown = GetToolBar().IsWindow() && GetToolBar().IsWindowVisible();
 
-        // Get the device contect of the default or currently chosen printer
+        // Get the device context of the default or currently chosen printer
         CPrintDialog printDlg;
         CDC printerDC = printDlg.GetPrinterDC();
 
@@ -361,6 +394,7 @@ LRESULT CMainFrame::OnPreviewClose()
     // Show the menu and toolbar
     ShowMenu(GetFrameMenu() != 0);
     ShowToolBar(m_isToolbarShown);
+    UpdateSettings();
 
     SetStatusText(LoadString(IDW_READY));
 
@@ -411,10 +445,33 @@ LRESULT CMainFrame::OnPreviewSetup()
     return 0;
 }
 
+// Called when the frame's position has changed.
+LRESULT CMainFrame::OnWindowPosChanged(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    // The DPI can change when the window is moved to a different monitor.
+    if (m_isDPIChanging)
+    {
+        if (m_view.GetImage().GetHandle() != 0)
+        {
+            // Adjust the frame size to fit the view.
+            AdjustFrameRect(m_viewRect);
+
+            // Restore the scrollbars and scroll position.
+            CSize size = CSize(m_view.GetImageRect().Width(), m_view.GetImageRect().Height());
+            m_view.SetScrollSizes(size);
+            m_view.SetScrollPosition(m_scrollPos);
+        }
+
+        m_isDPIChanging = false;
+    }
+
+    return FinalWindowProc(msg, wparam, lparam);
+}
+
 // Saves the current bitmap to the specified file.
 void CMainFrame::SaveFile(CString& fileName)
 {
-    bool DoSave = TRUE;
+    bool doSave = true;
 
     try
     {
@@ -422,7 +479,7 @@ void CMainFrame::SaveFile(CString& fileName)
         File.Open(fileName, OPEN_EXISTING);
 
         if (IDYES != MessageBox(_T("File already exists. Do you wish to overwrite it?"), _T("Saving file ") + fileName, MB_YESNO | MB_ICONWARNING))
-            DoSave = FALSE;
+            doSave = false;
     }
 
     catch (const CFileException&)
@@ -430,7 +487,7 @@ void CMainFrame::SaveFile(CString& fileName)
         // Discard exception
     }
 
-    if (DoSave)
+    if (doSave)
     {
         m_pathName = fileName;
 
@@ -449,7 +506,7 @@ void CMainFrame::SaveFile(CString& fileName)
 void CMainFrame::SetupMenuIcons()
 {
     std::vector<UINT> data = GetToolBarData();
-    if (GetMenuIconHeight() >= 24)
+    if ((GetMenuIconHeight() >= 24) && (GetWindowDpi(*this) != 192))
         SetMenuIcons(data, RGB(192, 192, 192), IDW_MAIN);
     else
         SetMenuIcons(data, RGB(192, 192, 192), IDB_TOOLBAR16);
@@ -480,6 +537,8 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         case UWM_PREVIEWCLOSE:    return OnPreviewClose();
         case UWM_PREVIEWPRINT:    return OnPreviewPrint();
         case UWM_PREVIEWSETUP:    return OnPreviewSetup();
+
+        case WM_WINDOWPOSCHANGED:  return OnWindowPosChanged(msg, wparam, lparam);
         }
 
         return WndProcDefault(msg, wparam, lparam);

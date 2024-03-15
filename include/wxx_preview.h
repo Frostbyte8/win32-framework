@@ -1,4 +1,4 @@
-// Win32++   Version 9.2
+// Win32++   Version 9.5
 // Release Date: TBA
 //
 //      David Nash
@@ -6,7 +6,7 @@
 //      url: https://sourceforge.net/projects/win32-framework
 //
 //
-// Copyright (c) 2005-2022  David Nash
+// Copyright (c) 2005-2024  David Nash
 //
 // Permission is hereby granted, free of charge, to
 // any person obtaining a copy of this software and
@@ -139,7 +139,7 @@ namespace Win32xx
 
     private:
         CPreviewPane(const CPreviewPane&);               // Disable copy construction
-        CPreviewPane& operator = (const CPreviewPane&);  // Disable assignment operator
+        CPreviewPane& operator=(const CPreviewPane&);    // Disable assignment operator
         CBitmap m_bitmap;
     };
 
@@ -177,7 +177,7 @@ namespace Win32xx
 
     private:
         CPrintPreview(const CPrintPreview&);               // Disable copy construction
-        CPrintPreview& operator = (const CPrintPreview&);  // Disable assignment operator
+        CPrintPreview& operator=(const CPrintPreview&);    // Disable assignment operator
         CPreviewPane m_previewPane;               // Default CPreviewPane object
         CPreviewPane* m_pPreviewPane;             // Pointer to the CPreviewPane object we actually use
         CResizer m_resizer;
@@ -272,7 +272,7 @@ namespace Win32xx
             int border = 10;
             CRect rcClient = GetClientRect();
 
-            double ratio = double(bm.bmHeight) / double(bm.bmWidth);
+            double ratio = static_cast<double>(bm.bmHeight) / static_cast<double>(bm.bmWidth);
             int previewWidth;
             int previewHeight;
 

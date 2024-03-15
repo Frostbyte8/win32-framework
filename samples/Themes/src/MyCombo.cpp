@@ -11,51 +11,35 @@
 //
 CMyCombo::CMyCombo()
 {
-    SetImage(3, IDB_STATUS);
 }
 
 CMyCombo::~CMyCombo()
 {
 }
 
-void CMyCombo::PreCreate(CREATESTRUCT& cs)
+void CMyCombo::OnAttach()
 {
-    cs.lpszClass = WC_COMBOBOXEX;
-    cs.style = WS_VISIBLE | WS_CHILD | CBS_DROPDOWN | WS_CLIPCHILDREN;
-
-    // Set the height of the combobox in order to see a dropdown list.
-    cs.cy = 100;
+    SetImages(IDB_STATUS, 3);
 }
 
 BOOL CMyCombo::AddItems()
 {
-    typedef struct
-    {
-        int image;
-        int selectedImage;
-        int indent;
-        LPCTSTR text;        // Note: LPTSTR would be incorrect here.
-    } ITEMINFO;
+    std::vector<CString> itemsText;
+    itemsText.push_back("Item 1");
+    itemsText.push_back("Item 2");
+    itemsText.push_back("Item 3");
 
-    ITEMINFO IInf[ ] =
+    std::vector<CString>::iterator it;
+    for (it = itemsText.begin(); it != itemsText.end(); ++it)
     {
-        { 0, 0,  0, _T("Item 1")},
-        { 1, 1,  0, _T("Item 2")},
-        { 2, 2,  0, _T("Item 3")}
-    };
-
-    int MaxItems = 3;
-    for(int i = 0; i < MaxItems; ++i)
-    {
+        int i = static_cast<int>(it - itemsText.begin());
         COMBOBOXEXITEM cbei;
         ZeroMemory(&cbei, sizeof(cbei));
-        cbei.mask = CBEIF_TEXT | CBEIF_INDENT | CBEIF_IMAGE| CBEIF_SELECTEDIMAGE;
+        cbei.mask = CBEIF_TEXT | CBEIF_IMAGE | CBEIF_SELECTEDIMAGE;
         cbei.iItem          = i;
-        cbei.pszText        = const_cast<LPTSTR>(IInf[i].text);
-        cbei.cchTextMax     = sizeof(IInf[i].text);
-        cbei.iImage         = IInf[i].image;
-        cbei.iSelectedImage = IInf[i].selectedImage;
-        cbei.iIndent        = IInf[i].indent;
+        cbei.pszText        = const_cast<LPTSTR>(itemsText[i].c_str());
+        cbei.iImage         = i;
+        cbei.iSelectedImage = i;
 
         // Add the items to the ComboBox's dropdown list.
         if(-1 == InsertItem(cbei))
@@ -65,20 +49,24 @@ BOOL CMyCombo::AddItems()
     // Assign the existing image list to the ComboBoxEx control.
     SetImageList(m_images);
 
+    // Adjust the ComboBoxEx height for the image height.
+    SetItemHeight(-1, m_images.GetIconSize().cy +2);
+
     return TRUE;
 }
 
-void CMyCombo::SetImage(int image, UINT ImageID)
+void CMyCombo::SetImages(UINT bitmapID, int imageCount)
 {
     m_images.DeleteImageList();
 
-    CBitmap bm(ImageID);
-    BITMAP bmData = bm.GetBitmapData();
-    int iImageWidth  = bmData.bmWidth / image;
-    int iImageHeight = bmData.bmHeight;
+    CBitmap bitmap(bitmapID);
+    bitmap = DpiScaleUpBitmap(bitmap);
+    CSize bitmapSize = bitmap.GetSize();
+    int imageWidth  = bitmapSize.cx / imageCount;
+    int imageHeight = bitmapSize.cy;
 
-    COLORREF crMask = RGB(255,0,255);
-    m_images.Create(iImageWidth, iImageHeight, ILC_COLOR32 | ILC_MASK, image, 0);
-    m_images.Add(bm, crMask);
+    COLORREF mask = RGB(255,0,255);
+    m_images.Create(imageWidth, imageHeight, ILC_COLOR32 | ILC_MASK, imageCount, 0);
+    m_images.Add(bitmap, mask);
 }
 

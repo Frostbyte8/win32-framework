@@ -68,16 +68,16 @@ void CMainFrame::LoadDefaultDockers()
     DWORD style = DS_CLIENTEDGE; // The style added to each docker
 
     // Add the parent dockers
-    CDocker* pDockRight  = AddDockedChild(new CDockClasses, DS_DOCKED_RIGHT | style, 250, ID_DOCK_CLASSES1);
-    CDocker* pDockBottom = AddDockedChild(new CDockText, DS_DOCKED_BOTTOM | style, 100, ID_DOCK_TEXT1);
+    CDocker* pDockRight  = AddDockedChild(new CDockClasses, DS_DOCKED_RIGHT | style, DpiScaleInt(250), ID_DOCK_CLASSES1);
+    CDocker* pDockBottom = AddDockedChild(new CDockText, DS_DOCKED_BOTTOM | style, DpiScaleInt(100), ID_DOCK_TEXT1);
 
     // Add the remaining dockers
-    pDockRight->AddDockedChild(new CDockFiles, DS_DOCKED_CONTAINER | style, 250, ID_DOCK_FILES1);
-    pDockRight->AddDockedChild(new CDockDialog, DS_DOCKED_CONTAINER | style, 250, ID_DOCK_DIALOG);
+    pDockRight->AddDockedChild(new CDockFiles, DS_DOCKED_CONTAINER | style, DpiScaleInt(250), ID_DOCK_FILES1);
+    pDockRight->AddDockedChild(new CDockDialog, DS_DOCKED_CONTAINER | style, DpiScaleInt(250), ID_DOCK_DIALOG);
 
-    pDockBottom->AddDockedChild(new CDockOutput, DS_DOCKED_CONTAINER | style, 100, ID_DOCK_OUTPUT1);
-    pDockBottom->AddDockedChild(new CDockText, DS_DOCKED_CONTAINER | style, 100, ID_DOCK_TEXT2);
-    pDockBottom->AddDockedChild(new CDockOutput, DS_DOCKED_CONTAINER | style, 100, ID_DOCK_OUTPUT2);
+    pDockBottom->AddDockedChild(new CDockOutput, DS_DOCKED_CONTAINER | style, DpiScaleInt(100), ID_DOCK_OUTPUT1);
+    pDockBottom->AddDockedChild(new CDockText, DS_DOCKED_CONTAINER | style, DpiScaleInt(100), ID_DOCK_TEXT2);
+    pDockBottom->AddDockedChild(new CDockOutput, DS_DOCKED_CONTAINER | style, DpiScaleInt(100), ID_DOCK_OUTPUT2);
 }
 
 // Loads the default arrangement of MDIs.
@@ -153,7 +153,6 @@ BOOL CMainFrame::OnCloseMDIs()
 void CMainFrame::OnClose()
 {
     SaveRegistrySettings();
-    m_myTabbedMDI.CloseAllMDIChildren();
     Destroy();
 }
 
@@ -327,6 +326,16 @@ BOOL CMainFrame::OnFileNewTree()
     return TRUE;
 }
 
+// Limit the minimum size of the window.
+LRESULT CMainFrame::OnGetMinMaxInfo(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    LPMINMAXINFO lpMMI = (LPMINMAXINFO)lparam;
+    const CSize minimumSize(600, 400);
+    lpMMI->ptMinTrackSize.x = DpiScaleInt(minimumSize.cx);
+    lpMMI->ptMinTrackSize.y = DpiScaleInt(minimumSize.cy);
+    return FinalWindowProc(msg, wparam, lparam);
+}
+
 // Toggle hiding of tabs for containers with a single tab.
 BOOL CMainFrame::OnHideSingleTab()
 {
@@ -363,7 +372,7 @@ void CMainFrame::OnInitialUpdate()
 
     // PreCreate initially set the window as invisible, so show it now.
     ShowWindow(GetInitValues().showCmd);
-    RedrawWindow(RDW_INVALIDATE | RDW_UPDATENOW | RDW_ERASE | RDW_ALLCHILDREN);
+    RedrawWindow();
 }
 
 // Updates menu items before they are displayed.
@@ -472,7 +481,7 @@ void CMainFrame::SetupMenuIcons()
 {
     // Load the default set of icons from the toolbar
     std::vector<UINT> data = GetToolBarData();
-    if (GetMenuIconHeight() >= 24)
+    if ((GetMenuIconHeight() >= 24) && (GetWindowDpi(*this) != 192))
         SetMenuIcons(data, RGB(192, 192, 192), IDW_MAIN);
     else
         SetMenuIcons(data, RGB(192, 192, 192), IDB_TOOLBAR16);
@@ -509,9 +518,10 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
 {
     try
     {
-    //  switch (msg)
-    //  {
-    //  }
+        switch (msg)
+        {
+        case WM_GETMINMAXINFO:    return OnGetMinMaxInfo(msg, wparam, lparam);
+        }
 
         // Always pass unhandled messages on to WndProcDefault.
         return WndProcDefault(msg, wparam, lparam);

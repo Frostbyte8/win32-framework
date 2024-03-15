@@ -28,7 +28,6 @@ public:
     virtual ~CMainFrame();
     virtual HWND Create(HWND parent = 0);
 
-
 protected:
     // Virtual functions that override base class functions
     virtual CDocker* NewDockerFromID(int id);
@@ -43,8 +42,8 @@ protected:
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CMainFrame(const CMainFrame&);                // Disable copy construction
-    CMainFrame& operator = (const CMainFrame&);   // Disable assignment operator
+    CMainFrame(const CMainFrame&);               // Disable copy construction
+    CMainFrame& operator=(const CMainFrame&);    // Disable assignment operator
 
     // Command handlers
     BOOL OnContainerTabsAtTop();
@@ -52,6 +51,9 @@ private:
     BOOL OnDockDefault();
     BOOL OnFileExit();
     BOOL OnHideSingleTab();
+
+    // Message handlers
+    LRESULT OnGetMinMaxInfo(UINT msg, WPARAM wparam, LPARAM lparam);
 
     void HideSingleContainerTab(bool hideSingle);
     void LoadDefaultDockers();

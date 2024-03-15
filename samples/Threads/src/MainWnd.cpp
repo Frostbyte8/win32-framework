@@ -47,6 +47,7 @@ HWND CMainWindow::Create(HWND parent)
 
     // Create the main window.
     CRect rc(20 , 50, 400, 500);
+    rc = DpiScaleRect(rc);
     return CreateEx(WS_EX_TOPMOST, NULL, str, WS_OVERLAPPEDWINDOW | WS_VISIBLE,
         rc, parent, 0);
 }
@@ -87,7 +88,7 @@ int CMainWindow::OnCreate(CREATESTRUCT&)
             AppendText(str);
         }
 
-        catch (CWinException &e)
+        catch (const CWinException &e)
         {
             // Display the exception and allow the program to continue.
             CString Error = CString(e.GetText()) + "\n" + CString(e.GetErrorString());
@@ -141,6 +142,15 @@ LRESULT CMainWindow::OnCloseThread(WPARAM wparam)
     return 0;
 }
 
+LRESULT CMainWindow::OnDpiChanged(UINT, WPARAM, LPARAM lparam)
+{
+    LPRECT prc = reinterpret_cast<LPRECT>(lparam);
+    SetWindowPos(0, *prc, SWP_SHOWWINDOW);
+    m_edit.DPISetFont();
+
+    return 0;
+}
+
 // Called in the main window is resized.
 LRESULT CMainWindow::OnSize()
 {
@@ -172,6 +182,7 @@ LRESULT CMainWindow::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         case UWM_APPENDTEXT:     return OnAppendText(wparam);
         case UWM_CLOSETHREAD:    return OnCloseThread(wparam);
         case UWM_WINDOWCREATED:  return OnWindowCreated();
+        case WM_DPICHANGED:      return OnDpiChanged(msg, wparam, lparam);
         case WM_SIZE:            return OnSize();
         }
 

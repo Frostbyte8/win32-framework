@@ -74,6 +74,16 @@ STDMETHODIMP CMainFrame::Execute(UINT32 cmdID, UI_EXECUTIONVERB verb, const PROP
     return S_OK;
 }
 
+// Limit the minimum size of the window.
+LRESULT CMainFrame::OnGetMinMaxInfo(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    LPMINMAXINFO lpMMI = (LPMINMAXINFO)lparam;
+    const CSize minimumSize(500, 300);
+    lpMMI->ptMinTrackSize.x = DpiScaleInt(minimumSize.cx);
+    lpMMI->ptMinTrackSize.y = DpiScaleInt(minimumSize.cy);
+    return FinalWindowProc(msg, wparam, lparam);
+}
+
 // The IUIRibbon interface provides the ability to specify settings and properties for thr ribbon.
 IUIRibbon* CMainFrame::GetIUIRibbon() const
 {
@@ -313,7 +323,7 @@ void CMainFrame::OnInitialUpdate()
 {
     // Add some Dockers to the Ribbon Frame
     DWORD style = DS_CLIENTEDGE; // The style added to each docker
-    int dockWidth = 150;
+    int dockWidth = DpiScaleInt(150);
     CDocker* pDock1 = AddDockedChild(new CDockFiles, DS_DOCKED_LEFT | style, dockWidth);
     CDocker* pDock2 = AddDockedChild(new CDockFiles, DS_DOCKED_RIGHT | style, dockWidth);
 
@@ -466,6 +476,7 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         case UWM_DROPFILE:          return OnDropFile(wparam);
         case UWM_GETALLPOINTS:      return OnGetAllPoints();
         case UWM_SENDPOINT:         return OnSendPoint(wparam);
+        case WM_GETMINMAXINFO:      return OnGetMinMaxInfo(msg, wparam, lparam);
         }
 
         // Use the default message handling for remaining messages.

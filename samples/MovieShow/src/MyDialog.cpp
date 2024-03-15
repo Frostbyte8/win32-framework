@@ -47,7 +47,8 @@ INT_PTR CViewDialog::DialogProc(UINT msg, WPARAM wparam, LPARAM lparam)
 
         switch (msg)
         {
-        case WM_MOUSEACTIVATE:      return OnMouseActivate(msg, wparam, lparam);
+        case WM_MOUSEACTIVATE:           return OnMouseActivate(msg, wparam, lparam);
+        case WM_DPICHANGED_BEFOREPARENT: return OnDpiChangedBeforeParent(msg, wparam, lparam);
         }
 
         // Pass unhandled messages on to parent DialogProc.
@@ -62,6 +63,15 @@ INT_PTR CViewDialog::DialogProc(UINT msg, WPARAM wparam, LPARAM lparam)
 
         return 0;
     }
+}
+
+// Called in response to a WM_DPICHANGED_BEFOREPARENT message that is sent to child
+// windows after a DPI change. A WM_DPICHANGED_BEFOREPARENT is only received when the
+// application is DPI_AWARENESS_PER_MONITOR_AWARE.
+LRESULT CViewDialog::OnDpiChangedBeforeParent(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    SetDialogFonts();
+    return FinalWindowProc(msg, wparam, lparam);
 }
 
 // Called when the dialog is created, but before it is displayed.
@@ -88,12 +98,8 @@ BOOL CViewDialog::OnInitDialog()
     wp.rcNormalPosition.bottom = wp.rcNormalPosition.top + width * 3 / 2;
     m_picture.SetWindowPlacement(wp);
 
-    CRect rc = m_year.GetWindowRect();
-    MapWindowPoints(*this, rc);
-
-    // Initialize dialog resizing
-    m_Resizer.Initialize(*this, CRect(0, 0, width + rc.right + 10, 210));
-
+    // Position the dialog elements.
+    m_Resizer.Initialize(*this, CRect(0, 0, DpiScaleInt(240), DpiScaleInt(240)));
     m_Resizer.AddChild(m_static1, CResizer::topleft, 0);
     m_Resizer.AddChild(m_static2, CResizer::topleft, 0);
     m_Resizer.AddChild(m_static3, CResizer::topleft, 0);
@@ -122,6 +128,20 @@ LRESULT CViewDialog::OnMouseActivate(UINT msg, WPARAM wparam, LPARAM lparam)
     return FinalWindowProc(msg, wparam, lparam);
 }
 
+// Sets the fonts used within the dialog.
+void CViewDialog::SetDialogFonts()
+{
+    // Set the fonts.
+    NONCLIENTMETRICS info = GetNonClientMetrics();
+    LOGFONT lf = info.lfMenuFont;
+    int dpi = GetWindowDpi(*this);
+    lf.lfHeight = -MulDiv(9, dpi, POINTS_PER_INCH);
+    CFont textFont(lf);
+
+    GetActors().SetFont(textFont, FALSE);
+    GetInfo().SetFont(textFont, FALSE);
+}
+
 
 ///////////////////////////////////
 // CDockDialog function definitions
@@ -136,4 +156,3 @@ CDockDialog::CDockDialog() : m_view(IDD_MYDIALOG)
     // Set the width of the splitter bar
     SetBarWidth(8);
 }
-

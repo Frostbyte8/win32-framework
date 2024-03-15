@@ -1,4 +1,4 @@
-// Win32++   Version 9.2
+// Win32++   Version 9.5
 // Release Date: TBA
 //
 //      David Nash
@@ -6,7 +6,7 @@
 //      url: https://sourceforge.net/projects/win32-framework
 //
 //
-// Copyright (c) 2005-2022  David Nash
+// Copyright (c) 2005-2024  David Nash
 //
 // Permission is hereby granted, free of charge, to
 // any person obtaining a copy of this software and
@@ -42,7 +42,7 @@
 
 // These classes add support for property sheets to Win32++. A property sheet
 // will have one or more property pages. These pages are much like dialogs
-// which are presented within a tabbed dialog or within a wizard. The data
+// that are presented within a tabbed dialog or within a wizard. The data
 // on a property page can be validated before the next page is presented.
 // Property sheets have three modes of use: Modal, Modeless, and Wizard.
 //
@@ -102,8 +102,8 @@ namespace Win32xx
         void SetWizardButtons(DWORD flags) const;
 
     private:
-        CPropertyPage(const CPropertyPage&);                // Disable copy construction
-        CPropertyPage& operator = (const CPropertyPage&);   // Disable assignment operator
+        CPropertyPage(const CPropertyPage&);               // Disable copy construction
+        CPropertyPage& operator=(const CPropertyPage&);    // Disable assignment operator
 
         static UINT CALLBACK StaticPropSheetPageProc(HWND wnd, UINT msg, LPPROPSHEETPAGE ppsp);
         static INT_PTR CALLBACK StaticDialogProc(HWND hDlg, UINT msg, WPARAM wparam, LPARAM lparam);
@@ -156,7 +156,7 @@ namespace Win32xx
 
     private:
         CPropertySheet(const CPropertySheet&);              // Disable copy construction
-        CPropertySheet& operator = (const CPropertySheet&); // Disable assignment operator
+        CPropertySheet& operator=(const CPropertySheet&); // Disable assignment operator
         void BuildPageArray();
         static void CALLBACK Callback(HWND hwnd, UINT msg, LPARAM lparam);
 
@@ -463,11 +463,10 @@ namespace Win32xx
         case PSPCB_CREATE:
         {
             TLSData* pTLSData = GetApp()->GetTlsData();
+            assert(pTLSData != NULL);
             if (pTLSData == NULL)
             {
                 // Thread Local Storage data isn't assigned.
-                // We should never get here.
-                TRACE("*** Warning in CPropertyPage::StaticPropSheetPageProc: TLS data isn't assigned ***\n");
                 return 0;
             }
 
@@ -498,11 +497,10 @@ namespace Win32xx
             }
         }
 
+        assert(pPage != 0);
         if (pPage == 0)
         {
             // Got a message for a window that's not in the map.
-            // We should never get here.
-            TRACE("*** Warning in CPropertyPage::StaticDialogProc: HWND not in window map ***\n");
             return 0;
         }
 
@@ -611,17 +609,12 @@ namespace Win32xx
 
                 CPropertySheet* w = static_cast<CPropertySheet*>(pTLSData->pWnd);
 
-                if (w != 0)
+                assert(w != NULL);
+                if (w != NULL)
                 {
                     // Subclass the property sheet, so that messages are forwarded
                     // to CWnd::StaticWindowProc for handling in WndProc.
                     w->Attach(wnd);
-                }
-                else
-                {
-                    // Thread Local Storage data isn't assigned.
-                    // We should never get here.
-                    TRACE("*** Warning in CPropertySheet::Callback: TLS data isn't assigned. ***\n");
                 }
             }
             break;

@@ -209,10 +209,9 @@ INT_PTR CMyDialog::DialogProc(UINT msg, WPARAM wparam, LPARAM lparam)
 {
     try
     {
-        //  switch (msg)
-        //  {
-        //
-        //  }
+    //    switch (msg)
+    //    {
+    //    }
 
         // Pass unhandled messages on to parent DialogProc
         return DialogProcDefault(msg, wparam, lparam);

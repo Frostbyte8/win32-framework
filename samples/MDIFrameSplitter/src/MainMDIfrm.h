@@ -27,8 +27,8 @@ protected:
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CMainMDIFrame(const CMainMDIFrame&);                // Disable copy construction
-    CMainMDIFrame& operator = (const CMainMDIFrame&);   // Disable assignment operator
+    CMainMDIFrame(const CMainMDIFrame&);               // Disable copy construction
+    CMainMDIFrame& operator=(const CMainMDIFrame&);    // Disable assignment operator
 
     // Command handlers
     BOOL OnFileClose();
@@ -38,6 +38,10 @@ private:
     BOOL OnMDICloseAll();
     BOOL OnMDIIconArrange();
     BOOL OnMDITile();
+
+    // Message handlers
+    LRESULT OnGetMinMaxInfo(UINT msg, WPARAM wparam, LPARAM lparam);
+    LRESULT OnMouseActivate(UINT msg, WPARAM wparam, LPARAM lparam);
 };
 
 #endif  //MAINMDIFRM_H

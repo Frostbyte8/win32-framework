@@ -19,6 +19,7 @@ class CMainFrame : public CFrame
 public:
     CMainFrame();
     CDoc& GetDoc()      { return m_view.GetDoc(); }
+    void SetDarkMode(bool isDarkMode);
     void SetDarkTheme();
 
     // Virtual functions that override public base class functions
@@ -39,8 +40,8 @@ protected:
     virtual LRESULT WndProc(UINT, WPARAM, LPARAM);
 
 private:
-    CMainFrame(const CMainFrame&);                // Disable copy construction
-    CMainFrame& operator = (const CMainFrame&);   // Disable assignment operator
+    CMainFrame(const CMainFrame&);               // Disable copy construction
+    CMainFrame& operator=(const CMainFrame&);    // Disable assignment operator
 
     // Command Handlers
     BOOL OnFileExit();

@@ -10,7 +10,7 @@
 
 ///////////////////////////////////////////////////////////
 // CMainFrame manages the application's main window.
-// The main window is a frame which has a menubar, toolbar,
+// The main window is a frame that has a menubar, toolbar,
 // statusbar and view window.
 class CMainFrame : public CFrame
 {
@@ -25,6 +25,7 @@ protected:
     virtual void OnClose();
     virtual BOOL OnCommand(WPARAM wparam, LPARAM lparam);
     virtual int OnCreate(CREATESTRUCT& cs);
+    virtual LRESULT OnDpiChanged(UINT msg, WPARAM wparam, LPARAM lparam);
     virtual void OnInitialUpdate();
     virtual void OnMenuUpdate(UINT id);
     virtual LRESULT OnNotify(WPARAM wparam, LPARAM lparam);
@@ -33,15 +34,15 @@ protected:
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CMainFrame(const CMainFrame&);                // Disable copy construction
-    CMainFrame& operator = (const CMainFrame&);   // Disable assignment operator
+    CMainFrame(const CMainFrame&);               // Disable copy construction
+    CMainFrame& operator=(const CMainFrame&);    // Disable assignment operator
 
     // static callbacks
     static  DWORD CALLBACK MyStreamInCallback(DWORD cookie, LPBYTE pBuffer, LONG cb, LONG* pcb);
     static  DWORD CALLBACK MyStreamOutCallback(DWORD cookie, LPBYTE pBuffer, LONG cb, LONG* pcb);
 
     // Command handlers
-    void OnDropFiles(HDROP hDropInfo);
+    void OnDropFiles(HDROP dropInfo);
     BOOL OnEditCut();
     BOOL OnEditCopy();
     BOOL OnEditPaste();

@@ -22,6 +22,7 @@ CDockSimple::CDockSimple()
     SetCaption (_T("Simple View - Docking"));
 }
 
+
 /////////////////////////////////
 // CDockText function definitions
 //
@@ -35,7 +36,7 @@ CDockText::CDockText()
     // Set the width of the splitter bar.
     SetBarWidth(8);
 
-    SetCaption (_T("Text View - Docking"));
+    SetCaption(_T("Text View - Docking"));
 }
 
 
@@ -52,7 +53,7 @@ CDockClasses::CDockClasses()
     // Set the width of the splitter bar.
     SetBarWidth(8);
 
-    SetCaption (_T("Class View - Docking"));
+    SetCaption(_T("Class View - Docking"));
 }
 
 
@@ -69,6 +70,6 @@ CDockFiles::CDockFiles()
     // Set the width of the splitter bar.
     SetBarWidth(8);
 
-    SetCaption (_T("Files View - Docking"));
+    SetCaption(_T("Files View - Docking"));
 }
 

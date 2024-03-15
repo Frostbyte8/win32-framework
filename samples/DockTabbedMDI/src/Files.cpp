@@ -23,43 +23,6 @@ CViewFiles::~CViewFiles()
     if (IsWindow()) DeleteAllItems();
 }
 
-// Called when a window handle (HWND) is attached to CViewFiles.
-void CViewFiles::OnAttach()
-{
-    // Set the image lists
-    m_smallImages.Create(16, 15, ILC_COLOR32 | ILC_MASK, 1, 0);
-    CBitmap bm(IDB_FILEVIEW);
-    m_smallImages.Add( bm, RGB(255, 0, 255) );
-    SetImageList(m_smallImages, LVSIL_SMALL);
-
-    // Set the report style
-    DWORD style = GetStyle();
-    SetStyle((style & ~LVS_TYPEMASK) | LVS_REPORT);
-
-    SetColumns();
-    InsertItems();
-}
-
-// Configures the columns (header control) of the list view.
-void CViewFiles::SetColumns()
-{
-    // empty the list
-    DeleteAllItems();
-
-    // initialize the columns
-    LV_COLUMN lvColumn;
-    ZeroMemory(&lvColumn, sizeof(LV_COLUMN));
-    lvColumn.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
-    lvColumn.fmt = LVCFMT_LEFT;
-    lvColumn.cx = 120;
-    TCHAR szString[3][20] = {_T("Name"), _T("Size"), _T("Type")};
-    for(int i = 0; i < 3; ++i)
-    {
-        lvColumn.pszText = szString[i];
-        InsertColumn(i, lvColumn);
-    }
-}
-
 // Insert 4 list view items.
 void CViewFiles::InsertItems()
 {
@@ -83,10 +46,74 @@ void CViewFiles::InsertItems()
     SetItemText(item, 2, _T("Folder"));
 }
 
+// Called when a window handle (HWND) is attached to CViewFiles.
+void CViewFiles::OnAttach()
+{
+    SetDPIImages();
+
+    // Set the report style
+    DWORD style = GetStyle();
+    SetStyle((style & ~LVS_TYPEMASK) | LVS_REPORT);
+
+    SetColumns();
+    InsertItems();
+}
+
 // Called when the window is destroyed.
 void CViewFiles::OnDestroy()
 {
     SetImageList(0, LVSIL_SMALL);
+}
+
+// Respond to a mouse click on the window
+LRESULT CViewFiles::OnMouseActivate(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    // Set window focus. The docker will now report this as active.
+    SetFocus();
+    return FinalWindowProc(msg, wparam, lparam);
+}
+
+// Called in response to a WM_DPICHANGED_BEFOREPARENT message which is sent to child
+// windows after a DPI change. A WM_DPICHANGED_BEFOREPARENT is only received when the
+// application is DPI_AWARENESS_PER_MONITOR_AWARE.
+LRESULT CViewFiles::OnDpiChangedBeforeParent(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    SetDPIImages();
+    SetDPIColumnWidths();
+    return FinalWindowProc(msg, wparam, lparam);
+}
+
+// Configures the columns (header control) of the list view.
+void CViewFiles::SetColumns()
+{
+    // empty the list
+    DeleteAllItems();
+
+    // Add the column items.
+    InsertColumn(0, _T("Name"));
+    InsertColumn(1, _T("Size"));
+    InsertColumn(2, _T("Type"));
+    SetDPIColumnWidths();
+}
+
+// Adjusts the listview column widths in response to window DPI changes.
+void CViewFiles::SetDPIColumnWidths()
+{
+    SetColumnWidth(0, DpiScaleInt(120));
+    SetColumnWidth(1, DpiScaleInt(50));
+    SetColumnWidth(2, DpiScaleInt(100));
+}
+
+// Adjusts the listview image sizes in response to window DPI changes.
+void CViewFiles::SetDPIImages()
+{
+    // Set the image lists
+    CBitmap bmImage(IDB_FILEVIEW);
+    bmImage = DpiScaleUpBitmap(bmImage);
+    int scale = bmImage.GetSize().cy / 15;
+    m_smallImages.Create(scale * 16, scale * 15, ILC_COLOR32 | ILC_MASK, 1, 0);
+    m_smallImages.Add(bmImage, RGB(255, 0, 255));
+    SetImageList(m_smallImages, LVSIL_SMALL);
 }
 
 // Process the list-view's window messages.
@@ -96,9 +123,8 @@ LRESULT CViewFiles::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
     {
         switch (msg)
         {
-        case WM_MOUSEACTIVATE:
-            SetFocus();
-            break;
+        case WM_MOUSEACTIVATE:      return OnMouseActivate(msg, wparam, lparam);
+        case WM_DPICHANGED_BEFOREPARENT:   return OnDpiChangedBeforeParent(msg, wparam, lparam);
         }
 
         return WndProcDefault(msg, wparam, lparam);
@@ -140,4 +166,3 @@ CDockFiles::CDockFiles()
     // Set the width of the splitter bar.
     SetBarWidth(8);
 }
-

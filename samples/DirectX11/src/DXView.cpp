@@ -400,8 +400,10 @@ int CDXView::OnCreate(CREATESTRUCT&)
 // Set the window creation parameters.
 void CDXView::PreCreate(CREATESTRUCT& cs)
 {
-    cs.cx = 800;
-    cs.cy = 600;
+    cs.x = DpiScaleInt(80);
+    cs.y = DpiScaleInt(60);
+    cs.cx = DpiScaleInt(800);
+    cs.cy = DpiScaleInt(600);
 }
 
 // Render a frame.
@@ -462,6 +464,13 @@ LRESULT CDXView::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         case WM_DESTROY:
             PostQuitMessage(0);
             break;
+
+        case WM_DPICHANGED:
+        {
+            LPRECT prc = reinterpret_cast<LPRECT>(lparam);
+            SetWindowPos(0, *prc, SWP_SHOWWINDOW);
+            break;
+        }
         }
 
         return WndProcDefault(msg, wparam, lparam);

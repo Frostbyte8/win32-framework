@@ -28,11 +28,8 @@ CViewClasses::~CViewClasses()
 // Called when a window handle (HWND) is attached to CViewClasses.
 void CViewClasses::OnAttach()
 {
-    //set the image lists
-    m_normalImages.Create(16, 15, ILC_COLOR32 | ILC_MASK, 1, 0);
-    CBitmap bm(IDB_CLASSVIEW);
-    m_normalImages.Add( bm, RGB(255, 0, 0) );
-    SetImageList(m_normalImages, LVSIL_NORMAL);
+    // Set the image lists
+    SetDPIImages();
 
     // Adjust style to show lines and [+] button
     DWORD dwStyle = GetStyle();
@@ -67,7 +64,7 @@ void CViewClasses::OnDestroy()
     SetImageList(0, LVSIL_SMALL);
 }
 
-// Respond to a mouse click on the window
+// Respond to a mouse click on the window.
 LRESULT CViewClasses::OnMouseActivate(UINT msg, WPARAM wparam, LPARAM lparam)
 {
     // Set window focus. The docker will now report this as active.
@@ -75,11 +72,35 @@ LRESULT CViewClasses::OnMouseActivate(UINT msg, WPARAM wparam, LPARAM lparam)
     return FinalWindowProc(msg, wparam, lparam);
 }
 
+// Called in response to a WM_DPICHANGED_BEFOREPARENT message which is sent to child
+// windows after a DPI change. A WM_DPICHANGED_BEFOREPARENT is only received when the
+// application is DPI_AWARENESS_PER_MONITOR_AWARE.
+LRESULT CViewClasses::OnDpiChangedBeforeParent(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    SetDPIImages();
+    return FinalWindowProc(msg, wparam, lparam);
+}
+
 // Set the CREATESTURCT parameters befoe the window is created.
 void CViewClasses::PreCreate(CREATESTRUCT& cs)
 {
-    cs.style = TVS_NOTOOLTIPS|WS_CHILD;
-    cs.lpszClass = WC_TREEVIEW;
+    cs.style = TVS_NOTOOLTIPS | WS_CHILD;
+}
+
+// Adjusts the treeview image sizes in response to window DPI changes.
+void CViewClasses::SetDPIImages()
+{
+    // Resize the image list.
+    CBitmap bmImage(IDB_CLASSVIEW);
+    bmImage = DpiScaleUpBitmap(bmImage);
+    int scale = bmImage.GetSize().cy / 15;
+    m_normalImages.Create(scale * 16, scale * 15, ILC_COLOR32 | ILC_MASK, 1, 0);
+    m_normalImages.Add(bmImage, RGB(255, 0, 0));
+    SetImageList(m_normalImages, LVSIL_NORMAL);
+
+    // Reset the item indentation.
+    int imageWidth = m_normalImages.GetIconSize().cx;
+    SetIndent(imageWidth);
 }
 
 // Process the tree-view's window messages.
@@ -90,6 +111,7 @@ LRESULT CViewClasses::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         switch (msg)
         {
         case WM_MOUSEACTIVATE:      return OnMouseActivate(msg, wparam, lparam);
+        case WM_DPICHANGED_BEFOREPARENT: return OnDpiChangedBeforeParent(msg, wparam, lparam);
         }
 
         return WndProcDefault(msg, wparam, lparam);
@@ -119,33 +141,6 @@ CContainClasses::CContainClasses()
     SetView(m_viewClasses);
 }
 
-// Adds a ComboBoxEx control to the toolbar.
-void CContainClasses::AddCombo()
-{
-    int comboWidth = 120;
-    CToolBar& tb = GetToolBar();
-    if (tb.CommandToIndex(IDM_FILE_SAVE) < 0) return;
-
-    // Adjust button width and convert to separator
-    tb.SetButtonStyle(IDM_FILE_SAVE, TBSTYLE_SEP);
-    tb.SetButtonWidth(IDM_FILE_SAVE, comboWidth);
-
-    // Determine the size and position of the ComboBox
-    int index = tb.CommandToIndex(IDM_FILE_SAVE);
-    CRect rect = tb.GetItemRect(index);
-
-    // Create the ComboboxEx window
-    m_comboBoxEx.Create(tb);
-    m_comboBoxEx.SetWindowPos(0, rect, SWP_NOACTIVATE);
-
-    // Adjust the toolbar height to accommodate the ComboBoxEx control
-    CRect rc = m_comboBoxEx.GetWindowRect();
-    tb.SetButtonSize( rc.Height(), rc.Height() );
-
-    // Add the ComboBox's items
-    m_comboBoxEx.AddItems();
-}
-
 // Process the command messages (WM_COMMAND).
 BOOL CContainClasses::OnCommand(WPARAM wparam, LPARAM)
 {
@@ -169,7 +164,7 @@ BOOL CContainClasses::OnFileNew()
 }
 
 // Demonstrates responding to the container's toolbar.
-// Inbokes the program's Help About dialog.
+// Invokes the program's Help About dialog.
 BOOL CContainClasses::OnHelpAbout()
 {
     // Send a message to the frame requesting the help dialog
@@ -180,28 +175,25 @@ BOOL CContainClasses::OnHelpAbout()
 // Set the Bitmap resource for the toolbar
 void CContainClasses::SetupToolBar()
 {
-    SetToolBarImages(RGB(192,192,192), IDW_MAIN, 0, 0);
+    SetToolBarImages(RGB(192, 192, 192), IDW_MAIN, 0, 0);
 
     // Set the Resource IDs for the toolbar buttons
-    AddToolBarButton( IDM_FILE_NEW         );
-    AddToolBarButton( IDM_FILE_OPEN, FALSE );
+    AddToolBarButton(IDM_FILE_NEW);
+    AddToolBarButton(IDM_FILE_OPEN, FALSE);
 
-    AddToolBarButton( 0 );  // Separator
-    AddToolBarButton( IDM_FILE_SAVE, FALSE );
+    AddToolBarButton(0);  // Separator
+    AddToolBarButton(IDM_FILE_SAVE, FALSE);
 
-    AddToolBarButton( 0 );  // Separator
-    AddToolBarButton( IDM_EDIT_CUT         );
-    AddToolBarButton( IDM_EDIT_COPY        );
-    AddToolBarButton( IDM_EDIT_PASTE       );
+    AddToolBarButton(0);  // Separator
+    AddToolBarButton(IDM_EDIT_CUT);
+    AddToolBarButton(IDM_EDIT_COPY);
+    AddToolBarButton(IDM_EDIT_PASTE);
 
-    AddToolBarButton( 0 );  // Separator
-    AddToolBarButton( IDM_FILE_PRINT, FALSE );
+    AddToolBarButton(0);  // Separator
+    AddToolBarButton(IDM_FILE_PRINT, FALSE);
 
-    AddToolBarButton( 0 );  // Separator
-    AddToolBarButton( IDM_HELP_ABOUT       );
-
-    // Add the ComboBarEx control to the toolbar
-    AddCombo();
+    AddToolBarButton(0);  // Separator
+    AddToolBarButton(IDM_HELP_ABOUT);
 }
 
 
@@ -217,4 +209,3 @@ CDockClasses::CDockClasses()
     // Set the width of the splitter bar
     SetBarWidth(8);
 }
-

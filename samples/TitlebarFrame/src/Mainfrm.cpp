@@ -4,7 +4,7 @@
 
 #include "stdafx.h"
 #include <dwmapi.h>
-#include <uxtheme.h>
+#include <Uxtheme.h>
 #include <vsstyle.h>
 #include <vssym32.h>
 #include "Mainfrm.h"
@@ -82,7 +82,7 @@ void CMainFrame::DrawBackground(CDC& dc) const
 void CMainFrame::DrawCloseButton(CDC& dc) const
 {
     ButtonRects buttonRects = GetButtonRects();
-    UINT dpi = GetDpiForWindow(*this);
+    UINT dpi = ::GetDpiForWindow(*this);
     int iconDimension = dpi_scale(10, dpi);
     COLORREF itemColor = IsActive() ? m_colors.activeItem : m_colors.inactiveItem;
     dc.CreatePen(PS_SOLID, 1, itemColor);
@@ -109,7 +109,7 @@ void CMainFrame::DrawMinimizeButton(CDC& dc) const
     COLORREF itemColor = IsActive() ? m_colors.activeItem : m_colors.inactiveItem;
     CBrush buttonIconBrush(itemColor);
     ButtonRects buttonRects = GetButtonRects();
-    UINT dpi = GetDpiForWindow(*this);
+    UINT dpi = ::GetDpiForWindow(*this);
     int iconDimension = dpi_scale(10, dpi);
     if (m_hoveredButton == TitlebarButton::Minimize)
     {
@@ -129,7 +129,7 @@ void CMainFrame::DrawMinimizeButton(CDC& dc) const
 void CMainFrame::DrawMaximizeButton(CDC& dc) const
 {
     ButtonRects buttonRects = GetButtonRects();
-    UINT dpi = GetDpiForWindow(*this);
+    UINT dpi = ::GetDpiForWindow(*this);
     int iconDimension = dpi_scale(10, dpi);
     if (m_hoveredButton == TitlebarButton::Maximize)
     {
@@ -156,6 +156,8 @@ void CMainFrame::DrawTitleText(CDC& dc) const
     LOGFONT logicalFont;
     if (SUCCEEDED(GetThemeSysFont(theme, TMT_CAPTIONFONT, &logicalFont)))
     {
+        int dpi = GetWindowDpi(*this);
+        logicalFont.lfHeight = -MulDiv(10, dpi, POINTS_PER_INCH);
         dc.CreateFontIndirect(logicalFont);
     }
 
@@ -167,7 +169,9 @@ void CMainFrame::DrawTitleText(CDC& dc) const
     titlebarTextRect.right = buttonRects.minimize.left;
 
     // Draw the title bar text.
-    DTTOPTS drawThemeOptions = { sizeof(drawThemeOptions) };
+    DTTOPTS drawThemeOptions;
+    ZeroMemory(&drawThemeOptions, sizeof(drawThemeOptions));
+    drawThemeOptions.dwSize = sizeof(drawThemeOptions);
     drawThemeOptions.dwFlags = DTT_TEXTCOLOR;
     COLORREF itemColor = IsActive() ? m_colors.activeItem : m_colors.inactiveItem;
     drawThemeOptions.crText = itemColor;
@@ -221,7 +225,7 @@ void CMainFrame::DrawWindowIcon(CDC& dc) const
 // Retrieves the rect locations of the title bar buttons.
 ButtonRects CMainFrame::GetButtonRects() const
 {
-    UINT dpi = GetDpiForWindow(*this);
+    UINT dpi = ::GetDpiForWindow(*this);
     ButtonRects buttonRects;
     // Sadly SM_CXSIZE does not result in the right size buttons for Win10
     int buttonWidth = dpi_scale(47, dpi);
@@ -296,7 +300,7 @@ CRect CMainFrame::GetTitlebarRect() const
     const int borders = 2;
     HTHEME theme = ::OpenThemeData(*this, L"WINDOW");
     UINT dpi = ::GetDpiForWindow(*this);
-    ::GetThemePartSize(theme, NULL, WP_CAPTION, CS_ACTIVE, NULL, TS_TRUE, &barSize);
+    ::GetThemePartSize(theme, nullptr, WP_CAPTION, CS_ACTIVE, nullptr, TS_TRUE, &barSize);
     ::CloseThemeData(theme);
     int height = dpi_scale(barSize.cy, dpi) + borders;
 
@@ -326,7 +330,8 @@ CRect CMainFrame::GetViewRect() const
 // Returns true of the window is maximized, false otherwise.
 bool CMainFrame::IsMaximized() const
 {
-    WINDOWPLACEMENT placement = { 0 };
+    WINDOWPLACEMENT placement;
+    ZeroMemory(&placement, sizeof(placement));
     placement.length = sizeof(WINDOWPLACEMENT);
     if (GetWindowPlacement(placement))
     {
@@ -383,7 +388,7 @@ int CMainFrame::OnCreate(CREATESTRUCT& cs)
 {
     // Inform the application of the frame change to force redrawing with the new
     // client area that is extended into the title bar.
-    SetWindowPos(NULL, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE);
+    SetWindowPos(HWND_TOP, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE);
 
     // Call the base class function.
     int result = CFrame::OnCreate(cs);
@@ -580,9 +585,10 @@ BOOL CMainFrame::OnFullMode()
 LRESULT CMainFrame::OnGetMinMaxInfo(UINT msg, WPARAM wparam, LPARAM lparam)
 {
     LPMINMAXINFO lpMMI = (LPMINMAXINFO)lparam;
-    lpMMI->ptMinTrackSize.x = 550;
-    lpMMI->ptMinTrackSize.y = 400;
-    return WndProcDefault(msg, wparam, lparam);
+    const CSize minimumSize(400, 300);
+    lpMMI->ptMinTrackSize.x = DpiScaleInt(minimumSize.cx);
+    lpMMI->ptMinTrackSize.y = DpiScaleInt(minimumSize.cy);
+    return FinalWindowProc(msg, wparam, lparam);
 }
 
 // Set the frame to mini mode.
@@ -650,7 +656,7 @@ LRESULT CMainFrame::OnNCMouseMove(UINT msg, WPARAM wparam, LPARAM lparam)
         InvalidateRect(buttonRects.maximize, FALSE);
     }
 
-    return WndProcDefault(msg, wparam, lparam);
+    return FinalWindowProc(msg, wparam, lparam);
 }
 
 // Update the hovered button when the mouse leaves the non-client area.
@@ -663,7 +669,7 @@ LRESULT CMainFrame::OnNCMouseLeave(UINT msg, WPARAM wparam, LPARAM lparam)
         m_hoveredButton = TitlebarButton::None;
     }
 
-    return WndProcDefault(msg, wparam, lparam);
+    return FinalWindowProc(msg, wparam, lparam);
 }
 
 // Repositions the frame's child windows.
@@ -686,7 +692,7 @@ void CMainFrame::RecalcLayout()
         for (UINT u = 0; u < GetReBar().GetRowCount(); ++u)
             cyRB += GetReBar().GetRowHeight(u);
 
-        GetReBar().SetWindowPos(NULL, 0, rc.Height(), rc.Width(), cyRB, SWP_SHOWWINDOW);
+        GetReBar().SetWindowPos(HWND_TOP, 0, rc.Height(), rc.Width(), cyRB, SWP_SHOWWINDOW);
     }
 
     if (m_isMiniFrame)
@@ -699,10 +705,10 @@ void CMainFrame::RecalcLayout()
             CRect menuRect = GetClientRect();
             CSize size = GetMenuBar().GetMaxSize();
             menuRect.left = GetButtonRects().system.right;
-            menuRect.top = (rect.Height() - size.cy) / 2;;
+            menuRect.top = (rect.Height() - size.cy) / 2;
             menuRect.right = menuRect.left + size.cx;
             menuRect.bottom = menuRect.top + size.cy;
-            GetMenuBar().SetWindowPos(NULL, menuRect, SWP_SHOWWINDOW);
+            GetMenuBar().SetWindowPos(HWND_TOP, menuRect, SWP_SHOWWINDOW);
         }
     }
 
@@ -749,6 +755,7 @@ LRESULT CMainFrame::OnNCHitTest(UINT msg, WPARAM wparam, LPARAM lparam)
     case TitlebarButton::Minimize:    return HTMINBUTTON;
     case TitlebarButton::Maximize:    return HTMAXBUTTON;
     case TitlebarButton::Close:       return HTCLOSE;
+    case TitlebarButton::None:        break;
     }
 
     // Looks like adjustment happening in NCCALCSIZE is messing with the detection
@@ -783,7 +790,7 @@ LRESULT CMainFrame::OnNCLButtonDown(UINT msg, WPARAM wparam, LPARAM lparam)
     }
 
     // Default handling allows for dragging and double click to maximize.
-    return WndProcDefault(msg, wparam, lparam);
+    return FinalWindowProc(msg, wparam, lparam);
 }
 
 // Map button clicks to the correct messages for the window.
@@ -809,7 +816,7 @@ LRESULT CMainFrame::OnNCLButtonUp(UINT msg, WPARAM wparam, LPARAM lparam)
         }
     }
 
-    return WndProcDefault(msg, wparam, lparam);
+    return FinalWindowProc(msg, wparam, lparam);
 }
 
 // Display a system menu with a right mouse button click on the titlebar.
@@ -831,7 +838,7 @@ LRESULT CMainFrame::OnNCRButtonDown(UINT msg, WPARAM wparam, LPARAM lparam)
         SendMessage(WM_SYSCOMMAND, command, 0);
     }
 
-    return WndProcDefault(msg, wparam, lparam);
+    return FinalWindowProc(msg, wparam, lparam);
 }
 
 // Called when any part of the window is repainted.
@@ -866,6 +873,7 @@ LRESULT CMainFrame::OnPreviewClose()
         ShowMenu(GetFrameMenu() != 0);
     }
     ShowToolBar(m_isToolbarShown);
+    UpdateSettings();
 
     SetStatusText(LoadString(IDW_READY));
 
@@ -921,7 +929,7 @@ void CMainFrame::SetupMenuIcons()
 {
     // Set the bitmap used for menu icons
     std::vector<UINT> data = GetToolBarData();
-    if (GetMenuIconHeight() >= 24)
+    if ((GetMenuIconHeight() >= 24) && (GetWindowDpi(*this) != 192))
         AddMenuIcons(data, RGB(192, 192, 192), IDW_MAIN, 0);
     else
         AddMenuIcons(data, RGB(192, 192, 192), IDB_MENUICONS);

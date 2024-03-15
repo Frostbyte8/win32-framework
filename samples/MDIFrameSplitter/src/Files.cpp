@@ -49,8 +49,10 @@ void CViewFiles::InsertItems()
 void CViewFiles::OnAttach()
 {
     // Set the image lists.
-    m_smallImages.Create(16, 15, ILC_COLOR32 | ILC_MASK, 1, 0);
+    int scale = DpiScaleInt(1);
+    m_smallImages.Create(scale * 16, scale * 15, ILC_COLOR32 | ILC_MASK, 1, 0);
     CBitmap image(IDB_FILEVIEW);
+    image = DpiScaleUpBitmap(image);
     m_smallImages.Add(image, RGB(255, 0, 255));
     SetImageList(m_smallImages, LVSIL_SMALL);
 
@@ -82,18 +84,10 @@ void CViewFiles::SetColumns()
     // Empty the list.
     DeleteAllItems();
 
-    // Initialize the columns.
-    LV_COLUMN column;
-    ZeroMemory(&column, sizeof(column));
-    column.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
-    column.fmt = LVCFMT_LEFT;
-    column.cx = 120;
-    TCHAR string[3][20] = {_T("Name"), TEXT("Size"), _T("Type")};
-    for(int i = 0; i < 3; ++i)
-    {
-        column.pszText = string[i];
-        InsertColumn(i, column);
-    }
+    // Add the column items.
+    InsertColumn(0, _T("Name"), 0, DpiScaleInt(120));
+    InsertColumn(1, _T("Size"), 0, DpiScaleInt(50));
+    InsertColumn(2, _T("Type"), 0, DpiScaleInt(120));
 }
 
 // Process the list view's window messages.
@@ -146,5 +140,4 @@ int CDockFiles::OnCreate(CREATESTRUCT& cs)
 
     return CDocker::OnCreate(cs);
 }
-
 

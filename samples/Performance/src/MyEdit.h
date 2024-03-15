@@ -15,14 +15,16 @@ public:
     CMyEdit();
     virtual ~CMyEdit() {}
 
+    void DPISetFont();
+
 protected:
     // Virtual functions that override base class functions
     virtual void OnAttach();
     virtual void PreCreate(CREATESTRUCT& cs);
 
 private:
-    CMyEdit(const CMyEdit&);                // Disable copy construction
-    CMyEdit& operator = (const CMyEdit&);   // Disable assignment operator
+    CMyEdit(const CMyEdit&);               // Disable copy construction
+    CMyEdit& operator=(const CMyEdit&);    // Disable assignment operator
 
     CFont m_font;
 };

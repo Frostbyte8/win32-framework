@@ -1,4 +1,4 @@
-// Win32++   Version 9.2
+// Win32++   Version 9.5
 // Release Date: TBA
 //
 //      David Nash
@@ -6,7 +6,7 @@
 //      url: https://sourceforge.net/projects/win32-framework
 //
 //
-// Copyright (c) 2005-2022  David Nash
+// Copyright (c) 2005-2024  David Nash
 //
 // Permission is hereby granted, free of charge, to
 // any person obtaining a copy of this software and
@@ -55,10 +55,11 @@ namespace Win32xx
     struct TabPageInfo
     {
         CString tabText;    // The tab's text
-        int image;          // index of this tab's image
+        HICON tabIcon;      // The tab's icon
+        int tabImage;       // index of this tab's image
         int tabID;          // identifier for this tab (used by TabbedMDI)
         CWnd* pView;        // pointer to the view window
-        TabPageInfo() : image(0), tabID(0), pView(0) {}    // constructor
+        TabPageInfo() : tabIcon(0), tabImage(0), tabID(0), pView(0) {}    // constructor
     };
 
     struct TABNMHDR
@@ -92,8 +93,8 @@ namespace Win32xx
             virtual void OnCancel() { EndDialog(-2); }
 
         private:
-            CSelectDialog(const CSelectDialog&);                // Disable copy construction
-            CSelectDialog& operator = (const CSelectDialog&);   // Disable assignment operator
+            CSelectDialog(const CSelectDialog&);               // Disable copy construction
+            CSelectDialog& operator=(const CSelectDialog&);    // Disable assignment operator
 
             std::vector<CString> m_items;
             UINT IDC_LIST;
@@ -108,7 +109,10 @@ namespace Win32xx
         virtual void   SelectPage(int page);
         virtual void   RecalcLayout();
         virtual void   RemoveTabPage(int page);
+        virtual void   SetTabsFontSize(int fontSize = 9);
+        virtual void   SetTabsIconSize(int iconSize = 16);
         virtual void   SwapTabs(int tab1, int tab2);
+        virtual void   UpdateTabs();
 
         // Accessors
         CWnd* GetActiveView() const         { return m_pActiveView; }
@@ -117,13 +121,13 @@ namespace Win32xx
         CMenu GetListMenu();
         CRect GetListRect() const;
         SIZE GetMaxTabSize() const;
-        CImageList GetODImageList() const   { return m_odImages; }
+        CImageList& GetImages()             { return m_images; }
         BOOL GetShowButtons() const         { return m_isShowingButtons; }
         BOOL GetTabsAtTop() const;
         CFont GetTabFont() const            { return m_tabFont; }
+        int GetTabHeight() const;
         int GetTabImageID(int tab) const;
         int GetTabIndex(CWnd* pWnd) const;
-        int GetTabHeight() const            { return m_tabHeight; }
         TabPageInfo GetTabPageInfo(int tab) const;
         CString GetTabText(int tab) const;
         int GetTextHeight() const;
@@ -135,7 +139,6 @@ namespace Win32xx
         void SetOwnerDraw(BOOL isEnabled);
         void SetShowButtons(BOOL show);
         void SetTabFont(HFONT font);
-        void SetTabHeight(int height);
         void SetTabIcon(int tab, HICON icon);
         void SetTabsAtTop(BOOL isAtTop);
         void SetTabText(int tab, LPCTSTR text);
@@ -179,6 +182,7 @@ namespace Win32xx
         virtual void    DrawTabs(CDC& dc);
         virtual void    DrawTabBorders(CDC& dc, RECT& rc);
         virtual void    OnAttach();
+        virtual void    OnDestroy();
         virtual BOOL    OnEraseBkgnd(CDC&) { return TRUE;}
         virtual LRESULT OnEraseBkgnd(UINT msg, WPARAM wparam, LPARAM lparam);
         virtual LRESULT OnLButtonDblClk(UINT msg, WPARAM wparam, LPARAM lparam);
@@ -192,6 +196,7 @@ namespace Win32xx
         virtual LRESULT OnNotifyReflect(WPARAM wparam, LPARAM lparam);
         virtual LRESULT OnSetFocus(UINT msg, WPARAM wparam, LPARAM lparam);
         virtual LRESULT OnTCNSelChange(LPNMHDR pNMHDR);
+        virtual LRESULT OnDpiChangedAfterParent(UINT msg, WPARAM wparam, LPARAM lparam);
         virtual LRESULT OnWindowPosChanged(UINT msg, WPARAM wparam, LPARAM lparam);
         virtual LRESULT OnWindowPosChanging(UINT msg, WPARAM wparam, LPARAM lparam);
         virtual void    NotifyChanged();
@@ -207,14 +212,15 @@ namespace Win32xx
 
     private:
         CTab(const CTab&);              // Disable copy construction
-        CTab& operator = (const CTab&); // Disable assignment operator
+        CTab& operator=(const CTab&); // Disable assignment operator
 
         void ShowActiveView(CWnd* pView);
+        void UpdateImageList();
 
         std::vector<TabPageInfo> m_allTabPageInfo;
         std::vector<WndPtr> m_tabViews;
         CFont m_tabFont;                // Font used for tab text with owner draw
-        CImageList m_odImages;          // Image List for Owner Draw Tabs
+        CImageList m_images;            // Image-list for the tab control
         LPCDLGTEMPLATE m_pDlgTemplate;  // Dialog template for the list dialog
         CWnd* m_pActiveView;
         CPoint m_oldMousePos;
@@ -224,7 +230,6 @@ namespace Win32xx
         BOOL m_isClosePressed;
         BOOL m_isListPressed;
         BOOL m_isListMenuActive;
-        int m_tabHeight;
         COLORREF m_blankPageColor;
     };
 
@@ -267,6 +272,7 @@ namespace Win32xx
         virtual LRESULT OnNotify(WPARAM wparam, LPARAM lparam);
         virtual LRESULT OnSetFocus(UINT, WPARAM, LPARAM);
         virtual BOOL    OnTabClose(int tab);
+        virtual LRESULT OnDpiChangedBeforeParent(UINT, WPARAM, LPARAM);
         virtual LRESULT OnWindowPosChanged(UINT msg, WPARAM wparam, LPARAM lparam);
         virtual void    RecalcLayout();
 
@@ -275,7 +281,7 @@ namespace Win32xx
 
     private:
         CTabbedMDI(const CTabbedMDI&);              // Disable copy construction
-        CTabbedMDI& operator = (const CTabbedMDI&); // Disable assignment operator
+        CTabbedMDI& operator=(const CTabbedMDI&);   // Disable assignment operator
 
         CTab m_tab;
         CTab* m_pTab;
@@ -329,8 +335,7 @@ namespace Win32xx
     //
 
     inline CTab::CTab() : m_pActiveView(NULL), m_isShowingButtons(FALSE), m_isTracking(FALSE),
-                          m_isClosePressed(FALSE), m_isListPressed(FALSE), m_isListMenuActive(FALSE),
-                          m_tabHeight(0)
+                          m_isClosePressed(FALSE), m_isListPressed(FALSE), m_isListMenuActive(FALSE)
     {
         /*
         103 DIALOGEX 0, 0, 208, 202
@@ -363,6 +368,7 @@ namespace Win32xx
             0x00,0x0e,0x00,0x01,0x00,0x00,0x00,0xff,0xff,0x80,0x00,0x4f,0x00,0x4b,0x00,0x00,
             0x00,0x00,0x00
         };
+
         m_blankPageColor = GetSysColor(COLOR_BTNFACE);
         SetListDialog(reinterpret_cast<LPCDLGTEMPLATE>(dlgTemplate));
     }
@@ -374,39 +380,39 @@ namespace Win32xx
     // Adds a tab along with the specified view window.
     // The framework assumes ownership of the CWnd pointer provided,
     // and deletes the CWnd object when the tab is removed or destroyed.
-    // Returns a pointer to the view window which was supplied.
+    // Returns a pointer to the view window that was supplied.
     // Use RemoveTabPage to remove the tab and page added in this manner.
     inline CWnd* CTab::AddTabPage(CWnd* pView, LPCTSTR tabText, HICON icon, int tabID)
     {
+        assert(IsWindow());
         assert(pView);
         assert(lstrlen(tabText) < WXX_MAX_STRING_SIZE);
 
         m_tabViews.push_back(WndPtr(pView));
 
+        // Set the TabPageInfo.
         TabPageInfo tpi;
         tpi.pView = pView;
+        tpi.tabIcon = icon;
         tpi.tabID = tabID;
         tpi.tabText = tabText;
         if (icon != 0)
-            tpi.image = GetODImageList().Add(icon);
+            tpi.tabImage = GetImages().Add(icon);
         else
-            tpi.image = -1;
+            tpi.tabImage = -1;
 
-        int iNewPage = static_cast<int>(m_allTabPageInfo.size());
+        int page = static_cast<int>(m_allTabPageInfo.size());
         m_allTabPageInfo.push_back(tpi);
 
-        if (IsWindow())
-        {
-            TCITEM tie;
-            ZeroMemory(&tie, sizeof(tie));
-            tie.mask = TCIF_TEXT | TCIF_IMAGE;
-            tie.iImage = tpi.image;
-            tie.pszText = const_cast<LPTSTR>(tpi.tabText.c_str());
-            InsertItem(iNewPage, &tie);
-
-            SetTabSize();
-            SelectPage(iNewPage);
-        }
+        // Add the tab to the tab control.
+        TCITEM tie;
+        ZeroMemory(&tie, sizeof(tie));
+        tie.mask = TCIF_TEXT | TCIF_IMAGE;
+        tie.iImage = tpi.tabImage;
+        tie.pszText = const_cast<LPTSTR>(tpi.tabText.c_str());
+        InsertItem(page, &tie);
+        SetTabSize();
+        SelectPage(page);
 
         return pView;
     }
@@ -451,65 +457,53 @@ namespace Win32xx
         // Draw the outer highlight for the close button.
         if (!IsRectEmpty(&rcClose))
         {
+            // Use the Marlett font to draw special characters
+            CFont marlett;
+            marlett.CreatePointFont(100, _T("Marlett"));
+            dc.SetBkMode(TRANSPARENT);
+            LOGFONT lf = DpiScaleLogfont(marlett.GetLogFont(), 10);
+            dc.CreateFontIndirect(lf);
+
+            COLORREF grey(RGB(232, 228, 220));
+            COLORREF black(RGB(0, 0, 0));
+            COLORREF white(RGB(255, 255, 255));
+
             switch (state)
             {
             case 0:
-                {
-                dc.CreatePen(PS_SOLID, 1, RGB(232, 228, 220));
-                dc.MoveTo(rcClose.left, rcClose.bottom);
-                dc.LineTo(rcClose.right, rcClose.bottom);
-                dc.LineTo(rcClose.right, rcClose.top);
-                dc.LineTo(rcClose.left, rcClose.top);
-                dc.LineTo(rcClose.left, rcClose.bottom);
-                break;
-                }
+            {
+                // Draw a grey box for the normal button using two special characters.
+                dc.SetTextColor(grey);
+                dc.TextOut(rcClose.left, rcClose.top, _T("\x63"), 1);
+                dc.TextOut(rcClose.left, rcClose.top, _T("\x64"), 1);
+            }
+            break;
 
             case 1:
-                {
-                // Draw outline, white at top, black on bottom.
-                dc.CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
-                dc.MoveTo(rcClose.left, rcClose.bottom);
-                dc.LineTo(rcClose.right, rcClose.bottom);
-                dc.LineTo(rcClose.right, rcClose.top);
-                dc.CreatePen(PS_SOLID, 1, RGB(255, 255, 255));
-                dc.LineTo(rcClose.left, rcClose.top);
-                dc.LineTo(rcClose.left, rcClose.bottom);
-                }
-                break;
+            {
+                // Draw popped up button, black on right and bottom.
+                dc.SetTextColor(white);
+                dc.TextOut(rcClose.left, rcClose.top, _T("\x63"), 1);
+                dc.SetTextColor(black);
+                dc.TextOut(rcClose.left, rcClose.top, _T("\x64"), 1);
+            }
+            break;
+
             case 2:
-                {
-                // Draw outline, black on top, white on bottom.
-                dc.CreatePen(PS_SOLID, 1, RGB(255, 255, 255));
-                dc.MoveTo(rcClose.left, rcClose.bottom);
-                dc.LineTo(rcClose.right, rcClose.bottom);
-                dc.LineTo(rcClose.right, rcClose.top);
-                dc.CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
-                dc.LineTo(rcClose.left, rcClose.top);
-                dc.LineTo(rcClose.left, rcClose.bottom);
-                }
-                break;
+            {
+                // Draw popped up button, black on right and bottom.
+                dc.SetTextColor(black);
+                dc.TextOut(rcClose.left, rcClose.top, _T("\x63"), 1);
+                dc.SetTextColor(white);
+                dc.TextOut(rcClose.left, rcClose.top, _T("\x64"), 1);
+            }
+            break;
+
             }
 
-            // Manually draw close button.
-            dc.CreatePen(PS_SOLID, 1, RGB(64, 64, 64));
-
-            dc.MoveTo(rcClose.left + 3, rcClose.top +3);
-            dc.LineTo(rcClose.right - 2, rcClose.bottom -2);
-
-            dc.MoveTo(rcClose.left + 4, rcClose.top +3);
-            dc.LineTo(rcClose.right - 2, rcClose.bottom -3);
-
-            dc.MoveTo(rcClose.left + 3, rcClose.top +4);
-            dc.LineTo(rcClose.right - 3, rcClose.bottom -2);
-
-            dc.MoveTo(rcClose.right -3, rcClose.top +3);
-            dc.LineTo(rcClose.left + 2, rcClose.bottom -2);
-
-            dc.MoveTo(rcClose.right -3, rcClose.top +4);
-            dc.LineTo(rcClose.left + 3, rcClose.bottom -2);
-
-            dc.MoveTo(rcClose.right -4, rcClose.top +3);
-            dc.LineTo(rcClose.left + 2, rcClose.bottom -3);
+            // Draw the close button (a Marlett "r" looks like "X").
+            dc.SetTextColor(RGB(0, 0, 0));
+            dc.TextOut(rcClose.left, rcClose.top, _T("\x72"), 1);
         }
     }
 
@@ -535,56 +529,56 @@ namespace Win32xx
         // Draw the outer highlight for the list button.
         if (!IsRectEmpty(&rcList))
         {
+            // Use the Marlett font to draw special characters
+            CFont marlett;
+            marlett.CreatePointFont(100, _T("Marlett"));
+            dc.SetBkMode(TRANSPARENT);
+            LOGFONT lf = DpiScaleLogfont(marlett.GetLogFont(), 10);
+            dc.CreateFontIndirect(lf);
+
+            COLORREF grey(RGB(232, 228, 220));
+            COLORREF black(RGB(0, 0, 0));
+            COLORREF white(RGB(255, 255, 255));
+
             switch (uState)
             {
             case 0:
-                {
-                dc.CreatePen(PS_SOLID, 1, RGB(232, 228, 220));
-                dc.MoveTo(rcList.left, rcList.bottom);
-                dc.LineTo(rcList.right, rcList.bottom);
-                dc.LineTo(rcList.right, rcList.top);
-                dc.LineTo(rcList.left, rcList.top);
-                dc.LineTo(rcList.left, rcList.bottom);
-                }
-                break;
+            {
+                // Draw a grey box for the normal button using two special characters.
+                dc.SetTextColor(grey);
+                dc.TextOut(rcList.left, rcList.top, _T("\x63"), 1);
+                dc.TextOut(rcList.left, rcList.top, _T("\x64"), 1);
+            }
+            break;
 
             case 1:
-                {
-                // Draw outline, white at top, black on bottom.
-                dc.CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
-                dc.MoveTo(rcList.left, rcList.bottom);
-                dc.LineTo(rcList.right, rcList.bottom);
-                dc.LineTo(rcList.right, rcList.top);
-                dc.CreatePen(PS_SOLID, 1, RGB(255, 255, 255));
-                dc.LineTo(rcList.left, rcList.top);
-                dc.LineTo(rcList.left, rcList.bottom);
-                }
-                break;
+            {
+                // Draw popped up button, black on right and bottom.
+                dc.SetTextColor(white);
+                dc.TextOut(rcList.left, rcList.top, _T("\x63"), 1);
+                dc.SetTextColor(black);
+                dc.TextOut(rcList.left, rcList.top, _T("\x64"), 1);
+            }
+            break;
 
             case 2:
-                {
-                // Draw outline, black on top, white on bottom.
-                dc.CreatePen(PS_SOLID, 1, RGB(255, 255, 255));
-                dc.MoveTo(rcList.left, rcList.bottom);
-                dc.LineTo(rcList.right, rcList.bottom);
-                dc.LineTo(rcList.right, rcList.top);
-                dc.CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
-                dc.LineTo(rcList.left, rcList.top);
-                dc.LineTo(rcList.left, rcList.bottom);
-                }
-                break;
+            {
+                // Draw pressed button, black on left and top.
+                dc.SetTextColor(black);
+                dc.TextOut(rcList.left, rcList.top, _T("\x63"), 1);
+                dc.SetTextColor(white);
+                dc.TextOut(rcList.left, rcList.top, _T("\x64"), 1);
+            }
+            break;
+
             }
 
-            // Manually draw list button.
-            dc.CreatePen(PS_SOLID, 1, RGB(64, 64, 64));
-            int maxLength = static_cast<int>(0.65 * rcList.Width());
-            int topGap = 1 + rcList.Height()/3;
-            for (int i = 0; i <= maxLength/2; ++i)
-            {
-                int Length = maxLength - 2*i;
-                dc.MoveTo(rcList.left +1 + (rcList.Width() - Length)/2, rcList.top +topGap +i);
-                dc.LineTo(rcList.left +1 + (rcList.Width() - Length)/2 + Length, rcList.top +topGap +i);
-            }
+            if (GetWinVersion() >= 3000)
+                rcList.OffsetRect(1, -1);
+
+            // Draw the down arrow button.
+            dc.SetTextColor(black);
+            dc.TextOut(rcList.left, rcList.top, _T("\x75"), 1);
         }
     }
 
@@ -612,8 +606,8 @@ namespace Win32xx
                 dc.CreatePen(PS_SOLID, 1, RGB(160, 160, 160));
                 dc.RoundRect(rcItem.left, rcItem.top, rcItem.right +1, rcItem.bottom, 6, 6);
 
-                CSize szImage = GetODImageList().GetIconSize();
-                int padding = 4;
+                CSize szImage = GetImages().GetIconSize();
+                int padding = DpiScaleInt(4);
 
                 if (rcItem.Width() >= szImage.cx + 2 * padding)
                 {
@@ -624,7 +618,7 @@ namespace Win32xx
                     // Draw the icon.
                     int drawleft = rcItem.left + padding;
                     int drawtop = rcItem.top + yOffset;
-                    GetODImageList().Draw(dc, image,  CPoint(drawleft, drawtop), ILD_NORMAL);
+                    GetImages().Draw(dc, image,  CPoint(drawleft, drawtop), ILD_NORMAL);
 
                     // Calculate the size of the text.
                     CRect rcText = rcItem;
@@ -648,20 +642,21 @@ namespace Win32xx
 
         // Draw a lighter rectangle touching the tab buttons.
         CRect rcItem;
+        int gap = 3;
         GetItemRect(0, rcItem);
-        int left = rcItem.left +1;
+        int left = rcItem.left;
         int right = rc.right;
         int top = rc.bottom;
-        int bottom = top + 3;
+        int bottom = top + gap;
 
         if (!isBottomTab)
         {
-            bottom = MAX(rc.top, m_tabHeight +4);
-            top = bottom -3;
+            bottom = MAX(rc.top, GetTabHeight() + gap + 1);
+            top = bottom - gap;
         }
 
-        dc.CreateSolidBrush(RGB(248,248,248));
-        dc.CreatePen(PS_SOLID, 1, RGB(248,248,248));
+        dc.CreateSolidBrush(RGB(248, 248, 248));
+        dc.CreatePen(PS_SOLID, 1, RGB(248, 248, 248));
         if (!rcItem.IsRectEmpty())
         {
             dc.Rectangle(left, top, right, bottom);
@@ -671,18 +666,18 @@ namespace Win32xx
             if (isBottomTab)
             {
                 dc.MoveTo(left-1, bottom);
-                dc.LineTo(right, bottom);
+                dc.LineTo(right-1, bottom);
             }
             else
             {
                 dc.MoveTo(left-1, top-1);
-                dc.LineTo(right, top-1);
+                dc.LineTo(right-1, top-1);
             }
 
             // Draw a lighter line over the darker line for the selected tab.
-            dc.CreatePen(PS_SOLID, 1, RGB(248,248,248));
+            dc.CreatePen(PS_SOLID, 1, RGB(248, 248, 248));
             GetItemRect(GetCurSel(), rcItem);
-            OffsetRect(&rcItem, 1, 1);
+            OffsetRect(&rcItem, 0, 1);
 
             if (isBottomTab)
             {
@@ -704,19 +699,33 @@ namespace Win32xx
         if (GetShowButtons())
         {
             rc = GetClientRect();
-            int Gap = 2;
-            int cx = ::GetSystemMetrics(SM_CXSMICON) -1;
-            int cy = ::GetSystemMetrics(SM_CYSMICON) -1;
-            rc.right -= Gap;
+            int gap = DpiScaleInt(4);
+            int cx = GetSystemMetrics(SM_CXSMICON) * GetWindowDpi(*this) / GetWindowDpi(HWND_DESKTOP);
+            int cy = GetSystemMetrics(SM_CXSMICON) * GetWindowDpi(*this) / GetWindowDpi(HWND_DESKTOP);
+            rc.right -= gap;
             rc.left = rc.right - cx;
 
             if (GetTabsAtTop())
-                rc.top = Gap;
+            {
+                rc.top = (GetTabHeight() - cy) / 2;
+                rc.bottom = rc.top + cy;
+            }
             else
-                rc.top = MAX(Gap, rc.bottom - m_tabHeight);
+            {
+                rc.bottom = rc.bottom - (GetTabHeight() - cy) / 2;
+                rc.top = rc.bottom - cy;
+            }
 
-            rc.bottom = rc.top + cy;
+#if (WINVER >= 0x0500)
+            if (GetExStyle() & WS_EX_LAYOUTRTL)
+            {
+                rc.left = rc.left + gap;
+                rc.right = rc.left + cx;
+            }
+#endif
+
         }
+
         return rc;
     }
 
@@ -759,7 +768,7 @@ namespace Win32xx
         {
             CRect rcClose = GetCloseRect();
             rcList = rcClose;
-            rcList.OffsetRect( -(rcClose.Width() + 2), 0);
+            rcList.OffsetRect(-(rcClose.Width() + DpiScaleInt(2)), 0);
             rcList.InflateRect(-1, 0);
         }
         return rcList;
@@ -785,9 +794,12 @@ namespace Win32xx
             CSize TempSize = dcClient.GetTextExtentPoint32(str, lstrlen(str));
 
             int imageSize = 0;
-            int padding = 6;
+            int padding = DpiScaleInt(10);
             if (tcItem.iImage >= 0)
-                imageSize = 20;
+            {
+                imageSize = m_images.GetIconSize().cx;
+            }
+
             TempSize.cx += imageSize + padding;
 
             if (TempSize.cx > Size.cx)
@@ -811,6 +823,14 @@ namespace Win32xx
         dcClient.SelectObject(m_tabFont);
         CSize szText = dcClient.GetTextExtentPoint32(_T("Text"), lstrlen(_T("Text")));
         return szText.cy;
+    }
+
+    // Retrieves the tab height calculated from the icon height and text height.
+    inline int CTab::GetTabHeight() const
+    {
+        int heightGap = DpiScaleInt(5);
+        CSize iconSize = m_images.GetIconSize();
+        return MAX(iconSize.cy, GetTextHeight()) + heightGap;
     }
 
     // Returns the index of the tab given its view window.
@@ -840,7 +860,7 @@ namespace Win32xx
     {
         size_t tabIndex = static_cast<size_t>(tab);
         assert (tabIndex < m_allTabPageInfo.size());
-        return m_allTabPageInfo[tabIndex].image;
+        return m_allTabPageInfo[tabIndex].tabImage;
     }
 
     // Returns the text for the specified tab.
@@ -894,36 +914,7 @@ namespace Win32xx
     // Called when this object is attached to a tab control.
     inline void CTab::OnAttach()
     {
-        // Set the font used in the tabs.
-        CFont font;
-        NONCLIENTMETRICS info = GetNonClientMetrics();
-        font.CreateFontIndirect(info.lfStatusFont);
-        SetTabFont(font);
-
-        // Create and assign the image list.
-        GetODImageList().DeleteImageList();
-        int iconHeight = MAX(16, GetTextHeight());
-        iconHeight = iconHeight - iconHeight % 8;
-        GetODImageList().Create(iconHeight, iconHeight, ILC_MASK | ILC_COLOR32, 0, 0);
-
-        // Assign ImageList unless we are owner drawn.
-        if (!(GetStyle() & TCS_OWNERDRAWFIXED))
-            SetImageList(m_odImages);
-
-        for (size_t i = 0; i < m_allTabPageInfo.size(); ++i)
-        {
-            // Add tabs for each view.
-            TCITEM tie;
-            ZeroMemory(&tie, sizeof(tie));
-            tie.mask = TCIF_TEXT | TCIF_IMAGE;
-            tie.iImage = m_allTabPageInfo[i].image;
-            tie.pszText = const_cast<LPTSTR>(m_allTabPageInfo[i].tabText.c_str());
-            InsertItem(static_cast<int>(i), &tie);
-        }
-
-        int heightGap = 5;
-        SetTabHeight( MAX(20, GetTextHeight() + heightGap) );
-        SelectPage(0);
+        UpdateTabs();
     }
 
     // Called when the background is erased.
@@ -1117,6 +1108,27 @@ namespace Win32xx
         return FinalWindowProc(msg, wparam, lparam);
     }
 
+    // Called when a window is destroyed.
+    inline void CTab::OnDestroy()
+    {
+        // Remove any current pages.
+        int pages = static_cast<int>(m_allTabPageInfo.size());
+        for (int i = pages - 1; i >= 0; i--)
+        {
+            RemoveTabPage(i);
+        }
+    }
+
+    // Called in response to a WM_DPICHANGED_AFTERPARENT message that is sent to child
+    // windows after a DPI change. A WM_DPICHANGED_AFTERPARENT is only received when the
+    // application is DPI_AWARENESS_PER_MONITOR_AWARE.
+    inline LRESULT CTab::OnDpiChangedAfterParent(UINT, WPARAM, LPARAM)
+    {
+        UpdateTabs();
+
+        return 0;
+    }
+
     // Called after the tab control is resized.
     inline LRESULT CTab::OnWindowPosChanged(UINT msg, WPARAM wparam, LPARAM lparam)
     {
@@ -1196,7 +1208,7 @@ namespace Win32xx
         DrawListButton(memDC);
         DrawTabBorders(memDC, rcTab);
 
-        // Now copy our from our memory DC to the window DC.
+        // Now copy from our memory DC to the window DC.
         dcView.SelectClipRgn(rgnClip);
 
         if (isRTL)
@@ -1228,16 +1240,17 @@ namespace Win32xx
         if (IsWindow())
         {
             SetTabSize();
+
             if (GetActiveView())
             {
                 // Position the View over the tab control's display area.
                 CRect rc = GetClientRect();
                 MapWindowPoints(GetParent(), rc);
                 AdjustRect(FALSE, &rc);
-                VERIFY(GetActiveView()->SetWindowPos(0, rc, SWP_SHOWWINDOW));
+                VERIFY(GetActiveView()->SetWindowPos(HWND_TOP, rc, SWP_SHOWWINDOW));
             }
 
-            RedrawWindow(RDW_INVALIDATE|RDW_NOCHILDREN);
+            RedrawWindow(RDW_INVALIDATE | RDW_NOCHILDREN);
         }
     }
 
@@ -1253,7 +1266,7 @@ namespace Win32xx
         // Remove the TapPageInfo entry.
         std::vector<TabPageInfo>::iterator itTPI = m_allTabPageInfo.begin() + page;
         CWnd* pView = (*itTPI).pView;
-        int image = (*itTPI).image;
+        int image = (*itTPI).tabImage;
         if (image >= 0)
             RemoveImage(image);
 
@@ -1285,7 +1298,6 @@ namespace Win32xx
 
             NotifyChanged();
         }
-
     }
 
     // Selects the tab and the view page.
@@ -1300,49 +1312,26 @@ namespace Win32xx
         }
     }
 
-    // Enable or disable fixed tab width.
+    // Enable or disable fixed-with tabs.
+    // When fixed-width is enabled, all tabs have the same width.
     inline void CTab::SetFixedWidth(BOOL isEnabled)
     {
         DWORD style = GetStyle();
-        if (isEnabled)
-        {
-            SetStyle(style | TCS_FIXEDWIDTH);
-
-            // Remove Image list for fixed width and Owner drawn tabs.
-            if (style & TCS_OWNERDRAWFIXED)
-                SetImageList(0);
-            else
-                SetImageList(m_odImages);
-        }
-        else
-        {
-            SetStyle(style & ~TCS_FIXEDWIDTH);
-            SetImageList(m_odImages);
-        }
-
+        style = isEnabled ? style | TCS_FIXEDWIDTH : style & ~TCS_FIXEDWIDTH;
+        SetStyle(style);
+        UpdateImageList();
         RecalcLayout();
     }
 
-    // Enable or disable owner draw.
+    // Enable or disable owner-draw.
+    // When owner-draw is enabled, the tabs are drawn by Paint().
+    // Note: Setting owner-draw also sets fixed-width.
     inline void CTab::SetOwnerDraw(BOOL isEnabled)
     {
         DWORD style = GetStyle();
-        if (isEnabled)
-        {
-            SetStyle(style | TCS_OWNERDRAWFIXED);
-
-            // Remove Image list for tabs with both fixed width and Owner drawn tabs.
-            if (style & TCS_FIXEDWIDTH)
-                SetImageList(0);
-            else
-                SetImageList(m_odImages);
-        }
-        else
-        {
-            SetStyle(style & ~TCS_OWNERDRAWFIXED);
-            SetImageList(m_odImages);
-        }
-
+        style = isEnabled ? style | TCS_OWNERDRAWFIXED | TCS_FIXEDWIDTH : style & ~TCS_OWNERDRAWFIXED;
+        SetStyle(style);
+        UpdateImageList();
         RecalcLayout();
     }
 
@@ -1357,19 +1346,9 @@ namespace Win32xx
     inline void CTab::SetTabFont(HFONT font)
     {
         m_tabFont = font;
-        int heightGap = 5;
-        SetTabHeight( MAX(20, GetTextHeight() + heightGap) );
 
         // Set the font used without owner draw.
         SetFont(font);
-    }
-
-    // Sets the height of the tabs.
-    inline void CTab::SetTabHeight(int height)
-    {
-        m_tabHeight = height;
-        NotifyChanged();
-        RecalcLayout();
     }
 
     // Changes or sets the tab's icon.
@@ -1382,15 +1361,18 @@ namespace Win32xx
         GetItem(tab, &tci);
         if (tci.iImage >= 0)
         {
-            GetODImageList().Replace(tab, icon);
+            GetImages().Replace(tab, icon);
         }
         else
         {
-            int image = GetODImageList().Add(icon);
+            int image = GetImages().Add(icon);
             tci.iImage = image;
             SetItem(tab, &tci);
-            m_allTabPageInfo[static_cast<size_t>(tab)].image = image;
+            m_allTabPageInfo[static_cast<size_t>(tab)].tabImage = image;
         }
+
+        m_allTabPageInfo[static_cast<size_t>(tab)].tabIcon = icon;
+        SetTabSize();
     }
 
     // Positions the tabs at the top or bottom of the control.
@@ -1404,8 +1386,6 @@ namespace Win32xx
             style |= TCS_BOTTOM;
 
         SetStyle(style);
-
-        RedrawWindow();
         RecalcLayout();
     }
 
@@ -1414,18 +1394,26 @@ namespace Win32xx
     {
         if (GetItemCount() > 0)
         {
-            CRect rc = GetClientRect();
-            AdjustRect(FALSE, &rc);
+            DWORD style = GetStyle();
+            if (style & TCS_OWNERDRAWFIXED)
+            {
+                CRect rc = GetClientRect();
+                AdjustRect(FALSE, &rc);
+                int padding = DpiScaleInt(2);
+                if (m_isShowingButtons)
+                    padding = GetCloseRect().Width() + GetListRect().Width() + DpiScaleInt(4);
 
-            int xGap = 2;
-            if (m_isShowingButtons) xGap += GetCloseRect().Width() + GetListRect().Width() +2;
-
-            int nItemWidth = MIN( GetMaxTabSize().cx, (rc.Width() - xGap)/GetItemCount() );
-            nItemWidth = MAX(nItemWidth, 0);
-
-            SendMessage(TCM_SETITEMSIZE, 0, MAKELPARAM(nItemWidth, m_tabHeight));
-
-            NotifyChanged();
+                int itemWidth = MIN(GetMaxTabSize().cx, (rc.Width() - padding) / GetItemCount());
+                itemWidth = MAX(itemWidth, 0);
+                SetItemSize(itemWidth, GetTabHeight());
+                NotifyChanged();
+            }
+            else
+            {
+                int itemWidth = GetMaxTabSize().cx;
+                SetItemSize(itemWidth, GetTabHeight());
+                NotifyChanged();
+            }
         }
     }
 
@@ -1442,10 +1430,12 @@ namespace Win32xx
 
             if (SetItem(tab, &Item))
                 m_allTabPageInfo[tabIndex].tabText = text;
+
+            SetTabSize();
         }
     }
 
-    // Sets or changes the View window displayed within the tab page.
+    // Sets or changes the view window displayed within the tab page.
     inline void CTab::ShowActiveView(CWnd* pView)
     {
         if (pView != m_pActiveView)
@@ -1465,11 +1455,11 @@ namespace Win32xx
                     GetActiveView()->Create( GetParent() );
                 }
 
-                // Position the View over the tab control's display area
+                // Position the view window over the tab control's display area
                 CRect rc = GetClientRect();
                 AdjustRect(FALSE, &rc);
                 MapWindowPoints(GetParent(), rc);
-                VERIFY(GetActiveView()->SetWindowPos(0, rc, SWP_SHOWWINDOW));
+                VERIFY(GetActiveView()->SetWindowPos(HWND_TOP, rc, SWP_SHOWWINDOW));
                 GetActiveView()->SetFocus();
             }
         }
@@ -1498,7 +1488,7 @@ namespace Win32xx
         DrawListButton(dc);
     }
 
-    // Definition of a dialog template which displays a List Box.
+    // Definition of a dialog template that displays a List Box.
     inline void CTab::ShowListDialog()
     {
         // Display the modal dialog. The dialog is defined in the dialog template rather
@@ -1545,6 +1535,59 @@ namespace Win32xx
         }
     }
 
+    // Updates the tab font based on the window's DPI.
+    inline void CTab::SetTabsFontSize(int fontSize)
+    {
+        // Set the font used in the tabs.
+        CFont font;
+        NONCLIENTMETRICS info = GetNonClientMetrics();
+        int dpi = GetWindowDpi(*this);
+        LOGFONT lf = info.lfStatusFont;
+        lf.lfHeight = -MulDiv(fontSize, dpi, POINTS_PER_INCH);
+        font.CreateFontIndirect(lf);
+        SetTabFont(font);
+        RecalcLayout();
+    }
+
+    // Updates the tab icons based on the window's DPI.
+    inline void CTab::SetTabsIconSize(int iconSize)
+    {
+        int iconHeight = DpiScaleInt(iconSize);
+        iconHeight = iconHeight - iconHeight % 8;
+
+        const std::vector<TabPageInfo>& v = GetAllTabs();
+        GetImages().Create(iconHeight, iconHeight, ILC_MASK | ILC_COLOR32, 0, 0);
+        for (size_t i = 0; i < v.size(); ++i)
+        {
+            // Set the icons for the container parent.
+            GetImages().Add(v[i].tabIcon);
+        }
+
+        // Assign the ImageList.
+        UpdateImageList();
+
+        RecalcLayout();
+    }
+
+    // Assigns or removes tab control's image-list as required.
+    inline void CTab::UpdateImageList()
+    {
+        DWORD style = GetStyle();
+        if (style & TCS_FIXEDWIDTH && style & TCS_OWNERDRAWFIXED)
+            // Remove the image-list to allow very narrow tabs.
+            SetImageList(0);
+        else
+            SetImageList(m_images);
+    }
+
+    // Updates the font and icons in the tabs.
+    // Called when the dpi changes.
+    inline void CTab::UpdateTabs()
+    {
+        SetTabsFontSize();
+        SetTabsIconSize();
+    }
+
     // Provides the default message handling for the tab control.
     inline LRESULT CTab::WndProcDefault(UINT msg, WPARAM wparam, LPARAM lparam)
     {
@@ -1562,6 +1605,7 @@ namespace Win32xx
         case WM_SETFOCUS:           return OnSetFocus(msg, wparam, lparam);
         case WM_WINDOWPOSCHANGED:   return OnWindowPosChanged(msg, wparam, lparam);
         case WM_WINDOWPOSCHANGING:  return OnWindowPosChanging(msg, wparam, lparam);
+        case WM_DPICHANGED_AFTERPARENT: return OnDpiChangedAfterParent(msg, wparam, lparam);
         }
 
         // Pass unhandled messages on for default processing.
@@ -2083,6 +2127,15 @@ namespace Win32xx
         return TRUE;
     }
 
+    // Called in response to a WM_DPICHANGED_BEFOREPARENT message that is sent to child
+    // windows after a DPI change. A WM_DPICHANGED_BEFOREPARENT is only received when the
+    // application is DPI_AWARENESS_PER_MONITOR_AWARE.
+    inline LRESULT CTabbedMDI::OnDpiChangedBeforeParent(UINT, WPARAM, LPARAM)
+    {
+        RecalcLayout();
+        return 0;
+    }
+
     // Called when the tabbedMDI window is resized.
     inline LRESULT CTabbedMDI::OnWindowPosChanged(UINT msg, WPARAM wparam, LPARAM lparam)
     {
@@ -2095,18 +2148,8 @@ namespace Win32xx
     {
         if (GetTab().IsWindow())
         {
-            if (GetTab().GetItemCount() >0)
-            {
-                CRect rcClient = GetClientRect();
-                VERIFY(GetTab().SetWindowPos(0, rcClient, SWP_SHOWWINDOW));
-                GetTab().UpdateWindow();
-            }
-            else
-            {
-                CRect rcClient = GetClientRect();
-                VERIFY(GetTab().SetWindowPos(0, rcClient, SWP_HIDEWINDOW));
-                Invalidate();
-            }
+            CRect rcClient = GetClientRect();
+            GetTab().SetWindowPos(HWND_TOP, rcClient, SWP_SHOWWINDOW);
         }
     }
 
@@ -2205,6 +2248,7 @@ namespace Win32xx
         {
         case WM_SETFOCUS:           return OnSetFocus(msg, wparam, lparam);
         case WM_WINDOWPOSCHANGED:   return OnWindowPosChanged(msg, wparam, lparam);
+        case WM_DPICHANGED_BEFOREPARENT:  return OnDpiChangedBeforeParent(msg, wparam, lparam);
         case UWM_GETCTABBEDMDI:     return reinterpret_cast<LRESULT>(this);
         }
 

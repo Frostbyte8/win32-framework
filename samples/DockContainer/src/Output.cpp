@@ -26,16 +26,19 @@ CViewOutput::~CViewOutput()
 // Called when a window handle (HWND) is attached to CViewOutput.
 void CViewOutput::OnAttach()
 {
+    SetDPIFont();
     SetWindowText(_T("Output Window"));
     SetReadOnly();
 }
 
-// Sets the CREATESTRUCT parameters before the window is created.
-void CViewOutput::PreCreate(CREATESTRUCT& cs)
+// Adjusts the font size in response to window DPI changes.
+void CViewOutput::SetDPIFont()
 {
-    cs.style = ES_AUTOHSCROLL | ES_AUTOVSCROLL | ES_MULTILINE | WS_CHILD |
-                WS_CLIPCHILDREN | WS_HSCROLL | WS_VISIBLE | WS_VSCROLL;
+    m_font.CreatePointFont(100, _T("Courier New"));
+    m_font = DpiScaleFont(m_font, 9);
+    SetFont(m_font);
 }
+
 
 //////////////////////////////////////
 // CContainOutput function definitions
@@ -63,4 +66,3 @@ CDockOutput::CDockOutput()
     // Set the width of the splitter bar
     SetBarWidth(8);
 }
-

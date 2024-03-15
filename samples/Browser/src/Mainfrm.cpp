@@ -22,10 +22,13 @@ CMainFrame::~CMainFrame()
 }
 
 // Adds a ComboBoxEx control to the rebar.
-void CMainFrame::AddComboBoxBand(UINT height)
+void CMainFrame::AddComboBoxBand()
 {
     // Create the ComboboxEx window.
     m_combo.Create(GetReBar());
+
+    int padding = 2;
+    int height = m_combo.GetWindowRect().Height() + DpiScaleInt(padding);
 
     // Put the window in a new rebar band.
     REBARBANDINFO rbbi;
@@ -312,6 +315,16 @@ BOOL CMainFrame::OnHelpAbout()
     return TRUE;
 }
 
+// Limit the minimum size of the window.
+LRESULT CMainFrame::OnGetMinMaxInfo(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    LPMINMAXINFO lpMMI = (LPMINMAXINFO)lparam;
+    const CSize minimumSize(600, 400);
+    lpMMI->ptMinTrackSize.x = DpiScaleInt(minimumSize.cx);
+    lpMMI->ptMinTrackSize.y = DpiScaleInt(minimumSize.cy);
+    return FinalWindowProc(msg, wparam, lparam);
+}
+
 // Load the browser's home page.
 BOOL CMainFrame::OnHome()
 {
@@ -328,8 +341,8 @@ void CMainFrame::OnInitialUpdate()
     // Suppress Java script errors.
     GetIWebBrowser2()->put_Silent(VARIANT_TRUE);
 
-    // Load the home page
-    m_browser.GoHome();
+    // Load the web page.
+    m_browser.Navigate2(_T("www.google.com"));
 }
 
 // Called when navigation completes on either a window or frameset element.
@@ -603,8 +616,7 @@ void CMainFrame::SetupToolBar()
     }
 
     // Add the ComboBoxEx control.
-    UINT Height = 26;
-    AddComboBoxBand(Height);
+    AddComboBoxBand();
 }
 
 // Process frame's window messages.
@@ -624,6 +636,7 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         case UWM_PROPERTYCHANGE:      OnPropertyChange((DISPPARAMS*)wparam);     break;
         case UWM_STATUSTEXTCHANGE:    OnStatusTextChange((DISPPARAMS*)wparam);   break;
         case UWM_TITLECHANGE:         OnTitleChange((DISPPARAMS*)wparam);        break;
+        case WM_GETMINMAXINFO:        return OnGetMinMaxInfo(msg, wparam, lparam);
         }
 
         // Pass unhandled messages on for default processing.

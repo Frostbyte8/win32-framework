@@ -5,6 +5,11 @@
 #include "stdafx.h"
 #include "RichView.h"
 
+// Required for Dev-C++
+#ifndef IMF_AUTOFONT
+  #define IMF_AUTOFONT          0x0002
+#endif
+
 /////////////////////////////////
 // CRichView function definitions
 //
@@ -39,7 +44,7 @@ UINT CRichView::CollatePages()
     textLength = GetTextLengthEx(GTL_NUMCHARS);
 
     // Calculate the page breaks
-    LONG lastChar;  // The index of the last char which fits on the page.
+    LONG lastChar;  // The index of the last char that fits on the page.
     m_pageBreaks.clear();
     do
     {
@@ -130,6 +135,10 @@ void CRichView::OnAttach()
     DWORD mask = ENM_KEYEVENTS | ENM_DROPFILES;
     SetEventMask(mask);
 
+    // Advises the control to be per-monitor DPI aware.
+    // This affects the initial font size on a second monitor with different DPI.
+    SendMessage(WM_DPICHANGED_BEFOREPARENT);
+
     SetFontDefaults();
 }
 
@@ -216,14 +225,14 @@ void CRichView::QuickPrint(LPCTSTR docName)
 // Set a default font.
 void CRichView::SetFontDefaults()
 {
-    //Set font
-    m_font.CreatePointFont(100, _T("Courier New"));
-    SetFont(m_font, FALSE);
-
-// Required for Dev-C++
-#ifndef IMF_AUTOFONT
-  #define IMF_AUTOFONT          0x0002
-#endif
+    // Set font to Courier New, size 10.
+    CHARFORMAT cf;
+    ZeroMemory(&cf, sizeof(cf));
+    cf.cbSize = sizeof(cf);
+    cf.dwMask = CFM_SIZE | CFM_FACE;
+    StrCopy(cf.szFaceName, _T("Courier New"), 32);
+    cf.yHeight = 204;
+    SetDefaultCharFormat(cf);
 
     // Prevent Unicode characters from changing the font
     LRESULT result = SendMessage(EM_GETLANGOPTIONS, 0, 0);

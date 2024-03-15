@@ -142,9 +142,6 @@ int CMainFrame::OnCreate(CREATESTRUCT& cs)
     // UseThemes(FALSE);             // Don't use themes.
     // UseToolBar(FALSE);            // Don't use a ToolBar.
 
-    // Create the PrintPreview dialog. It is initially hidden.
-    m_preview.Create(*this);
-
     // Get the name of the default or currently chosen printer.
     CPrintDialog printDlg;
     if (printDlg.GetDefaults())
@@ -159,21 +156,38 @@ int CMainFrame::OnCreate(CREATESTRUCT& cs)
     return  CFrame::OnCreate(cs);
 }
 
-// Called in response to a EN_DROPFILES notification.
-void CMainFrame::OnDropFiles(HDROP hDropInfo)
+// Called when the effective dots per inch (dpi) for a window has changed.
+// This occurs when:
+//  - The window is moved to a new monitor that has a different DPI.
+//  - The DPI of the monitor hosting the window changes.
+LRESULT CMainFrame::OnDpiChanged(UINT msg, WPARAM wparam, LPARAM lparam)
 {
-    TCHAR fileName[_MAX_PATH];
-    ::DragQueryFile(hDropInfo, 0, fileName, _MAX_PATH);
+    CFrame::OnDpiChanged(msg, wparam, lparam);
+    UpdateToolbar();
+    RecalcLayout();
+    return 0;
+}
 
-    if (ReadFile(fileName))
+// Called in response to a EN_DROPFILES notification.
+void CMainFrame::OnDropFiles(HDROP dropInfo)
+{
+    UINT length = ::DragQueryFile(dropInfo, 0, 0, 0);
+    int bufferLength = static_cast<int>(length);
+    if (length > 0)
     {
-        m_pathName = fileName;
-        ReadFile(fileName);
-        SetWindowTitle();
-        AddMRUEntry(fileName);
+        CString fileName;
+        ::DragQueryFile(dropInfo, 0, fileName.GetBuffer(bufferLength), length + 1);
+        fileName.ReleaseBuffer();
+
+        if (ReadFile(fileName))
+        {
+            m_pathName = fileName;
+            SetWindowTitle();
+            AddMRUEntry(fileName);
+        }
     }
 
-    ::DragFinish(hDropInfo);
+    ::DragFinish(dropInfo);
 }
 
 // Cuts the selected text to the clipboard.
@@ -267,10 +281,14 @@ BOOL CMainFrame::OnFilePreview()
         CPrintDialog printDlg;
         CDC printerDC = printDlg.GetPrinterDC();
 
-        // Setup the print preview.
-        m_preview.SetSource(m_richView);   // CPrintPreview calls m_richView::PrintPage
+        // Create the preview window if required.
+        if (!m_preview.IsWindow())
+            m_preview.Create(*this);
 
-        // Set the preview's owner (for messages), and number of pages.
+        // Specify the source of the PrintPage function.
+        m_preview.SetSource(m_richView);
+
+        // Set the preview's owner for notification messages, and number of pages.
         UINT maxPage = m_richView.CollatePages();
         m_preview.DoPrintPreview(*this, maxPage);
 
@@ -483,8 +501,8 @@ LRESULT CMainFrame::OnNotify(WPARAM wparam, LPARAM lparam)
     case EN_DROPFILES:
     {
         ENDROPFILES* ENDrop = reinterpret_cast<ENDROPFILES*>(lparam);
-        HDROP hDropInfo = reinterpret_cast<HDROP>(ENDrop->hDrop);
-        OnDropFiles(hDropInfo);
+        HDROP dropInfo = reinterpret_cast<HDROP>(ENDrop->hDrop);
+        OnDropFiles(dropInfo);
     }
     return TRUE;
     }
@@ -531,6 +549,7 @@ LRESULT CMainFrame::OnPreviewClose()
     // Show the menu and toolbar
     ShowMenu(GetFrameMenu() != 0);
     ShowToolBar(m_isToolbarShown);
+    UpdateSettings();
 
     // Restore focus to the window focused before DoPrintPreview was called.
     RestoreFocus();
@@ -645,7 +664,7 @@ void CMainFrame::SetupMenuIcons()
 {
     // Use the MenuIcons bitmap for images in menu items.
     std::vector<UINT> data = GetToolBarData();
-    if (GetMenuIconHeight() >= 24)
+    if ((GetMenuIconHeight() >= 24) && (GetWindowDpi(*this) != 192))
         AddMenuIcons(data, RGB(192, 192, 192), IDW_MAIN);
     else
         AddMenuIcons(data, RGB(192, 192, 192), IDW_MENUICONS);

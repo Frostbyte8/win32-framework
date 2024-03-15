@@ -108,7 +108,7 @@ HWND CMainFrame::Create(HWND parent)
 CString CMainFrame::CreateAppDataFolder(const CString& subfolder)
 {
     ::SetLastError(0);
-    CString app_data_path = GetAppDataPath();
+    CString appDataPath = GetAppDataPath();
 
     int from = 0;
     int to = subfolder.GetLength();
@@ -121,19 +121,19 @@ CString CMainFrame::CreateAppDataFolder(const CString& subfolder)
             next = to;
 
         CString add = subfolder.Mid(from, next - from);
-        app_data_path += _T("\\") + add;
-        ::CreateDirectory(app_data_path, 0);
+        appDataPath += _T("\\") + add;
+        ::CreateDirectory(appDataPath, NULL);
 
-        if ((::CreateDirectory(app_data_path, 0) == 0) && GetLastError() != ERROR_ALREADY_EXISTS)
+        if ((::CreateDirectory(appDataPath, NULL) == 0) && GetLastError() != ERROR_ALREADY_EXISTS)
         {
-            CString msg = app_data_path + _T("\nDirectory creation error.");
+            CString msg = appDataPath + _T("Directory creation error.");
             throw CUserException(msg);
         }
 
         from = ++next;
     }
 
-    return app_data_path;
+    return appDataPath;
 }
 
 // Identifies the window from the cursor position and returns its ID.
@@ -141,16 +141,16 @@ UINT CMainFrame::GetIDFromCursorPos()
 {
     UINT id = 0;
     CPoint pt = GetCursorPos();
-    HWND hCtrl = WindowFromPoint(pt);
+    HWND control = ::WindowFromPoint(pt);
 
-    if (hCtrl == GetToolBar().GetHwnd())
+    if (control == GetToolBar().GetHwnd())
     {
         // Over the toolbar window, so identify the toolbar button
 
         int button = GetToolBar().HitTest();
         id = GetToolBar().GetCommandID(button);
     }
-    else if (hCtrl == GetHwnd())
+    else if (control == GetHwnd())
     {
         // Over the frame window. Check to see if we are over a non-client area spot.
 
@@ -160,10 +160,10 @@ UINT CMainFrame::GetIDFromCursorPos()
 
         id = IDFR_NCFRAME + result; // As defined in resource.h
     }
-    else if (hCtrl != 0)
+    else if (control != 0)
     {
         // The view window (dialog), dialog controls, menubar and statusbar all have control IDs.
-        id = ::GetDlgCtrlID(hCtrl);
+        id = ::GetDlgCtrlID(control);
     }
 
     return id;
@@ -291,7 +291,7 @@ LRESULT CMainFrame::OnLButtonDown(UINT msg, WPARAM wparam, LPARAM lparam)
         return 0;
     }
 
-    return WndProcDefault(msg, wparam, lparam);
+    return FinalWindowProc(msg, wparam, lparam);
 }
 
 // Modifies the cursor when appropriate.
@@ -303,7 +303,7 @@ LRESULT CMainFrame::OnSetCursor(UINT msg, WPARAM wparam, LPARAM lparam)
         return TRUE;
     }
 
-    return WndProcDefault(msg, wparam, lparam);
+    return FinalWindowProc(msg, wparam, lparam);
 }
 
 // Called when the F1 key is pressed while SHIFT is held down.
@@ -337,7 +337,7 @@ void CMainFrame::OnUpdateCheckC(UINT id)
 // Updates the menu when a radio button is selected.
 void CMainFrame::OnUpdateRangeOfIDs(UINT idFirst, UINT idLast, UINT id)
 {
-    int fileItem = GetMenuItemPos(GetFrameMenu(), _T("Select"));
+    int fileItem = GetFrameMenu().FindMenuItem(_T("&Select"));
     CMenu radioMenu = GetFrameMenu().GetSubMenu(fileItem);
     if (GetDoc().GetRadio() == id)
         radioMenu.CheckMenuRadioItem(idFirst, idLast, id, MF_BYCOMMAND);
@@ -367,7 +367,7 @@ BOOL CMainFrame::SaveRegistrySettings()
 void CMainFrame::SetupMenuIcons()
 {
     std::vector<UINT> data = GetToolBarData();
-    if (GetMenuIconHeight() >= 24)
+    if ((GetMenuIconHeight() >= 24) && (GetWindowDpi(*this) != 192))
         SetMenuIcons(data, RGB(255, 0, 255), IDB_TOOLBAR24);
     else
         SetMenuIcons(data, RGB(192, 192, 192), IDB_TOOLBAR16);

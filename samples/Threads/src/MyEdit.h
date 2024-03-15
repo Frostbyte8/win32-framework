@@ -14,6 +14,7 @@ class CMyEdit : public CEdit
 public:
     CMyEdit();
     virtual ~CMyEdit() {}
+    void DPISetFont();
 
 protected:
     // Virtual functions that override base class functions
@@ -21,8 +22,8 @@ protected:
     virtual void PreCreate(CREATESTRUCT& cs);
 
 private:
-    CMyEdit(const CMyEdit&);                // Disable copy construction
-    CMyEdit& operator = (const CMyEdit&);   // Disable assignment operator
+    CMyEdit(const CMyEdit&);               // Disable copy construction
+    CMyEdit& operator=(const CMyEdit&);    // Disable assignment operator
 
     CFont m_font;
 };

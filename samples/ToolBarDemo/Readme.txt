@@ -1,7 +1,7 @@
 ToolBarDemo Example
 ===================
 This project demonstrates the how use several toolbars in a frame,
-and how to customize a ToolBar. A ToolBar is a window control which
+and how to customize a ToolBar. A ToolBar is a window control that
 has one or more buttons. Clicking these sends a command message to the
 parent window, much like selecting a menu item.
 
@@ -21,10 +21,6 @@ align itself to the Top, Left, Right or Bottom edge depending on which
 button is pressed. This ToolBar is a child window of the view window,
 so the code to create and position it is in the View.cpp file.
 
-Note:
-Refer to the themes sample for a demonstration of how to replace a 
-ToolBar button with a ComboBoxEx control.
-  
 
 Features demonstrated in this example
 =====================================

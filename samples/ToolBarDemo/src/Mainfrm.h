@@ -10,7 +10,7 @@
 
 ///////////////////////////////////////////////////////////
 // CMainFrame manages the application's main window.
-// The main window is a frame which has a menubar, toolbar,
+// The main window is a frame that has a menubar, toolbar,
 // statusbar and view window.
 class CMainFrame : public CFrame
 {
@@ -18,13 +18,15 @@ public:
     CMainFrame();
     virtual ~CMainFrame();
     virtual HWND Create(HWND parent = 0);
+    void SetImageListsForToolBars();
 
 protected:
     // Virtual functions that override base class functions
     virtual LRESULT OnBeginAdjust(LPNMTOOLBAR pNMTB);
-    virtual BOOL OnCommand(WPARAM wparam, LPARAM lparam);
-    virtual int OnCreate(CREATESTRUCT& cs);
-    virtual void OnInitialUpdate();
+    virtual BOOL    OnCommand(WPARAM wparam, LPARAM lparam);
+    virtual int     OnCreate(CREATESTRUCT& cs);
+    virtual LRESULT OnDpiChanged(UINT msg, WPARAM wparam, LPARAM lparam);
+    virtual void    OnInitialUpdate();
     virtual LRESULT OnNotify(WPARAM wparam, LPARAM lparam);
     virtual BOOL    OnViewToolBar();
     virtual void    SetupMenuIcons();
@@ -32,8 +34,8 @@ protected:
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CMainFrame(const CMainFrame&);                // Disable copy construction
-    CMainFrame& operator = (const CMainFrame&);   // Disable assignment operator
+    CMainFrame(const CMainFrame&);               // Disable copy construction
+    CMainFrame& operator=(const CMainFrame&);    // Disable assignment operator
 
     void    ResizeToolbarBand() const;
     void    SaveTBDefault();
@@ -57,8 +59,6 @@ private:
     CView m_view;
     CToolBar m_arrows;
     CToolBar m_cards;
-    CImageList m_arrowImages;
-    CImageList m_cardImages;
     std::vector<TBBUTTON>   m_defaultButtons;
     std::vector<TBBUTTON>   m_resetButtons;
     bool    m_useBigIcons;

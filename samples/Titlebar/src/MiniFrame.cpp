@@ -4,7 +4,7 @@
 
 #include "stdafx.h"
 #include <dwmapi.h>
-#include <uxtheme.h>
+#include <Uxtheme.h>
 #include <vsstyle.h>
 #include <vssym32.h>
 #include "MiniFrame.h"
@@ -57,7 +57,7 @@ void CMiniFrame::DrawBackground(CDC& dc) const
 void CMiniFrame::DrawCloseButton(CDC& dc) const
 {
     ButtonRects buttonRects = GetButtonRects();
-    UINT dpi = GetDpiForWindow(*this);
+    UINT dpi = ::GetDpiForWindow(*this);
     int iconDimension = dpi_scale(10, dpi);
     COLORREF itemColor = IsActive() ? m_colors.activeItem : m_colors.inactiveItem;
     dc.CreatePen(PS_SOLID, 1, itemColor);
@@ -82,7 +82,7 @@ void CMiniFrame::DrawCloseButton(CDC& dc) const
 void CMiniFrame::DrawMaximizeButton(CDC& dc) const
 {
     ButtonRects buttonRects = GetButtonRects();
-    UINT dpi = GetDpiForWindow(*this);
+    UINT dpi = ::GetDpiForWindow(*this);
     int iconDimension = dpi_scale(10, dpi);
     if (m_hoveredButton == TitlebarButton::Maximize)
     {
@@ -108,7 +108,7 @@ void CMiniFrame::DrawMinimizeButton(CDC& dc) const
     COLORREF itemColor = IsActive() ? m_colors.activeItem : m_colors.inactiveItem;
     CBrush buttonIconBrush(itemColor);
     ButtonRects buttonRects = GetButtonRects();
-    UINT dpi = GetDpiForWindow(*this);
+    UINT dpi = ::GetDpiForWindow(*this);
     int iconDimension = dpi_scale(10, dpi);
     if (m_hoveredButton == TitlebarButton::Minimize)
     {
@@ -197,7 +197,7 @@ void CMiniFrame::DrawWindowIcon(CDC& dc) const
 // Retrieves the rect locations of the title bar buttons.
 ButtonRects CMiniFrame::GetButtonRects() const
 {
-    UINT dpi = GetDpiForWindow(*this);
+    UINT dpi = ::GetDpiForWindow(*this);
     ButtonRects buttonRects;
     // Sadly SM_CXSIZE does not result in the right size buttons for Win10
     int buttonWidth = dpi_scale(47, dpi);
@@ -272,7 +272,7 @@ CRect CMiniFrame::GetTitlebarRect() const
     const int borders = 2;
     HTHEME theme = ::OpenThemeData(*this, L"WINDOW");
     UINT dpi = ::GetDpiForWindow(*this);
-    ::GetThemePartSize(theme, NULL, WP_CAPTION, CS_ACTIVE, NULL, THEMESIZE::TS_TRUE, &barSize);
+    ::GetThemePartSize(theme, nullptr, WP_CAPTION, CS_ACTIVE, nullptr, THEMESIZE::TS_TRUE, &barSize);
     ::CloseThemeData(theme);
     int height = dpi_scale(barSize.cy, dpi) + borders;
 
@@ -307,7 +307,7 @@ LRESULT CMiniFrame::OnActivate(UINT msg, WPARAM wparam, LPARAM lparam)
 {
     RECT titlebarRect = GetTitlebarRect();
     InvalidateRect(titlebarRect, FALSE);
-    return WndProcDefault(msg, wparam, lparam);
+    return FinalWindowProc(msg, wparam, lparam);
 }
 
 // OnCommand responds to menu input.
@@ -334,7 +334,7 @@ int CMiniFrame::OnCreate(CREATESTRUCT&)
 {
     // Inform the application of the frame change to force redrawing with the new
     // client area that is extended into the title bar.
-    SetWindowPos(NULL, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE);
+    SetWindowPos(HWND_TOP, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE);
 
     // Set the window's icon.
     SetIconSmall(IDW_MAIN);
@@ -363,6 +363,21 @@ void CMiniFrame::OnDestroy()
 {
     // End the application.
     ::PostQuitMessage(0);
+}
+
+// Called when the effective dots per inch (dpi) for a window has changed.
+// This occurs when:
+//  - The window is moved to a new monitor that has a different DPI.
+//  - The DPI of the monitor hosting the window changes.
+LRESULT CMiniFrame::OnDpiChanged(UINT, WPARAM, LPARAM lparam)
+{
+    LPRECT prc = reinterpret_cast<LPRECT>(lparam);
+    SetWindowPos(HWND_TOP, *prc, SWP_SHOWWINDOW);
+
+    m_menubar.SetupMenuBar(m_menu);
+    RecalcLayout();
+
+    return 0;
 }
 
 // Called when the window's background is drawn.
@@ -395,10 +410,10 @@ BOOL CMiniFrame::OnHelp()
 LRESULT CMiniFrame::OnGetMinMaxInfo(UINT msg, WPARAM wparam, LPARAM lparam)
 {
     LPMINMAXINFO lpMMI = (LPMINMAXINFO)lparam;
-    lpMMI->ptMinTrackSize.x = 400;
-    lpMMI->ptMinTrackSize.y = 300;
+    lpMMI->ptMinTrackSize.x = DpiScaleInt(400);
+    lpMMI->ptMinTrackSize.y = DpiScaleInt(300);
 
-    return WndProcDefault(msg, wparam, lparam);
+    return FinalWindowProc(msg, wparam, lparam);
 }
 
 // Handle WM_NCCALCSIZE to extend client (paintable) area into the title bar region.
@@ -491,7 +506,7 @@ LRESULT CMiniFrame::OnNCLButtonDown(UINT msg, WPARAM wparam, LPARAM lparam)
    }
 
     // Default handling allows for dragging and double click to maximize.
-    return WndProcDefault(msg, wparam, lparam);
+    return FinalWindowProc(msg, wparam, lparam);
 }
 
 // Map button clicks to the correct messages for the window.
@@ -517,7 +532,7 @@ LRESULT CMiniFrame::OnNCLButtonUp(UINT msg, WPARAM wparam, LPARAM lparam)
         }
     }
 
-    return WndProcDefault(msg, wparam, lparam);
+    return FinalWindowProc(msg, wparam, lparam);
 }
 
 // Update the hovered button when the mouse leaves the non-client area.
@@ -530,7 +545,7 @@ LRESULT CMiniFrame::OnNCMouseLeave(UINT msg, WPARAM wparam, LPARAM lparam)
         m_hoveredButton = TitlebarButton::None;
     }
 
-    return WndProcDefault(msg, wparam, lparam);
+    return FinalWindowProc(msg, wparam, lparam);
 }
 
 // Track when mouse hovers each of the title bar buttons to draw the highlight correctly.
@@ -551,7 +566,7 @@ LRESULT CMiniFrame::OnNCMouseMove(UINT msg, WPARAM wparam, LPARAM lparam)
         InvalidateRect(buttonRects.maximize, FALSE);
     }
 
-    return WndProcDefault(msg, wparam, lparam);
+    return FinalWindowProc(msg, wparam, lparam);
 }
 
 // Display a system menu with a right mouse button click on the titlebar.
@@ -573,7 +588,7 @@ LRESULT CMiniFrame::OnNCRButtonDown(UINT msg, WPARAM wparam, LPARAM lparam)
         SendMessage(WM_SYSCOMMAND, command, 0);
     }
 
-    return WndProcDefault(msg, wparam, lparam);
+    return FinalWindowProc(msg, wparam, lparam);
 }
 
 // Processes notification (WM_NOTIFY) messages from a child window.
@@ -620,7 +635,19 @@ LRESULT CMiniFrame::OnPaint(UINT, WPARAM, LPARAM)
 LRESULT CMiniFrame::OnSize(UINT msg, WPARAM wparam, LPARAM lparam)
 {
     RecalcLayout();
-    return WndProcDefault(msg, wparam, lparam);
+    return FinalWindowProc(msg, wparam, lparam);
+}
+
+// Called in response to system command.
+LRESULT CMiniFrame::OnSysCommand(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    // Pass menu accelerator keys to the menubar.
+    if ((SC_KEYMENU == wparam) && (VK_SPACE != lparam) && m_menubar.IsWindow())
+    {
+        m_menubar.SysCommand(msg, wparam, lparam);
+        return 0;
+    }
+    return FinalWindowProc(msg, wparam, lparam);
 }
 
 // Called before the window is created to set the CREATESTRUCT parameters.
@@ -628,10 +655,10 @@ void CMiniFrame::PreCreate(CREATESTRUCT& cs)
 {
     // Set some optional parameters for the window
     cs.lpszClass = _T("MiniFrame Window");  // Window Class
-    cs.x = 50;                              // top x
-    cs.y = 50;                              // top y
-    cs.cx = 400;                            // width
-    cs.cy = 300;                            // height
+    cs.x = DpiScaleInt(50);                 // top x
+    cs.y = DpiScaleInt(50);                 // top y
+    cs.cx = DpiScaleInt(400);               // width
+    cs.cy = DpiScaleInt(300);               // height
 }
 
 // Repositions the child windows.
@@ -647,17 +674,17 @@ void CMiniFrame::RecalcLayout() const
         CRect menuRect = GetClientRect();
         CSize size = m_menubar.GetMaxSize();
         menuRect.left = GetButtonRects().system.right;
-        menuRect.top = (rect.Height() - size.cy) / 2;;
+        menuRect.top = (rect.Height() - size.cy) / 2;
         menuRect.right = menuRect.left + size.cx;
         menuRect.bottom = menuRect.top + size.cy;
-        m_menubar.SetWindowPos(NULL, menuRect, SWP_SHOWWINDOW);
+        m_menubar.SetWindowPos(HWND_TOP, menuRect, SWP_SHOWWINDOW);
     }
 
     // Position the view window.
     if (m_view.IsWindow())
     {
         rect = GetViewRect();
-        m_view.SetWindowPos(NULL, rect, SWP_SHOWWINDOW);
+        m_view.SetWindowPos(HWND_TOP, rect, SWP_SHOWWINDOW);
     }
 
 }
@@ -668,6 +695,7 @@ LRESULT CMiniFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
     switch (msg)
     {
     case WM_ACTIVATE:           return OnActivate(msg, wparam, lparam);
+    case WM_DPICHANGED:         return OnDpiChanged(msg, wparam, lparam);
     case WM_ERASEBKGND:         return OnEraseBkGnd(msg, wparam, lparam);
     case WM_GETMINMAXINFO:      return OnGetMinMaxInfo(msg, wparam, lparam);
     case WM_HELP:               return OnHelp();
@@ -680,6 +708,7 @@ LRESULT CMiniFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
     case WM_NCRBUTTONDOWN:      return OnNCRButtonDown(msg, wparam, lparam);
     case WM_PAINT:              return OnPaint(msg, wparam, lparam);
     case WM_SIZE:               return OnSize(msg, wparam, lparam);
+    case WM_SYSCOMMAND:         return OnSysCommand(msg, wparam, lparam);
     }
 
     // Pass unhandled messages on for default processing.
