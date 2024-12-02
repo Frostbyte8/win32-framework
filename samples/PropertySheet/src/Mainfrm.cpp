@@ -6,8 +6,6 @@
 #include "Mainfrm.h"
 #include "resource.h"
 
-using namespace std;
-
 //////////////////////////////////
 // CMainFrame function definitions
 //
@@ -120,8 +118,8 @@ BOOL CMainFrame::OnModeless()
     // Permit only one Modeless property sheet.
     if (!m_modelessPS.IsWindow())
     {
-        m_modelessPS.AddPage(make_unique<CButtonPage>(IDD_BUTTONS, _T("Buttons")));
-        m_modelessPS.AddPage(make_unique<CComboPage>(IDD_COMBOBOXES, _T("Combo Boxes")));
+        m_modelessPS.AddPage(new CButtonPage(IDD_BUTTONS, _T("Buttons")));
+        m_modelessPS.AddPage(new CComboPage(IDD_COMBOBOXES, _T("Combo Boxes")));
         m_modelessPS.SetTitle(_T("Modeless Property Sheet"));
         m_modelessPS.Create(*this);
     }
@@ -138,8 +136,8 @@ BOOL CMainFrame::OnModal()
         m_modelessPS.Destroy();
 
     CMyPropertySheet mps(_T("Modal Property Sheet"), *this);
-    mps.AddPage(make_unique<CButtonPage>(IDD_BUTTONS, _T("Buttons")));
-    mps.AddPage(make_unique<CComboPage>(IDD_COMBOBOXES, _T("Combo Boxes")));
+    mps.AddPage(new CButtonPage(IDD_BUTTONS, _T("Buttons")));
+    mps.AddPage(new CComboPage(IDD_COMBOBOXES, _T("Combo Boxes")));
     mps.DoModal();
 
     return TRUE;
@@ -168,8 +166,8 @@ LRESULT CMainFrame::OnNotify(WPARAM wparam, LPARAM lparam)
 BOOL CMainFrame::OnWizard()
 {
     CMyPropertySheet mps(NULL, *this);
-    mps.AddPage(make_unique<CButtonPage>(IDD_BUTTONS, _T("Buttons")));
-    mps.AddPage(make_unique<CComboPage>(IDD_COMBOBOXES, _T("Combo Boxes")));
+    mps.AddPage(new CButtonPage(IDD_BUTTONS, _T("Buttons")));
+    mps.AddPage(new CComboPage(IDD_COMBOBOXES, _T("Combo Boxes")));
     mps.SetWizardMode(TRUE);
     mps.DoModal();
     return TRUE;

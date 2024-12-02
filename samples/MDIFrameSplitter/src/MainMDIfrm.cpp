@@ -115,7 +115,7 @@ BOOL CMainMDIFrame::OnFileExit()
 // Adds a new splitter MDI child.
 BOOL CMainMDIFrame::OnFileNew()
 {
-    AddMDIChild(std::make_unique<CSplitterMDIChild>());
+    AddMDIChild(new CSplitterMDIChild);
     return TRUE;
 }
 

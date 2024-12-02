@@ -10,7 +10,6 @@
 #include "Text.h"
 #include "resource.h"
 
-using namespace std;
 
 //////////////////////////////////
 // CMainFrame function definitions
@@ -63,58 +62,58 @@ void CMainFrame::LoadDefaultDockers()
     DWORD style = DS_CLIENTEDGE; // The style added to each docker
 
     // Add the right most dockers.
-    CDocker* pDockRight = AddDockedChild(make_unique<CDockClasses>(), DS_DOCKED_RIGHT | style, DpiScaleInt(200), ID_DOCK_CLASSES1);
-    pDockRight->AddDockedChild(make_unique<CDockFiles>(), DS_DOCKED_CONTAINER | style, DpiScaleInt(200), ID_DOCK_FILES1);
-    pDockRight->AddDockedChild(make_unique<CDockClasses>(), DS_DOCKED_CONTAINER | style, DpiScaleInt(200), ID_DOCK_CLASSES2);
-    pDockRight->AddDockedChild(make_unique<CDockFiles>(), DS_DOCKED_CONTAINER | style, DpiScaleInt(200), ID_DOCK_FILES2);
+    CDocker* pDockRight = AddDockedChild(new CDockClasses, DS_DOCKED_RIGHT | style, DpiScaleInt(200), ID_DOCK_CLASSES1);
+    pDockRight->AddDockedChild(new CDockFiles, DS_DOCKED_CONTAINER | style, DpiScaleInt(200), ID_DOCK_FILES1);
+    pDockRight->AddDockedChild(new CDockClasses, DS_DOCKED_CONTAINER | style, DpiScaleInt(200), ID_DOCK_CLASSES2);
+    pDockRight->AddDockedChild(new CDockFiles, DS_DOCKED_CONTAINER | style, DpiScaleInt(200), ID_DOCK_FILES2);
 
     // Add the bottom dockers.
-    CDocker* pDockBottom = AddDockedChild(make_unique<CDockOutput>(), DS_DOCKED_BOTTOM | style, DpiScaleInt(100), ID_DOCK_OUTPUT1);
-    pDockBottom->AddDockedChild(make_unique<CDockOutput>(), DS_DOCKED_CONTAINER | style, DpiScaleInt(100), ID_DOCK_OUTPUT2);
+    CDocker* pDockBottom = AddDockedChild(new CDockOutput, DS_DOCKED_BOTTOM | style, DpiScaleInt(100), ID_DOCK_OUTPUT1);
+    pDockBottom->AddDockedChild(new CDockOutput, DS_DOCKED_CONTAINER | style, DpiScaleInt(100), ID_DOCK_OUTPUT2);
 
     // Add the frame's dockers.
-    AddDockedChild(make_unique<CDockText>(), DS_DOCKED_CONTAINER | style, DpiScaleInt(100), ID_DOCK_TEXT1);
-    AddDockedChild(make_unique<CDockText>(), DS_DOCKED_CONTAINER | style, DpiScaleInt(100), ID_DOCK_TEXT2);
+    AddDockedChild(new CDockText, DS_DOCKED_CONTAINER | style, DpiScaleInt(100), ID_DOCK_TEXT1);
+    AddDockedChild(new CDockText, DS_DOCKED_CONTAINER | style, DpiScaleInt(100), ID_DOCK_TEXT2);
 
     SetDockStyle(style);
 }
 
 // Adds a new docker. The id specifies its type.
-DockPtr CMainFrame::NewDockerFromID(int id)
+CDocker* CMainFrame::NewDockerFromID(int id)
 {
-    DockPtr docker;
+    CDocker* pDock = NULL;
     switch(id)
     {
     case ID_DOCK_CLASSES1:
-        docker = make_unique<CDockClasses>();
+        pDock = new CDockClasses;
         break;
     case ID_DOCK_CLASSES2:
-        docker = make_unique<CDockClasses>();
+        pDock = new CDockClasses;
         break;
     case ID_DOCK_FILES1:
-        docker = make_unique<CDockFiles>();
+        pDock = new CDockFiles;
         break;
     case ID_DOCK_FILES2:
-        docker = make_unique<CDockFiles>();
+        pDock = new CDockFiles;
         break;
     case ID_DOCK_OUTPUT1:
-        docker = make_unique<CDockOutput>();
+        pDock = new CDockOutput;
         break;
     case ID_DOCK_OUTPUT2:
-        docker = make_unique<CDockOutput>();
+        pDock = new CDockOutput;
         break;
     case ID_DOCK_TEXT1:
-        docker = make_unique<CDockText>();
+        pDock = new CDockText;
         break;
     case ID_DOCK_TEXT2:
-        docker = make_unique<CDockText>();
+        pDock = new CDockText;
         break;
     default:
         TRACE("Unknown Dock ID\n");
         break;
     }
 
-    return docker;
+    return pDock;
 }
 
 // OnCommand responds to menu and and toolbar input.

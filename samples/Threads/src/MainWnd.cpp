@@ -70,7 +70,8 @@ int CMainWindow::OnCreate(CREATESTRUCT&)
     //  goes out of scope.
     for (int i = 1 ; i <= m_maxWindows ; i++)
     {
-        m_threads.push_back(std::make_unique<CMyWinThread>(i, GetHwnd()));
+        MyThreadPtr threadPtr(new CMyWinThread(i, GetHwnd()));
+        m_threads.push_back(threadPtr);
     }
 
     // Create the threads belonging to the MyThread objects.

@@ -20,7 +20,7 @@ public:
 
 protected:
     // Virtual functions that override base class functions
-    virtual DockPtr NewDockerFromID(int id);
+    virtual CDocker* NewDockerFromID(int id);
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:

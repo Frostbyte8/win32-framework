@@ -12,8 +12,12 @@
 // Forward declaration.
 class CTCPClientDlg;
 
-typedef std::shared_ptr<CSocket> SocketPtr;
-typedef std::shared_ptr<CTCPClientDlg> TCPClientDlgPtr;
+
+// Note: Modern C++ compilers can use these typedefs instead.
+// typedef std::shared_ptr<CSocket> SocketPtr;
+// typedef std::shared_ptr<CTCPClientDlg> TCPClientDlgPtr;
+typedef Shared_Ptr<CTCPClientDlg> TCPClientDlgPtr;
+typedef Shared_Ptr<CSocket> SocketPtr;
 
 
 //////////////////////////////////////////////////////////////

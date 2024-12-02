@@ -13,7 +13,6 @@
 #include "Text.h"
 #include "resource.h"
 
-using namespace std;
 
 //////////////////////////////////
 // CMainFrame function definitions
@@ -57,6 +56,7 @@ void CMainFrame::HideSingleContainerTab(bool hideSingle)
             pContainer->SetHideSingleTab(hideSingle);
         }
     }
+
 }
 
 // Loads the default arrangement of dockers.
@@ -67,16 +67,16 @@ void CMainFrame::LoadDefaultDockers()
     DWORD style = DS_CLIENTEDGE; // The style added to each docker
 
     // Add the parent dockers
-    CDocker* pDockRight  = AddDockedChild(make_unique<CDockClasses>(), DS_DOCKED_RIGHT | style, DpiScaleInt(250), ID_DOCK_CLASSES1);
-    CDocker* pDockBottom = AddDockedChild(make_unique<CDockText>(), DS_DOCKED_BOTTOM | style, DpiScaleInt(100), ID_DOCK_TEXT1);
+    CDocker* pDockRight  = AddDockedChild(new CDockClasses, DS_DOCKED_RIGHT | style, DpiScaleInt(250), ID_DOCK_CLASSES1);
+    CDocker* pDockBottom = AddDockedChild(new CDockText, DS_DOCKED_BOTTOM | style, DpiScaleInt(100), ID_DOCK_TEXT1);
 
     // Add the remaining dockers
-    pDockRight->AddDockedChild(make_unique<CDockFiles>(), DS_DOCKED_CONTAINER | style, DpiScaleInt(250), ID_DOCK_FILES1);
-    pDockRight->AddDockedChild(make_unique<CDockDialog>(), DS_DOCKED_CONTAINER | style, DpiScaleInt(250), ID_DOCK_DIALOG);
+    pDockRight->AddDockedChild(new CDockFiles, DS_DOCKED_CONTAINER | style, DpiScaleInt(250), ID_DOCK_FILES1);
+    pDockRight->AddDockedChild(new CDockDialog, DS_DOCKED_CONTAINER | style, DpiScaleInt(250), ID_DOCK_DIALOG);
 
-    pDockBottom->AddDockedChild(make_unique<CDockOutput>(), DS_DOCKED_CONTAINER | style, DpiScaleInt(100), ID_DOCK_OUTPUT1);
-    pDockBottom->AddDockedChild(make_unique<CDockText>(), DS_DOCKED_CONTAINER | style, DpiScaleInt(100), ID_DOCK_TEXT2);
-    pDockBottom->AddDockedChild(make_unique<CDockOutput>(), DS_DOCKED_CONTAINER | style, DpiScaleInt(100), ID_DOCK_OUTPUT2);
+    pDockBottom->AddDockedChild(new CDockOutput, DS_DOCKED_CONTAINER | style, DpiScaleInt(100), ID_DOCK_OUTPUT1);
+    pDockBottom->AddDockedChild(new CDockText, DS_DOCKED_CONTAINER | style, DpiScaleInt(100), ID_DOCK_TEXT2);
+    pDockBottom->AddDockedChild(new CDockOutput, DS_DOCKED_CONTAINER | style, DpiScaleInt(100), ID_DOCK_OUTPUT2);
 
     SetDockStyle(style);
 }
@@ -85,55 +85,55 @@ void CMainFrame::LoadDefaultDockers()
 void CMainFrame::LoadDefaultMDIs()
 {
     // Add some MDI tabs
-    m_myTabbedMDI.AddMDIChild(make_unique<CViewWeb>(), _T("Browser"), ID_MDI_WEB);
-    m_myTabbedMDI.AddMDIChild(make_unique<CViewRect>(), _T("Rectangles"), ID_MDI_RECT);
-    m_myTabbedMDI.AddMDIChild(make_unique<CViewText>(), _T("TextView"), ID_MDI_TEXT);
-    m_myTabbedMDI.AddMDIChild(make_unique<CViewClasses>(), _T("Classes"), ID_MDI_CLASSES);
-    m_myTabbedMDI.AddMDIChild(make_unique<CViewFiles>(), _T("Files"), ID_MDI_FILES);
+    m_myTabbedMDI.AddMDIChild(new CViewWeb, _T("Browser"), ID_MDI_WEB);
+    m_myTabbedMDI.AddMDIChild(new CViewRect, _T("Rectangles"), ID_MDI_RECT);
+    m_myTabbedMDI.AddMDIChild(new CViewText, _T("TextView"), ID_MDI_TEXT);
+    m_myTabbedMDI.AddMDIChild(new CViewClasses, _T("Classes"), ID_MDI_CLASSES);
+    m_myTabbedMDI.AddMDIChild(new CViewFiles, _T("Files"), ID_MDI_FILES);
 
     if (m_myTabbedMDI.IsWindow())
         m_myTabbedMDI.SetActiveMDITab(0);
 }
 
 // Adds a new docker. The dockID parameter specifies the docker type.
-DockPtr CMainFrame::NewDockerFromID(int dockID)
+CDocker* CMainFrame::NewDockerFromID(int dockID)
 {
-    DockPtr docker;
+    CDocker* pDocker = NULL;
     switch (dockID)
     {
     case ID_DOCK_CLASSES1:
-        docker = make_unique<CDockClasses>();
+        pDocker = new CDockClasses;
         break;
     case ID_DOCK_CLASSES2:
-        docker = make_unique<CDockClasses>();
+        pDocker = new CDockClasses;
         break;
     case ID_DOCK_FILES1:
-        docker = make_unique<CDockFiles>();
+        pDocker = new CDockFiles;
         break;
     case ID_DOCK_FILES2:
-        docker = make_unique<CDockFiles>();
+        pDocker = new CDockFiles;
         break;
     case ID_DOCK_OUTPUT1:
-        docker = make_unique<CDockOutput>();
+        pDocker = new CDockOutput;
         break;
     case ID_DOCK_OUTPUT2:
-        docker = make_unique<CDockOutput>();
+        pDocker = new CDockOutput;
         break;
     case ID_DOCK_TEXT1:
-        docker = make_unique<CDockText>();
+        pDocker = new CDockText;
         break;
     case ID_DOCK_TEXT2:
-        docker = make_unique<CDockText>();
+        pDocker = new CDockText;
         break;
     case ID_DOCK_DIALOG:
-        docker = make_unique<CDockDialog>();
+        pDocker = new CDockDialog;
         break;
     default:
         TRACE("Unknown Dock ID\n");
         break;
     }
 
-    return docker;
+    return pDocker;
 }
 
 // Close all the dockers.
@@ -295,35 +295,35 @@ BOOL CMainFrame::OnFileNew()
 // Adds a MDI with a list-view.
 BOOL CMainFrame::OnFileNewList()
 {
-    m_myTabbedMDI.AddMDIChild(make_unique<CViewFiles>(), _T("Files"), ID_MDI_FILES);
+    m_myTabbedMDI.AddMDIChild(new CViewFiles, _T("Files"), ID_MDI_FILES);
     return TRUE;
 }
 
 // Adds a MDI with a Rectangles view.
 BOOL CMainFrame::OnFileNewRect()
 {
-    m_myTabbedMDI.AddMDIChild(make_unique<CViewRect>(), _T("Rectangles"), ID_MDI_RECT);
+    m_myTabbedMDI.AddMDIChild(new CViewRect, _T("Rectangles"), ID_MDI_RECT);
     return TRUE;
 }
 
 // Adds a MDI with a Browser view.
 BOOL CMainFrame::OnFileNewBrowser()
 {
-    m_myTabbedMDI.AddMDIChild(make_unique<CViewWeb>(), _T("Browser"), ID_MDI_WEB);
+    m_myTabbedMDI.AddMDIChild(new CViewWeb, _T("Browser"), ID_MDI_WEB);
     return TRUE;
 }
 
 // Adds a MDI with a Text view.
 BOOL CMainFrame::OnFileNewText()
 {
-    m_myTabbedMDI.AddMDIChild(make_unique<CViewText>(), _T("TextView"), ID_MDI_TEXT);
+    m_myTabbedMDI.AddMDIChild(new CViewText, _T("TextView"), ID_MDI_TEXT);
     return TRUE;
 }
 
 // Adds a MDI with a tree-view.
 BOOL CMainFrame::OnFileNewTree()
 {
-    m_myTabbedMDI.AddMDIChild(make_unique<CViewClasses>(), _T("Classes"), ID_MDI_CLASSES);
+    m_myTabbedMDI.AddMDIChild(new CViewClasses, _T("Classes"), ID_MDI_CLASSES);
     return TRUE;
 }
 

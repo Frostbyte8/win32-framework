@@ -10,8 +10,12 @@
 class CWorkerSocket;
 class CTCPClientDlg;
 
-typedef std::shared_ptr<CWorkerSocket> ServerSocketPtr;
-typedef std::shared_ptr<CTCPClientDlg> TCPClientDlgPtr;
+
+// Note: Modern C++ compilers can use these typedefs instead.
+// typedef std::shared_ptr<CWorkerSocket> ServerSocketPtr;
+// typedef std::shared_ptr<CTCPClientDlg> TCPClientDlgPtr;
+typedef Shared_Ptr<CWorkerSocket> ServerSocketPtr;
+typedef Shared_Ptr<CTCPClientDlg> TCPClientDlgPtr;
 
 
 //////////////////////////////////////////////////////////////

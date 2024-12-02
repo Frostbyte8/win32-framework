@@ -58,7 +58,7 @@ private:
     void LoadListViewRegistrySettings();
 
     // Member variables
-    CDocker* m_pLeftPane;
+    CLeftPane* m_pLeftPane;
     CRightPane m_rightPane;
     bool m_showHidden;
 };

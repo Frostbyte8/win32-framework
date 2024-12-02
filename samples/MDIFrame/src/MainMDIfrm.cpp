@@ -101,8 +101,7 @@ BOOL CMainMDIFrame::OnFileExit()
 // Create a new MDI child.
 BOOL CMainMDIFrame::OnFileNew()
 {
-    using namespace std;
-    AddMDIChild(make_unique<CSimpleMDIChild>());
+    AddMDIChild(new CSimpleMDIChild);
     return TRUE;
 }
 

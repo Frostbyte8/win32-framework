@@ -29,7 +29,8 @@ CView::~CView()
 void CView::AddItem(CString subItem0, CString subItem1, CString subItem2)
 {
     // Create the itemData smart pointer.
-    ListItemDataPtr itemData = std::make_unique<ListItemData>(subItem0, subItem1, subItem2);
+    ListItemDataPtr itemData(new ListItemData(subItem0, subItem1, subItem2));
+    m_allListItemData.push_back(itemData);
 
     // Set the text for the all the subItems belonging to the item.
     int item = GetItemCount();
@@ -41,8 +42,6 @@ void CView::AddItem(CString subItem0, CString subItem1, CString subItem2)
     // The item's lparam is used for sorting.
     LPARAM lparam = reinterpret_cast<LPARAM>(itemData.get());
     SetItemData(item, lparam);
-
-    m_allListItemData.push_back(std::move(itemData));
 }
 
 // Compares two items using their lparam values.

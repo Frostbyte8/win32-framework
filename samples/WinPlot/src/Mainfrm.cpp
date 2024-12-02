@@ -39,7 +39,7 @@ BOOL CMainFrame::OnCommand(WPARAM wparam, LPARAM)
 
     switch(id)
     {
-    case IDM_EDIT_FUNCTION:     return OnInputFunction();
+    case IDM_EDIT_FUNCTION:     return OnEditFunction();
     case IDM_FILE_EXIT:         return OnFileExit();
     case IDW_VIEW_STATUSBAR:    return OnViewStatusBar();
     case IDW_VIEW_TOOLBAR:      return OnViewToolBar();
@@ -69,7 +69,7 @@ int CMainFrame::OnCreate(CREATESTRUCT& cs)
     return CFrame::OnCreate(cs);
 }
 
-BOOL CMainFrame::OnInputFunction()
+BOOL CMainFrame::OnEditFunction()
 {
     if (m_view.GetInput().DoModal(*this) == IDOK)
     {
@@ -112,8 +112,7 @@ void CMainFrame::OnInitialUpdate()
     // The frame is now created.
     // Place any additional startup code here.
 
-    m_view.GetInput().SetFunction(_T("sin(x)/x"));
-    OnInputFunction();
+    OnEditFunction();
     TRACE("Frame created\n");
 }
 

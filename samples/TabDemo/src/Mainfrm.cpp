@@ -9,8 +9,6 @@
 #include "MyDialog.h"
 #include "resource.h"
 
-using namespace std;
-
 ///////////////////////////////////
 // CMainFrame function definitions.
 //
@@ -101,12 +99,12 @@ BOOL CMainFrame::OnFileExit()
 // Called after the frame is created.
 void CMainFrame::OnInitialUpdate()
 {
-    // Add some tabs to the tab control.
-    m_view.AddTabPage(make_unique<CViewClasses>(), _T("Classes"), IDI_CLASSVIEW);
-    m_view.AddTabPage(make_unique<CViewFiles>(), _T("Files"), IDI_FILEVIEW);
-    m_view.AddTabPage(make_unique<CViewClasses>(), _T("Classes"), IDI_CLASSVIEW);
-    m_view.AddTabPage(make_unique<CViewFiles>(), _T("Files"), IDI_FILEVIEW);
-    m_view.AddTabPage(make_unique<CViewDialog>(IDD_MYDIALOG), _T("Dialog"), IDI_DIALOGVIEW);
+    // Add some tabs to the tab control
+    m_view.AddTabPage(new CViewClasses, _T("Classes"), IDI_CLASSVIEW);
+    m_view.AddTabPage(new CViewFiles, _T("Files"), IDI_FILEVIEW);
+    m_view.AddTabPage(new CViewClasses, _T("Classes"), IDI_CLASSVIEW);
+    m_view.AddTabPage(new CViewFiles, _T("Files"), IDI_FILEVIEW);
+    m_view.AddTabPage(new CViewDialog(IDD_MYDIALOG), _T("Dialog"), IDI_DIALOGVIEW);
 
     m_view.SelectPage(0);
 

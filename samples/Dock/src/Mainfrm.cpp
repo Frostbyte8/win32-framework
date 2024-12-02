@@ -6,7 +6,6 @@
 #include "Mainfrm.h"
 #include "resource.h"
 
-using namespace std;
 
 //////////////////////////////////
 // CMainFrame function definitions
@@ -41,56 +40,56 @@ void CMainFrame::LoadDefaultDockers()
 {
     // Note: The  DockIDs are used for saving/restoring the dockers state in the registry
 
-    CDocker* pDockLeft = AddDockedChild(make_unique<CDockClasses>(), DS_DOCKED_LEFT, DpiScaleInt(200), ID_DOCK_CLASSES1);
-    CDocker* pDockRight = AddDockedChild(make_unique<CDockClasses>(), DS_DOCKED_RIGHT, DpiScaleInt(200), ID_DOCK_CLASSES2);
-    CDocker* pDockTop = AddDockedChild(make_unique<CDockText>(), DS_DOCKED_TOP, DpiScaleInt(100), ID_DOCK_TEXT1);
-    CDocker* pDockBottom = AddDockedChild(make_unique<CDockText>(), DS_DOCKED_BOTTOM, DpiScaleInt(100), ID_DOCK_TEXT2);
+    CDocker* pDockLeft = AddDockedChild(new CDockClasses, DS_DOCKED_LEFT, DpiScaleInt(200), ID_DOCK_CLASSES1);
+    CDocker* pDockRight = AddDockedChild(new CDockClasses, DS_DOCKED_RIGHT, DpiScaleInt(200), ID_DOCK_CLASSES2);
+    CDocker* pDockTop = AddDockedChild(new CDockText, DS_DOCKED_TOP, DpiScaleInt(100), ID_DOCK_TEXT1);
+    CDocker* pDockBottom = AddDockedChild(new CDockText, DS_DOCKED_BOTTOM, DpiScaleInt(100), ID_DOCK_TEXT2);
 
-    pDockLeft->AddDockedChild(make_unique<CDockFiles>(), DS_DOCKED_BOTTOM, DpiScaleInt(150), ID_DOCK_FILES1);
-    pDockRight->AddDockedChild(make_unique<CDockFiles>(), DS_DOCKED_BOTTOM, DpiScaleInt(150), ID_DOCK_FILES2);
-    pDockTop->AddDockedChild(make_unique<CDockSimple>(), DS_DOCKED_RIGHT, DpiScaleInt(100), ID_DOCK_SIMPLE1);
-    pDockBottom->AddDockedChild(make_unique<CDockSimple>(), DS_DOCKED_RIGHT, DpiScaleInt(100), ID_DOCK_SIMPLE2);
+    pDockLeft->AddDockedChild(new CDockFiles, DS_DOCKED_BOTTOM, DpiScaleInt(150), ID_DOCK_FILES1);
+    pDockRight->AddDockedChild(new CDockFiles, DS_DOCKED_BOTTOM, DpiScaleInt(150), ID_DOCK_FILES2);
+    pDockTop->AddDockedChild(new CDockSimple, DS_DOCKED_RIGHT, DpiScaleInt(100), ID_DOCK_SIMPLE1);
+    pDockBottom->AddDockedChild(new CDockSimple, DS_DOCKED_RIGHT, DpiScaleInt(100), ID_DOCK_SIMPLE2);
 
     // Adjust dockstyles as per menu selections
     SetDockStyles();
 }
 
 // Adds a new docker. The id specifies the dock type.
-DockPtr CMainFrame::NewDockerFromID(int id)
+CDocker* CMainFrame::NewDockerFromID(int id)
 {
-    DockPtr docker;
+    CDocker* pDock = NULL;
     switch (id)
     {
     case ID_DOCK_CLASSES1:
-        docker = make_unique<CDockClasses>();
+        pDock = new CDockClasses;
         break;
     case ID_DOCK_CLASSES2:
-        docker = make_unique<CDockClasses>();
+        pDock = new CDockClasses;
         break;
     case ID_DOCK_FILES1:
-        docker = make_unique<CDockFiles>();
+        pDock = new CDockFiles;
         break;
     case ID_DOCK_FILES2:
-        docker = make_unique<CDockFiles>();
+        pDock = new CDockFiles;
         break;
     case ID_DOCK_SIMPLE1:
-        docker = make_unique<CDockSimple>();
+        pDock = new CDockSimple;
         break;
     case ID_DOCK_SIMPLE2:
-        docker = make_unique<CDockSimple>();
+        pDock = new CDockSimple;
         break;
     case ID_DOCK_TEXT1:
-        docker = make_unique<CDockText>();
+        pDock = new CDockText;
         break;
     case ID_DOCK_TEXT2:
-        docker = make_unique<CDockText>();
+        pDock = new CDockText;
         break;
     default:
         TRACE("Unknown Dock ID\n");
         break;
     }
 
-    return docker;
+    return pDock;
 }
 
 // Toggle the display of a 3D border.

@@ -6,8 +6,6 @@
 #include "Mainfrm.h"
 #include "resource.h"
 
-using namespace std;
-
 ///////////////////////////////////
 // CMainFrame function definitions.
 //
@@ -52,26 +50,26 @@ void CMainFrame::LoadDefaultWindowPanes()
 // Adds a new docker. The id specifies the dock type.
 // The id is used by LoadDockRegistrySettings to restore the
 // previous window pane arrangement.
-DockPtr CMainFrame::NewDockerFromID(int id)
+CDocker* CMainFrame::NewDockerFromID(int id)
 {
-    DockPtr docker;
+    CDocker* pDock = NULL;
     switch (id)
     {
     case ID_DOCK_LIST:
-        docker = make_unique<CDockList>();
+        pDock = new CDockList;
         break;
     case ID_DOCK_TREE:
-        docker = make_unique<CDockTree>();
+        pDock = new CDockTree;
         break;
     case ID_DOCK_TEXT:
-        docker = make_unique<CDockText>();
+        pDock = new CDockText;
         break;
     default:
         TRACE("Unknown Dock ID\n");
         break;
     }
 
-    return docker;
+    return pDock;
 }
 
 // Responds to menu and toolbar input.

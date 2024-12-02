@@ -51,9 +51,9 @@ void CMetaView::OnDraw(CDC& dc)
     CRect rcClient = GetClientRect();
     int cxClient = rcClient.Width();
     int cyClient = rcClient.Height();
-    dc.SetMapMode(MM_ANISOTROPIC);
-    dc.SetWindowExtEx(1000, 1000, NULL);
-    dc.SetViewportExtEx(cxClient, cyClient, NULL);
+    SetMapMode(dc, MM_ANISOTROPIC);
+    SetWindowExtEx(dc, 1000, 1000, NULL);
+    SetViewportExtEx(dc, cxClient, cyClient, NULL);
 
     CRect rc(0, 0, 100, 100);
 

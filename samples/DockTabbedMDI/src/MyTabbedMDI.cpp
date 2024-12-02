@@ -11,7 +11,6 @@
 #include "Rect.h"
 #include "Text.h"
 
-using namespace std;
 
 ////////////////////////////////////
 // CMyTabbedMDI function definitions
@@ -23,35 +22,35 @@ CMyTabbedMDI::CMyTabbedMDI()
 }
 
 // Adds a new MDI. The mdiChild parameter specifies the MDI type.
-WndPtr CMyTabbedMDI::NewMDIChildFromID(int mdiChild)
+CWnd* CMyTabbedMDI::NewMDIChildFromID(int mdiChild)
 {
-    WndPtr view;
+    CWnd* pView = NULL;
     switch(mdiChild)
     {
     case ID_MDI_CLASSES:
-        view = make_unique<CViewClasses>();
+        pView = new CViewClasses;
         break;
     case ID_MDI_FILES:
-        view = make_unique<CViewFiles>();
+        pView = new CViewFiles;
         break;
     case ID_MDI_OUTPUT:
-        view = make_unique<CViewOutput>();
+        pView = new CViewOutput;
         break;
     case ID_MDI_TEXT:
-        view = make_unique<CViewText>();
+        pView = new CViewText;
         break;
     case ID_MDI_RECT:
-        view = make_unique<CViewRect>();
+        pView = new CViewRect;
         break;
     case ID_MDI_WEB:
-        view = make_unique<CViewWeb>();
+        pView = new CViewWeb;
         break;
     default:
         TRACE("Unknown TabbedMDI id\n");
         break;
     }
 
-    return view;
+    return pView;
 }
 
 // Called after the window is moved or resized.
