@@ -18,7 +18,7 @@ public:
 protected:
     // Virtual functions that override base class functions
     virtual void OnAttach();
-    virtual void OnDestroy();
+    virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
     CViewList(const CViewList&);               // Disable copy construction
@@ -26,8 +26,6 @@ private:
 
     void InsertItems();
     void SetColumns();
-
-    CImageList m_smallImages;
 };
 
 
@@ -43,6 +41,7 @@ public:
 protected:
     // Virtual functions that override base class functions
     virtual int  OnCreate(CREATESTRUCT& cs);
+    virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
     CMDIChildList(const CMDIChildList&);                // Disable copy construction

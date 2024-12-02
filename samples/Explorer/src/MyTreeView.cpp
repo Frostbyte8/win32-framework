@@ -32,7 +32,7 @@ int CALLBACK CMyTreeView::CompareFunction(LPARAM param1, LPARAM param2, LPARAM)
     if(FAILED(result))
         return 0;
 
-    return (short)SCODE_CODE(GetScode(result));
+    return (short)HRESULT_CODE(result);
 }
 
 // Identifies the tree view item for the point, and calls DoItemMenu.
@@ -131,12 +131,12 @@ void CMyTreeView::EnumObjects(HTREEITEM parentItem, CShellFolder& parentFolder, 
             itemInfo.mask = TVIF_PARAM | TVIF_TEXT | TVIF_IMAGE | TVIF_SELECTEDIMAGE | TVIF_CHILDREN;
 
             // Store a pointer to the TreeItemData in the lParam and m_pItems.
-            TreeItemDataPtr pItem(new TreeItemData(cpidlParent, cpidlRel, parentFolder));
+            TreeItemDataPtr pItem = std::make_unique<TreeItemData>(cpidlParent, cpidlRel, parentFolder);
             itemInfo.lParam = reinterpret_cast<LPARAM>(pItem.get());
 
             // m_pItems is a vector of smart pointers. The memory allocated by
             // new is automatically deleted when the vector goes out of scope.
-            m_pItems.push_back(pItem);
+            m_pItems.push_back(std::move(pItem));
 
             // Text and images are done on a callback basis.
             itemInfo.pszText = LPSTR_TEXTCALLBACK;
@@ -230,12 +230,12 @@ BOOL CMyTreeView::GetRootItems()
         itemInfo.mask = TVIF_PARAM | TVIF_TEXT | TVIF_IMAGE | TVIF_SELECTEDIMAGE | TVIF_CHILDREN;
 
         // Store a pointer to the TreeItemData in the lParam and m_pItems.
-        TreeItemDataPtr pItem(new TreeItemData(cpidlDesk));
+        TreeItemDataPtr pItem = std::make_unique<TreeItemData>(cpidlDesk);
         itemInfo.lParam = reinterpret_cast<LPARAM>(pItem.get());
 
         // m_pItems is a vector of smart pointers. The memory allocated by
         // new is automatically deleted when the vector goes out of scope.
-        m_pItems.push_back(pItem);
+        m_pItems.push_back(std::move(pItem));
 
         // Text and images are done on a callback basis.
         itemInfo.pszText = LPSTR_TEXTCALLBACK;
@@ -295,7 +295,7 @@ void CMyTreeView::OnAttach()
     HIMAGELIST hSmall = reinterpret_cast<HIMAGELIST>(::SHGetFileInfo(_T("C:\\"), 0,
         &sfi, sizeof(SHFILEINFO), SHGFI_SYSICONINDEX | SHGFI_SMALLICON));
 
-    SetImageList(hSmall, LVSIL_NORMAL);
+    SetImageList(hSmall, TVSIL_NORMAL);
 }
 
 // Called when the window is destroyed.
@@ -403,9 +403,10 @@ LRESULT CMyTreeView::OnTVNSelChanged(LPNMTREEVIEW pNMTV)
 // Set the CREATESTRUCT parameters before the window is created.
 void CMyTreeView::PreCreate(CREATESTRUCT& cs)
 {
-    cs.dwExStyle = WS_EX_CLIENTEDGE;
-    cs.style = WS_TABSTOP | WS_CHILD | WS_VISIBLE | TVS_HASLINES |
-                    TVS_HASBUTTONS | TVS_NOTOOLTIPS | TVS_SHOWSELALWAYS ;
+    CTreeView::PreCreate(cs);
+    cs.dwExStyle |= WS_EX_CLIENTEDGE;
+    cs.style |= WS_TABSTOP | TVS_HASLINES | TVS_HASBUTTONS | 
+        TVS_NOTOOLTIPS | TVS_SHOWSELALWAYS ;
 }
 
 // Updates the tree view based on a selection in the list view.
@@ -477,15 +478,28 @@ LRESULT CMyTreeView::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
+
 
 ///////////////////////////////////
 //TreeItemData function definitions

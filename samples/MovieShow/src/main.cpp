@@ -27,7 +27,7 @@ public:
         if (m_mutex)  // Do not forget to close handles.
         {
             CloseHandle(m_mutex); // Do as late as possible.
-            m_mutex = 0;          // Good habit to be in.
+            m_mutex = nullptr;       // Good habit to be in.
         }
     }
 
@@ -46,13 +46,13 @@ CLimitSingleInstance g_singleInstanceObj(L"Global\\{2194ABA1-BFFA-4e6b-8C26-D1FA
 
 
 // The application's entry point function.
-int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int)
+int WINAPI wWinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPWSTR, _In_ int)
 {
     try
     {
         if (g_singleInstanceObj.IsAnotherInstanceRunning())
         {
-            ::MessageBox(0, L"Movie Show is already running", L"Warning", MB_ICONWARNING);
+            ::MessageBox(nullptr, L"Movie Show is already running", L"Warning", MB_ICONWARNING);
             return -1;
         }
 
@@ -64,17 +64,22 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int)
     }
 
     // Catch all unhandled CException types.
-    catch (const CException &e)
+    catch (const CException& e)
     {
-        // Display the exception and quit.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(nullptr, str1, str2, MB_ICONERROR);
     }
 
-    // Catch all unhandled exceptions.
-    catch (...)
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
     {
-        // Display the exception and quit.
-        ::MessageBox(0, L"Got an unexpected exception", L"Error", MB_ICONERROR);
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(nullptr, str1, _T("Error: std::exception"), MB_ICONERROR);
     }
 
     return -1;

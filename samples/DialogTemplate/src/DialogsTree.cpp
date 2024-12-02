@@ -69,20 +69,13 @@ void CDialogsTree::OnAttach()
     m_normalImages.Create(size, size, ILC_COLOR32, 1, 0);
     m_normalImages.AddIcon(IDI_WINDOWS);
     m_normalImages.AddIcon(IDW_MAIN);
-    SetImageList(m_normalImages, LVSIL_NORMAL);
+    SetImageList(m_normalImages, TVSIL_NORMAL);
 
     // Adjust style to show lines and [+] button
     DWORD dwStyle = GetStyle();
     dwStyle |= TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT;
     SetStyle(dwStyle);
 }
-
-// Called when the window is destroyed.
-void CDialogsTree::OnDestroy()
-{
-    SetImageList(0, LVSIL_SMALL);
-}
-
 
 // Called when the WM_NOTIFY message is reflected back to CViewTree
 // by the framework.
@@ -112,6 +105,36 @@ void CDialogsTree::PreCreate(CREATESTRUCT& cs)
     cs.style = TVS_NOTOOLTIPS | WS_CHILD;
 }
 
+// All window messages for this window pass through WndProc.
+LRESULT CDialogsTree::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    try
+    {
+        // Pass unhandled messages on for default processing.
+        return WndProcDefault(msg, wparam, lparam);
+    }
+
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
+    }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
+}
+
 
 ////////////////////////////////////
 // CDockDialogsTree function definitions
@@ -126,3 +149,32 @@ CDockDialogsTree::CDockDialogsTree()
     SetBarWidth(8);
 }
 
+// All window messages for this window pass through WndProc.
+LRESULT CDockDialogsTree::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    try
+    {
+        // Pass unhandled messages on for default processing.
+        return WndProcDefault(msg, wparam, lparam);
+    }
+
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
+    }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
+}

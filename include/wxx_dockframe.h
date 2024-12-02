@@ -1,9 +1,10 @@
-// Win32++   Version 9.5
-// Release Date: TBA
+// Win32++   Version 9.6.1
+// Release Date: 29th July 2024
 //
 //      David Nash
 //      email: dnash@bigpond.net.au
 //      url: https://sourceforge.net/projects/win32-framework
+//           https://github.com/DavidNash2024/Win32xx
 //
 //
 // Copyright (c) 2005-2024  David Nash
@@ -51,7 +52,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 // The CDockFrame class adds support for docking to a Single Document Interface
-// (SDI) frame. CDockFrame inherits from CFrameT<Docker>. CDockFrame has access
+// (SDI) frame. CDockFrame inherits from CFrameT<CDocker>. CDockFrame has access
 // to the public and protected functions defined by CFrameT and CDocker, as well
 // as those defined by CWnd.
 //
@@ -111,10 +112,10 @@ namespace Win32xx
         virtual int OnCreate(CREATESTRUCT& cs);
 
     private:
-        CMDIDockFrame(const CMDIDockFrame&);              // Disable copy construction
-        CMDIDockFrame& operator=(const CMDIDockFrame&);   // Disable assignment operator
+        CMDIDockFrame(const CMDIDockFrame&);                // Disable copy construction
+        CMDIDockFrame& operator=(const CMDIDockFrame&);     // Disable assignment operator
 
-        CMDIClient<CDocker::CDockClient> m_dockMDIClient;   // MDIClient for docking
+        CMDIClient<CDocker::CDockClient> m_dockMDIClient;   // Both a DockClient and MDIClient
     };
 
 }
@@ -252,9 +253,6 @@ namespace Win32xx
 
         // Assign m_dockMDIClient as this docker's dock client.
         SetDockClient(m_dockMDIClient);
-
-        // Assign this CMDIDockFrame as the new dock client's docker.
-        m_dockMDIClient.SetDocker(this);
     }
 
     // Called when the frame window is created.

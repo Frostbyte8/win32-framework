@@ -8,6 +8,8 @@
 #include "Files.h"
 #include "resource.h"
 
+using namespace std;
+
 /////////////////////////////////////
 // CMainMDIFrame function definitions
 //
@@ -81,29 +83,19 @@ BOOL CMainMDIFrame::OnFilePrint()
     return TRUE;
 }
 
-// Limit the minimum size of the window.
-LRESULT CMainMDIFrame::OnGetMinMaxInfo(UINT msg, WPARAM wparam, LPARAM lparam)
-{
-    LPMINMAXINFO lpMMI = (LPMINMAXINFO)lparam;
-    const CSize minimumSize(500, 300);
-    lpMMI->ptMinTrackSize.x = DpiScaleInt(minimumSize.cx);
-    lpMMI->ptMinTrackSize.y = DpiScaleInt(minimumSize.cy);
-    return FinalWindowProc(msg, wparam, lparam);
-}
-
 // Called after the frame window is created.
 // Called after OnCreate.
 void CMainMDIFrame::OnInitialUpdate()
 {
     TRACE("MDI Frame started \n");
-    // The frame is now created.
-    // Place any additional startup code here.
+    //The frame is now created.
+    //Place any additional startup code here.
 
     // Add some Dockers to the MDI Frame
     DWORD dwStyle = DS_CLIENTEDGE; // The style added to each docker
-    int DockWidth = DpiScaleInt(150);
-    CDocker* pDock1 = AddDockedChild(new CDockFiles, DS_DOCKED_LEFT | dwStyle, DockWidth);
-    CDocker* pDock2 = AddDockedChild(new CDockFiles, DS_DOCKED_RIGHT | dwStyle, DockWidth);
+    int dockWidth = DpiScaleInt(150);
+    CDocker* pDock1 = AddDockedChild(make_unique<CDockFiles>(), DS_DOCKED_LEFT | dwStyle, dockWidth);
+    CDocker* pDock2 = AddDockedChild(make_unique<CDockFiles>(), DS_DOCKED_RIGHT | dwStyle, dockWidth);
 
     assert (pDock1->GetContainer());
     assert (pDock2->GetContainer());
@@ -111,8 +103,8 @@ void CMainMDIFrame::OnInitialUpdate()
     pDock2->GetContainer()->SetHideSingleTab(TRUE);
 
     // Add some  MDI children
-    AddMDIChild(new CSimpleMDIChild);
-    AddMDIChild(new CSimpleMDIChild);
+    AddMDIChild(make_unique<CSimpleMDIChild>());
+    AddMDIChild(make_unique<CSimpleMDIChild>());
 }
 
 // Process input from the menu and toolbar.
@@ -187,14 +179,40 @@ BOOL CMainMDIFrame::OnFileExit()
 // Create a new MDI child
 BOOL CMainMDIFrame::OnFileNewMDI()
 {
-    AddMDIChild(new CSimpleMDIChild);
+    AddMDIChild(make_unique<CSimpleMDIChild>());
+    return TRUE;
+}
+
+// Creates the popup menu when the "New" toolbar button is pressed
+BOOL CMainMDIFrame::OnFileNew()
+{
+    // Position the popup menu
+    CToolBar& tb = GetToolBar();
+    RECT rc = tb.GetItemRect(tb.CommandToIndex(IDM_FILE_NEW));
+    tb.MapWindowPoints(HWND_DESKTOP, (LPPOINT)&rc, 2);
+
+    TPMPARAMS tpm;
+    tpm.cbSize = sizeof(tpm);
+    tpm.rcExclude = rc;
+
+    // Load the popup menu
+    CMenu topMenu(IDM_NEWMENU);
+    CMenu popupMenu = topMenu.GetSubMenu(0);
+
+    // Start the popup menu
+    popupMenu.TrackPopupMenuEx(TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_VERTICAL, 
+        rc.left, rc.bottom, *this, &tpm);
+
     return TRUE;
 }
 
 // Create a new docker.
 BOOL CMainMDIFrame::OnFileNewDocker()
 {
-    AddDockedChild(new CDockFiles, DS_DOCKED_LEFT | DS_CLIENTEDGE, 150);
+    int dockWidth = DpiScaleInt(150);
+    CDocker* pDock = AddDockedChild(make_unique<CDockFiles>(), 
+        DS_DOCKED_LEFT | DS_CLIENTEDGE, dockWidth);
+    pDock->GetContainer()->SetHideSingleTab(TRUE);
     return TRUE;
 }
 
@@ -226,6 +244,27 @@ BOOL CMainMDIFrame::OnMDITile()
     return TRUE;
 }
 
+// Process notification messages (WM_NOTIFY) from child windows.
+LRESULT CMainMDIFrame::OnNotify(WPARAM wparam, LPARAM lparam)
+{
+    // Notification from our dropdown button is received if Comctl32.dll version
+    // is 4.70 or later (IE v3 required).
+    LPNMHDR pHeader = reinterpret_cast<LPNMHDR>(lparam);
+    switch (pHeader->code)
+    {
+        // Menu for dropdown toolbar button
+    case TBN_DROPDOWN:
+    {
+        if (pHeader->hwndFrom == GetToolBar())
+            OnFileNew();
+    }
+    break;
+
+    } //switch LPNMHDR
+
+    return CMDIDockFrame::OnNotify(wparam, lparam);
+}
+
 // Configures the images for menu items.
 void CMainMDIFrame::SetupMenuIcons()
 {
@@ -237,14 +276,15 @@ void CMainMDIFrame::SetupMenuIcons()
         SetMenuIcons(data, RGB(192, 192, 192), IDB_TOOLBAR16);
 
     // Add an extra icon for the New Docker menu item
-    AddMenuIcon(IDM_FILE_NEWDOCK, IDW_MAIN);
+    AddMenuIcon(IDM_FILE_NEWDOCK, IDI_DOCK);
+    AddMenuIcon(IDM_FILE_NEWMDI, IDW_MAIN);
 }
 
 // Assign resource IDs and images to the toolbar buttons.
 void CMainMDIFrame::SetupToolBar()
 {
     // Define the resource IDs for the toolbar
-    AddToolBarButton( IDM_FILE_NEWMDI);
+    AddToolBarButton( IDM_FILE_NEW);
     AddToolBarButton( IDM_FILE_OPEN  );
     AddToolBarButton( IDM_FILE_SAVE  );
     AddToolBarButton( 0 );              // Separator
@@ -257,6 +297,9 @@ void CMainMDIFrame::SetupToolBar()
     AddToolBarButton( IDM_HELP_ABOUT );
 
     SetToolBarImages(RGB(192, 192, 192), IDW_MAIN, IDB_TOOLBAR24_HOT, IDB_TOOLBAR24_DIS);
+
+    // Configure the "New" toolbar button to bring up a menu.
+    GetToolBar().SetButtonStyle(IDM_FILE_NEW, BTNS_WHOLEDROPDOWN);
 }
 
 // Process the frame's window messages.
@@ -264,22 +307,33 @@ LRESULT CMainMDIFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
 {
     try
     {
-        switch (msg)
-        {
-        case WM_GETMINMAXINFO:    return OnGetMinMaxInfo(msg, wparam, lparam);
-        }
+    //  switch (msg)
+    //  {
+    //  Add case statements for each messages to be handled here.
+    //  }
 
         //  Pass unhandled messages on for default processing.
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
-}
 
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
+}

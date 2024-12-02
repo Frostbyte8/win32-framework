@@ -1,4 +1,4 @@
-/* (02-Aug-2014) [Tab/Indent: 8/8][Line/Box: 80/74]              (MainFrm.cpp) *
+/* (06-May-2024) [Tab/Indent: 8/8][Line/Box: 80/74]              (MainFrm.cpp) *
 ********************************************************************************
 |                                                                              |
 |               Authors: Robert C. Tausworthe, David Nash, 2020                |
@@ -35,25 +35,15 @@ CMainFrame()                                                                /*
 *-----------------------------------------------------------------------------*/
     :   m_maxMRUEntries(5)
 {
-      // set screen default position and  size
+      // Set screen default position and  size.
     m_xWin  = 100;
     m_yWin  = 100;
     m_cxWin = 800;
     m_cyWin = 700;
     ZeroMemory(&m_plWnd, sizeof(WINDOWPLACEMENT));
-}
 
-/*============================================================================*/
-    HWND CMainFrame::
-Create(HWND parent)                                                         /*
-
-    Construct and initiallize the CMainFrame object.
-*-----------------------------------------------------------------------------*/
-{
-    // Set m_view as the view window of the frame
+      // Set m_view as the view window of the frame.
     SetView(m_view);
-
-    return CFrame::Create(parent);
 }
 
 /*============================================================================*/
@@ -546,5 +536,41 @@ SetWindowTitle(const CString &docPath /* = _T("") */)                       /*
 {
     CString s = m_appName + _T(":   ") + docPath;
     SetTitle(s);
+}
+
+/*============================================================================*/
+    LRESULT CMainFrame::
+WndProc(UINT msg, WPARAM wparam, LPARAM lparam)                             /*
+
+    Handle the window's messages.
+*-----------------------------------------------------------------------------*/
+
+{
+    try
+    {
+        // Pass unhandled messages on for default processing.
+        return WndProcDefault(msg, wparam, lparam);
+    }
+
+    // Catch all unhandled CException types.
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
+    }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 /*----------------------------------------------------------------------------*/

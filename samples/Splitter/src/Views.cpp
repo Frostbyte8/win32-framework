@@ -36,18 +36,31 @@ LRESULT CViewSimple::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
             break;
         }
 
-        return FinalWindowProc(msg, wparam, lparam);
+        return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
+
 
 //////////////////////////////////
 // CViewList function definitions.
@@ -136,9 +149,10 @@ void CViewList::SetDPIImages()
     CBitmap bmImage(IDB_FILEVIEW);
     bmImage = DpiScaleUpBitmap(bmImage);
     int scale = bmImage.GetSize().cy / 15;
-    m_smallImages.Create(scale * 16, scale * 15, ILC_COLOR32 | ILC_MASK, 1, 0);
-    m_smallImages.Add(bmImage, RGB(255, 0, 255));
-    SetImageList(m_smallImages, LVSIL_SMALL);
+    CImageList smallImages;
+    smallImages.Create(scale * 16, scale * 15, ILC_COLOR32 | ILC_MASK, 1, 0);
+    smallImages.Add(bmImage, RGB(255, 0, 255));
+    SetImageList(smallImages, LVSIL_SMALL);
 }
 
 // Process the listview window messages.
@@ -154,14 +168,25 @@ LRESULT CViewList::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 
 
@@ -225,12 +250,13 @@ void CViewTree::SetDPIImages()
     CBitmap bmImage(IDB_CLASSVIEW);
     bmImage = DpiScaleUpBitmap(bmImage);
     int scale = bmImage.GetSize().cy / 15;
-    m_smallImages.Create(scale * 16, scale * 15, ILC_COLOR32 | ILC_MASK, 1, 0);
-    m_smallImages.Add(bmImage, RGB(255, 0, 0));
-    SetImageList(m_smallImages, LVSIL_NORMAL);
+    CImageList smallImages;
+    smallImages.Create(scale * 16, scale * 15, ILC_COLOR32 | ILC_MASK, 1, 0);
+    smallImages.Add(bmImage, RGB(255, 0, 0));
+    SetImageList(smallImages, TVSIL_NORMAL);
 
     // Reset the item indentation.
-    int imageWidth = m_smallImages.GetIconSize().cx;
+    int imageWidth = smallImages.GetIconSize().cx;
     SetIndent(imageWidth);
 }
 
@@ -247,14 +273,25 @@ LRESULT CViewTree::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 
 
@@ -273,4 +310,35 @@ void CViewText::SetDPIFont()
     m_font.CreatePointFont(100, _T("Courier New"));
     m_font = DpiScaleFont(m_font, 9);
     SetFont(m_font);
+}
+
+// Handle the window's messages.
+LRESULT CViewText::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    try
+    {
+        // Pass unhandled messages on for default processing.
+        return WndProcDefault(msg, wparam, lparam);
+    }
+
+    // Catch all unhandled CException types.
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
+    }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }

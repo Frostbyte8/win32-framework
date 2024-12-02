@@ -9,6 +9,8 @@
 // Constructor.
 CMainFrame::CMainFrame()
 {
+    // Set m_view as the view window of the frame.
+    SetView(m_view);
 }
 
 // Destructor.
@@ -16,16 +18,7 @@ CMainFrame::~CMainFrame()
 {
 }
 
-// Create the frame window.
-HWND CMainFrame::Create(HWND parent)
-{
-    // Set m_view as the view window of the frame
-    SetView(m_view);
-
-    return CFrame::Create(parent);
-}
-
-// Process the messages from the Menu and Toolbar
+// Process the messages from the Menu and Toolbar.
 BOOL CMainFrame::OnCommand(WPARAM wparam, LPARAM)
 {
     switch (LOWORD(wparam))
@@ -77,31 +70,31 @@ BOOL CMainFrame::OnFileExit()
 
 BOOL CMainFrame::OnFileNew()
 {
-    ::MessageBox(0, _T("File New  ... Implemented later"), _T("Menu"), MB_OK);
+    ::MessageBox(NULL, _T("File New  ... Implemented later"), _T("Menu"), MB_OK);
     return TRUE;
 }
 
 BOOL CMainFrame::OnFileOpen()
 {
-    ::MessageBox(0, _T("File Open  ... Implemented later"), _T("Menu"), MB_OK);
+    ::MessageBox(NULL, _T("File Open  ... Implemented later"), _T("Menu"), MB_OK);
     return TRUE;
 }
 
 BOOL CMainFrame::OnFilePrint()
 {
-    ::MessageBox(0, _T("File Print  ... Implemented later"), _T("Menu"), MB_OK);
+    ::MessageBox(NULL, _T("File Print  ... Implemented later"), _T("Menu"), MB_OK);
     return TRUE;
 }
 
 BOOL CMainFrame::OnFileSave()
 {
-    ::MessageBox(0, _T("File Save  ... Implemented later"), _T("Menu"), MB_OK);
+    ::MessageBox(NULL, _T("File Save  ... Implemented later"), _T("Menu"), MB_OK);
     return TRUE;
 }
 
 BOOL CMainFrame::OnFileSaveAs()
 {
-    ::MessageBox(0, _T("File SaveAs  ... Implemented later"), _T("Menu"), MB_OK);
+    ::MessageBox(NULL, _T("File SaveAs  ... Implemented later"), _T("Menu"), MB_OK);
     return TRUE;
 }
 

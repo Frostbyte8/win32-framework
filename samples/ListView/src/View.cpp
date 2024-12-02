@@ -29,8 +29,7 @@ CView::~CView()
 void CView::AddItem(CString subItem0, CString subItem1, CString subItem2)
 {
     // Create the itemData smart pointer.
-    ListItemDataPtr itemData(new ListItemData(subItem0, subItem1, subItem2));
-    m_allListItemData.push_back(itemData);
+    ListItemDataPtr itemData = std::make_unique<ListItemData>(subItem0, subItem1, subItem2);
 
     // Set the text for the all the subItems belonging to the item.
     int item = GetItemCount();
@@ -42,6 +41,8 @@ void CView::AddItem(CString subItem0, CString subItem1, CString subItem2)
     // The item's lparam is used for sorting.
     LPARAM lparam = reinterpret_cast<LPARAM>(itemData.get());
     SetItemData(item, lparam);
+
+    m_allListItemData.push_back(std::move(itemData));
 }
 
 // Compares two items using their lparam values.
@@ -96,6 +97,12 @@ void CView::OnAttach()
 
     // Create the edit window. It is initially hidden.
     m_edit.Create(*this);
+
+    // Disable double click on the list-view's header.
+    m_header.Attach(GetHeader());
+    LONG_PTR style = static_cast<LONG_PTR>(m_header.GetClassLongPtr(GCL_STYLE));
+    style = style & ~CS_DBLCLKS;
+    m_header.SetClassLongPtr(GCL_STYLE, style);
 }
 
 // Shows the edit window when a subitem is clicked.
@@ -288,7 +295,8 @@ LRESULT CView::OnUpdateText()
 // Sets the CREATESTRUCT parameters for the window before it is created.
 void CView::PreCreate(CREATESTRUCT& cs)
 {
-    cs.style = LVS_REPORT | LVS_SINGLESEL | WS_CHILD;
+    CListView::PreCreate(cs);
+    cs.style |= LVS_REPORT | LVS_SINGLESEL;
 
     // The LVM_EDITLABEL style is not used. It sounds useful, but it
     // would only allow us to edit the label, not the other subitems.
@@ -389,12 +397,24 @@ LRESULT CView::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }

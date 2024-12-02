@@ -37,6 +37,8 @@ CMainFrame()                                                                /*
 *-----------------------------------------------------------------------------*/
     : m_view(IDD_MAIN_DIALOG)
 {
+      // Set m_view as the view window of the frame.
+    SetView(m_view);
 }
 
 /*============================================================================*/
@@ -52,8 +54,6 @@ Create(HWND parent)                                                          /*
     Note: the <key name> used here refers to the registerKeyName above.
 * ---------------------------------------------------------------------------- - */
 {
-      // Set m_view as the view window of the frame.
-    SetView(m_view);
     LoadRegistrySettings(registryKeyName);
 
     return CFrame::Create(parent);
@@ -67,7 +67,7 @@ FeatureNotImplemented()                                                     /*
     program.
 *-----------------------------------------------------------------------------*/
 {
-    ::MessageBox(0, _T("This feature is not yet implemented."), _T(""),
+    ::MessageBox(NULL, _T("This feature is not yet implemented."), _T(""),
         MB_OK | MB_ICONEXCLAMATION | MB_TASKMODAL);
 }
 
@@ -167,6 +167,7 @@ OnCommand(WPARAM wparam, LPARAM lparam)                                     /*
 
         case IDM_EDIT_REDO:
             GetFocus().SendMessage(EM_REDO, 0, 0);
+            return TRUE;
 
         case IDW_VIEW_STATUSBAR:
             OnViewStatusBar();
@@ -311,6 +312,50 @@ OnInitialUpdate()                                                           /*
 }
 
 /*============================================================================*/
+void CMainFrame::
+OnMenuUpdate(UINT id)                                                       /*
+
+    This method is called by the framework before the menu items are
+    displayed. Add code here to update the check state of menu items.
+*-----------------------------------------------------------------------------*/
+{
+    switch (id)
+    {
+    case IDC_CHECK_A:
+    {
+        bool isCheckA = (m_view.GetCheckA() != 0);
+        UINT check = isCheckA ? MF_CHECKED : MF_UNCHECKED;
+        GetFrameMenu().CheckMenuItem(id, check);
+    }
+    break;
+    case IDC_CHECK_B:
+    {
+        bool isCheckB = (m_view.GetCheckB() != 0);
+        UINT check = isCheckB ? MF_CHECKED : MF_UNCHECKED;
+        GetFrameMenu().CheckMenuItem(id, check);
+    }
+    break;
+    case IDC_CHECK_C:
+    {
+        bool isCheckC = (m_view.GetCheckC() != 0);
+        UINT check = isCheckC ? MF_CHECKED : MF_UNCHECKED;
+        GetFrameMenu().CheckMenuItem(id, check);
+    }
+    break;
+    }
+
+    if ((id >= IDC_RADIO_A) && (id <= IDC_RADIO_C))
+    {
+        int radio = id - IDC_RADIO_A;
+        if (m_view.GetRadio() == radio)
+            GetFrameMenu().CheckMenuRadioItem(IDC_RADIO_A, IDC_RADIO_C,
+                id, MF_BYCOMMAND);
+    }
+
+    CFrame::OnMenuUpdate(id);
+}
+
+/*============================================================================*/
     void CMainFrame::
 PreCreate(CREATESTRUCT& cs)                                                 /*
 
@@ -438,4 +483,37 @@ UpdateDialog(BOOL bReadFromControl)                                         /*
 {
     return m_view.UpdateDialog(bReadFromControl);
 }
-/*----------------------------------------------------------------------------*/
+
+/*============================================================================*/
+    LRESULT CMainFrame::
+WndProc(UINT msg, WPARAM wparam, LPARAM lparam)                             /*
+
+    Handle the window's messages
+------------------------------------------------------------------------------*/
+{
+    try
+    {
+        // Pass unhandled messages on for default processing.
+        return WndProcDefault(msg, wparam, lparam);
+    }
+
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
+    }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
+}

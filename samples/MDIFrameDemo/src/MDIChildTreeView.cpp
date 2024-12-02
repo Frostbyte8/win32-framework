@@ -22,22 +22,17 @@ CViewTree::~CViewTree()
     if (IsWindow()) DeleteAllItems();
 }
 
-// Called when the window is destroyed.
-void CViewTree::OnDestroy()
-{
-    SetImageList(0, LVSIL_SMALL);
-}
-
 // Called when a window handle (HWND) is attached to CViewTree.
 void CViewTree::OnAttach()
 {
     // Set the image lists.
-    int scale = DpiScaleInt(1);
-    m_normalImages.Create(16 * scale, 15 * scale, ILC_COLOR32 | ILC_MASK, 1, 0);
-    CBitmap image(IDB_CLASSVIEW);
-    image = DpiScaleUpBitmap(image);
-    m_normalImages.Add( image, RGB(255, 0, 0) );
-    SetImageList(m_normalImages, LVSIL_NORMAL);
+    CBitmap bmImage(IDB_CLASSVIEW);
+    bmImage = DpiScaleUpBitmap(bmImage);
+    int scale = bmImage.GetSize().cy / 15;
+    CImageList normalImages;
+    normalImages.Create(scale * 16, scale * 15, ILC_COLOR32 | ILC_MASK, 1, 0);
+    normalImages.Add(bmImage, RGB(255, 0, 0));
+    SetImageList(normalImages, TVSIL_NORMAL);
 
     // Adjust style to show lines and [+] button.
     DWORD style = GetStyle();
@@ -66,6 +61,37 @@ void CViewTree::OnAttach()
     Expand(htiCTreeViewApp, TVE_EXPAND);
 }
 
+// Handle the window's messages.
+LRESULT CViewTree::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    try
+    {
+        // Pass unhandled messages on for default processing.
+        return WndProcDefault(msg, wparam, lparam);
+    }
+
+    // Catch all unhandled CException types.
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
+    }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
+}
+
 
 /////////////////////////////////////////
 // CMDIChildTreeView function definitions
@@ -74,9 +100,9 @@ void CViewTree::OnAttach()
 // Constructor.
 CMDIChildTree::CMDIChildTree()
 {
-    m_Menu.LoadMenu(_T("MdiMenuTree"));
-    SetHandles(m_Menu, 0);
-    SetView(m_TreeView);
+    m_menu.LoadMenu(_T("MdiMenuTree"));
+    SetHandles(m_menu, NULL);
+    SetView(m_treeView);
 }
 
 // Destructor.
@@ -94,3 +120,33 @@ int CMDIChildTree::OnCreate(CREATESTRUCT& cs)
     return CMDIChild::OnCreate(cs);
 }
 
+// Handle the window's messages.
+LRESULT CMDIChildTree::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    try
+    {
+        // Pass unhandled messages on for default processing.
+        return WndProcDefault(msg, wparam, lparam);
+    }
+
+    // Catch all unhandled CException types.
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
+    }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
+}

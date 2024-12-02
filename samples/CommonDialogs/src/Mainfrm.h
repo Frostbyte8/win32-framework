@@ -35,9 +35,6 @@ CMainFrame : public CFrame                                                  /*
         CMainFrame();
         virtual ~CMainFrame() {}
 
-        void    AddMRUEntry(LPCTSTR MRUEntry)
-                    { CFrame::AddMRUEntry (MRUEntry);}
-        virtual HWND Create(HWND parent = 0);
         AboutBox& GetAboutBox() { return m_aboutBox; }
         void    EmptyMRUList();
         size_t  GetMRUSize() { return GetMRUEntries().size();}
@@ -52,11 +49,6 @@ CMainFrame : public CFrame                                                  /*
         void    SetMaxMRU(UINT max)          { m_maxMRU = max; }
         void    SetWindowTitle(LPCTSTR);
         void    UpdateControlUIState();
-
-        LRESULT OnActivate(UINT, WPARAM wparam, LPARAM lparam)
-                    { CWnd::WndProcDefault(WM_ACTIVATE, wparam, lparam);
-                      if (LOWORD(wparam) == WA_ACTIVE) GetRichView().SetFocus();
-                      return 0; }
 
     private:
         CMainFrame(const CMainFrame&);               // Disable copy construction

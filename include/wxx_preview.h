@@ -1,9 +1,10 @@
-// Win32++   Version 9.5
-// Release Date: TBA
+// Win32++   Version 9.6.1
+// Release Date: 29th July 2024
 //
 //      David Nash
 //      email: dnash@bigpond.net.au
 //      url: https://sourceforge.net/projects/win32-framework
+//           https://github.com/DavidNash2024/Win32xx
 //
 //
 // Copyright (c) 2005-2024  David Nash
@@ -40,11 +41,12 @@
 // in developing this class.
 
 
-#ifndef _WIN32XX_PREVIEWDIALOG_H_
-#define _WIN32XX_PREVIEWDIALOG_H_
+#ifndef _WIN32XX_PREVIEW_H_
+#define _WIN32XX_PREVIEW_H_
 
 #include "wxx_wincore.h"
 #include "wxx_dialog.h"
+#include "wxx_stdcontrols.h"
 #include "wxx_printdialogs.h"
 #include "default_resource.h"
 
@@ -62,9 +64,10 @@
 // 2) Specify values for the string resources used by CPrintPreview in
 //    resource.rc.
 // 3) Use SetSource to specify to where to call the PrintPage function.
+//    Alternatively, specify the source in CPrintPreview's constructor.
 // 4) Declare a PrintPage function in the source for printing and previewing:
-//     void  PrintPage(CDC& dc, UINT page);
-// 5) Call DoPrintPreview(HWND ownerWindow, UINT maxPage = 1) to initiate the
+//     void  PrintPage(CDC& dc, int page);
+// 5) Call DoPrintPreview(HWND ownerWindow, int maxPage = 1) to initiate the
 //    print preview.
 // 6) Create the preview window, and swap it into the frame's view.
 // 7) Handle UWM_PREVIEWCLOSE to swap back to the default view when the preview
@@ -153,18 +156,19 @@ namespace Win32xx
     {
     public:
         CPrintPreview();
+        CPrintPreview(T& source);
         virtual ~CPrintPreview();
 
         CPreviewPane& GetPreviewPane() const { return *m_pPreviewPane; }
         void SetPreviewPane(CPreviewPane& previewPane) { m_pPreviewPane = &previewPane; }
 
-        virtual void DoPrintPreview(HWND ownerWindow, UINT maxPage = 1);
+        virtual void DoPrintPreview(HWND ownerWindow, int maxPage = 1);
         virtual BOOL OnCloseButton();
         virtual BOOL OnNextButton();
         virtual BOOL OnPrevButton();
         virtual BOOL OnPrintButton();
         virtual BOOL OnPrintSetup();
-        virtual void PreviewPage(UINT page);
+        virtual void PreviewPage(int page);
         virtual void SetSource(T& source) { m_pSource = &source; }
         virtual void UpdateButtons();
 
@@ -201,8 +205,8 @@ namespace Win32xx
 {
 
     //////////////////////////////////////////////////////
-    // Definitions for the CPreviewPane class
-    // CPreviewPane provides a preview pane for CPrintPreview
+    // Definitions for the CPreviewPane class.
+    // CPreviewPane provides a preview pane for CPrintPreview.
     //
 
     // Constructor.
@@ -222,7 +226,7 @@ namespace Win32xx
             wc.lpfnWndProc = ::DefWindowProc;
             wc.hInstance = GetApp()->GetInstanceHandle();
             wc.hbrBackground = (HBRUSH)GetStockObject(GRAY_BRUSH);
-            wc.hCursor = ::LoadCursor(0, IDC_ARROW);
+            wc.hCursor = ::LoadCursor(NULL, IDC_ARROW);
             VERIFY(::RegisterClass(&wc));
         }
 
@@ -331,7 +335,7 @@ namespace Win32xx
     }
 
     ///////////////////////////////////////////
-    // Definitions for the CPrintPreview class
+    // Definitions for the CPrintPreview class.
     //
 
     // Constructor.
@@ -340,6 +344,15 @@ namespace Win32xx
         m_pSource(0), m_currentPage(0), m_maxPage(1), m_ownerWindow(0)
     {
         m_pPreviewPane = &m_previewPane;
+    }
+
+    template <typename T>
+    inline CPrintPreview<T>::CPrintPreview(T& source)
+        : CDialog((LPCDLGTEMPLATE)previewTemplate),
+        m_pSource(0), m_currentPage(0), m_maxPage(1), m_ownerWindow(0)
+    {
+        m_pPreviewPane = &m_previewPane;
+        SetSource(source);
     }
 
     // Destructor.
@@ -401,14 +414,14 @@ namespace Win32xx
         AttachItem(IDW_PREVIEWCLOSE, m_buttonClose);
         AttachItem(IDW_PREVIEWPANE, GetPreviewPane());
 
-        // Assign button text from string resources
+        // Assign button text from string resources.
         m_buttonPrint.SetWindowText(LoadString(IDW_PREVIEWPRINT));
         m_buttonSetup.SetWindowText(LoadString(IDW_PREVIEWSETUP));
         m_buttonPrev.SetWindowText(LoadString(IDW_PREVIEWPREV));
         m_buttonNext.SetWindowText(LoadString(IDW_PREVIEWNEXT));
         m_buttonClose.SetWindowText(LoadString(IDW_PREVIEWCLOSE));
 
-        // Support dialog resizing
+        // Support dialog resizing.
         m_resizer.Initialize(*this, CRect(0, 0, 100, 120));
         m_resizer.AddChild(m_buttonPrint, CResizer::topleft, 0);
         m_resizer.AddChild(m_buttonSetup, CResizer::topleft, 0);
@@ -461,7 +474,7 @@ namespace Win32xx
     // Initiate the print preview.
     // ownerWindow: Print Preview's notifications are sent to this window.
     template <typename T>
-    inline void CPrintPreview<T>::DoPrintPreview(HWND ownerWindow, UINT maxPage)
+    inline void CPrintPreview<T>::DoPrintPreview(HWND ownerWindow, int maxPage)
     {
         m_ownerWindow = ownerWindow;
         assert(maxPage >= 1);
@@ -477,9 +490,9 @@ namespace Win32xx
     // information that would be printed on a page.
     // A CResourceException is thrown if there is no default printer.
     template <typename T>
-    inline void CPrintPreview<T>::PreviewPage(UINT page)
+    inline void CPrintPreview<T>::PreviewPage(int page)
     {
-        // Get the device context of the default or currently chosen printer
+        // Get the device context of the default or currently chosen printer.
         CPrintDialog printDlg;
         CDC printerDC = printDlg.GetPrinterDC();
 
@@ -500,7 +513,7 @@ namespace Win32xx
         memDC.SetWindowExtEx(width, height, NULL);
         memDC.SetViewportExtEx(width / shrink, height / shrink, NULL);
 
-        // Fill the bitmap with a white background
+        // Fill the bitmap with a white background.
         CRect rc(0, 0, width, height);
         memDC.FillRect(rc, (HBRUSH)::GetStockObject(WHITE_BRUSH));
 
@@ -508,11 +521,11 @@ namespace Win32xx
         assert(m_pSource);
         m_pSource->PrintPage(memDC, page);
 
-        // Detach the bitmap from the memory DC and save it
+        // Detach the bitmap from the memory DC and save it.
         CBitmap bitmap = memDC.DetachBitmap();
         GetPreviewPane().SetBitmap(bitmap);
 
-        // Display the print preview
+        // Display the print preview.
         UpdateButtons();
         CDC previewDC = GetPreviewPane().GetDC();
         GetPreviewPane().Render(previewDC);
@@ -529,4 +542,4 @@ namespace Win32xx
 }
 
 
-#endif // _WIN32XX_PREVIEWDIALOG_H_
+#endif // _WIN32XX_PREVIEW_H_

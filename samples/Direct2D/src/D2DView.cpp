@@ -103,7 +103,7 @@ LRESULT CD2DView::OnDisplayChange(UINT, WPARAM, LPARAM)
 LRESULT CD2DView::OnDpiChanged(UINT, WPARAM, LPARAM lparam)
 {
     LPRECT prc = (LPRECT)lparam;
-    SetWindowPos(0, *prc, SWP_SHOWWINDOW);
+    SetWindowPos(HWND_TOP, *prc, SWP_SHOWWINDOW);
     return 0;
 }
 
@@ -112,7 +112,6 @@ LRESULT CD2DView::OnPaint(UINT, WPARAM, LPARAM)
 {
     OnRender();
     ValidateRect();
-
     return 0;
 }
 
@@ -145,8 +144,8 @@ HRESULT CD2DView::OnRender()
         for (float y = 0.0f; y < height; y += 16.0f * zoom)
         {
             m_pRenderTarget->DrawLine(
-                D2D1::Point2F(0.0f, static_cast<FLOAT>(y)),
-                D2D1::Point2F(width, static_cast<FLOAT>(y)),
+                D2D1::Point2F(0.0f, y),
+                D2D1::Point2F(width, y),
                 m_pLightSlateGrayBrush,
                 zoom
             );
@@ -202,7 +201,6 @@ LRESULT CD2DView::OnSize(UINT, WPARAM, LPARAM lparam)
     UINT width = LOWORD(lparam);
     UINT height = HIWORD(lparam);
     OnResize(width, height);
-
     return 0;
 }
 
@@ -220,7 +218,7 @@ void CD2DView::PreCreate(CREATESTRUCT&cs)
 void CD2DView::PreRegisterClass(WNDCLASS& wc)
 {
     wc.style = CS_HREDRAW | CS_VREDRAW;
-    wc.hCursor = ::LoadCursor(0, IDI_APPLICATION);
+    wc.hCursor = ::LoadCursor(NULL, IDI_APPLICATION);
     wc.lpszClassName = L"Direct2D";
 }
 
@@ -243,7 +241,9 @@ LRESULT CD2DView::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
+        CString str;
+        str << e.GetText() << _T("\n") << e.GetErrorString();
+        ::MessageBox(NULL, str, _T("An exception occurred"), MB_ICONERROR);
 
         return 0;
     }

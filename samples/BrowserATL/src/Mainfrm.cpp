@@ -14,6 +14,8 @@
 // Constructor for CMainFrame.
 CMainFrame::CMainFrame()
 {
+    // Set m_view as the view window of the frame.
+    SetView(m_view);
 }
 
 // Destructor for CMainFrame.
@@ -49,11 +51,8 @@ void CMainFrame::AddComboBoxBand()
 
 HWND CMainFrame::Create(HWND parent)
 {
-    //Set m_view as the view window of the frame
-    SetView(m_view);
-
-    // Set the registry key name, and load the initial window position
-    // Use a registry key name like "CompanyName\\Application"
+    // Set the registry key name, and load the initial window position.
+    // Use a registry key name like "CompanyName\\Application".
     LoadRegistrySettings(L"Win32++\\Browser ATL Sample");
 
     return CFrame::Create(parent);
@@ -568,13 +567,24 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 

@@ -14,6 +14,8 @@
 // Constructor for CMainFrame. Its called after CFrame's constructor.
 CMainFrame::CMainFrame() : m_colored("Colored text")
 {
+    // Set m_view as the view window of the frame.
+    SetView(m_view);
 }
 
 // Destructor for CMainFrame.
@@ -24,11 +26,8 @@ CMainFrame::~CMainFrame()
 // Create the frame window.
 HWND CMainFrame::Create(HWND parent)
 {
-    //Set m_view as the view window of the frame
-    SetView(m_view);
-
-    // Set the registry key name, and load the initial window position
-    // Use a registry key name like "CompanyName\\Application"
+    // Set the registry key name, and load the initial window position.
+    // Use a registry key name like "CompanyName\\Application".
     LoadRegistrySettings(_T("Win32++\\StatusBar Sample"));
 
     return CFrame::Create(parent);
@@ -41,60 +40,58 @@ void CMainFrame::DrawStatusBar(LPDRAWITEMSTRUCT pDrawItem)
 
     // Retrieve the device context.
     CDC dc(pDrawItem->hDC);
-    CFont font = GetStatusBar().GetFont();
-    LOGFONT lf = font.GetLogFont();
-    CDC memDC(dc);
     CRect partRect = pDrawItem->rcItem;
 
     // Modify the background, font and text color for part 4.
     if (pDrawItem->itemID == 4)
     {
         // Change the font to italic.
+        CFont font = GetStatusBar().GetFont();
+        LOGFONT lf = font.GetLogFont();
         lf.lfItalic = TRUE;
+        dc.CreateFontIndirect(lf);
 
         // Change the part's background.
         COLORREF fillColor1 = RGB(230, 180, 0);
         COLORREF fillColor2 = RGB(240, 210, 90);
-        memDC.GradientFill(fillColor1, fillColor2, partRect, FALSE);
+        dc.GradientFill(fillColor1, fillColor2, partRect, FALSE);
 
         // Change the text color.
         COLORREF textColor = RGB(10, 20, 250);
-        memDC.SetTextColor(textColor);
+        dc.SetTextColor(textColor);
     }
 
-    // Create the font.
-    memDC.CreateFontIndirect(lf);
-
-    // Draw the owner drawn text.
-    // The text is stored in the itemData.
+    // Draw the owner drawn text, stored in the itemData.
     LPCTSTR text = reinterpret_cast<LPCTSTR>(pDrawItem->itemData);
-    memDC.SetBkMode(TRANSPARENT);
-    memDC.DrawText(text, lstrlen(text), partRect, DT_SINGLELINE | DT_VCENTER);
-
-    // Copy the memory dc to the statusbar's dc.
-    dc.BitBlt(0, 0, partRect.Width(), partRect.Height(), memDC, 0, 0, SRCCOPY);
+    dc.SetBkMode(TRANSPARENT);
+    dc.DrawText(text, lstrlen(text), partRect, DT_SINGLELINE | DT_VCENTER);
 }
 
+// Draws the StatusBar's background when StatusBar themes are enabled.
 BOOL CMainFrame::DrawStatusBarBkgnd(CDC& dc, CStatusBar& statusbar)
 {
-    // The background can be set here if XP themes are enabled
+    // The background can be set here if XP themes are enabled.
     if (IsXPThemed())
     {
-        // Exclude the progress bar window from the update region.
-        CRect rc = m_progressBar.GetWindowRect();
-        statusbar.ScreenToClient(rc);
-        dc.ExcludeClipRect(rc);
+        const StatusBarTheme& sbTheme = GetStatusBarTheme();
+        if (sbTheme.UseThemes)
+        {
+            // Exclude the progress bar window from the update region.
+            CRect rc = m_progressBar.GetWindowRect();
+            statusbar.ScreenToClient(rc);
+            dc.ExcludeClipRect(rc);
 
-        // Fill the background with a color gradient
-        rc = statusbar.GetClientRect();
-        CMemDC memDC(dc);
-        memDC.CreateCompatibleBitmap(dc, rc.Width(), rc.Height());
-        COLORREF fillColor1 = RGB(125, 230, 255);
-        COLORREF fillColor2 = RGB(250, 150, 150);
-        memDC.GradientFill(fillColor1, fillColor2, rc, FALSE);
-        dc.BitBlt(0, 0, rc.Width(), rc.Height(), memDC, 0, 0, SRCCOPY);
+            // Fill the background with a color gradient
+            rc = statusbar.GetClientRect();
+            CMemDC memDC(dc);
+            memDC.CreateCompatibleBitmap(dc, rc.Width(), rc.Height());
+            COLORREF fillColor1 = RGB(125, 230, 255);
+            COLORREF fillColor2 = RGB(250, 150, 150);
+            memDC.GradientFill(fillColor1, fillColor2, rc, FALSE);
+            dc.BitBlt(0, 0, rc.Width(), rc.Height(), memDC, 0, 0, SRCCOPY);
 
-        return TRUE;
+            return TRUE;
+        }
     }
 
     return FALSE;
@@ -142,21 +139,21 @@ int CMainFrame::OnCreate(CREATESTRUCT& cs)
     // UseThemes(FALSE);             // Don't use themes.
     // UseToolBar(FALSE);            // Don't use a ToolBar.
 
-    // call the base class function
+    // Call the base class function.
     CFrame::OnCreate(cs);
 
-    // Start a timer for the progress bar
+    // Start a timer for the progress bar.
     const int timerID = 101;
     SetTimer(timerID, 100, 0);
 
-    // Set the background color (ignored if XP themes are enabled)
+    // Set the background color (ignored if XP themes are enabled).
     COLORREF backgrnd = RGB(125, 230, 255);
     GetStatusBar().SendMessage(SB_SETBKCOLOR, 0, backgrnd);
 
-    // Create the Hyperlink
+    // Create the Hyperlink.
     m_hyperlink.Create(GetStatusBar());
 
-    // Create the ProgressBar
+    // Create the ProgressBar.
     m_progressBar.Create(GetStatusBar());
 
     return 0;
@@ -200,6 +197,11 @@ void CMainFrame::SetStatusIndicators()
         CString scrl = LoadString(IDW_INDICATOR_SCRL);
         CString empty;
 
+        CString oldCap = m_cap;
+        CString oldNum = m_num;
+        CString oldOvr = m_ovr;
+        CString oldScrl = m_scrl;
+
         m_cap  = (::GetKeyState(VK_CAPITAL) & 0x0001) ? cap : empty;
         m_num  = (::GetKeyState(VK_NUMLOCK) & 0x0001) ? num : empty;
         m_ovr  = (::GetKeyState(VK_INSERT) & 0x0001) ? ovr : ins;
@@ -207,72 +209,75 @@ void CMainFrame::SetStatusIndicators()
 
         // Update the indicators.
         // Use member variables for owner drawn text to keep the text in scope.
-        GetStatusBar().SetPartText(5, m_cap,  SBT_OWNERDRAW);
-        GetStatusBar().SetPartText(6, m_num,  SBT_OWNERDRAW);
-        GetStatusBar().SetPartText(7, m_ovr,  SBT_OWNERDRAW);
-        GetStatusBar().SetPartText(8, m_scrl, SBT_OWNERDRAW);
+        if (oldCap != m_cap)
+            GetStatusBar().SetPartText(5, m_cap,  SBT_OWNERDRAW);
+        if (oldNum != m_num)
+            GetStatusBar().SetPartText(6, m_num,  SBT_OWNERDRAW);
+        if (oldOvr != m_ovr)
+            GetStatusBar().SetPartText(7, m_ovr,  SBT_OWNERDRAW);
+        if (oldScrl != m_scrl)
+            GetStatusBar().SetPartText(8, m_scrl, SBT_OWNERDRAW);
     }
 }
 
 // Reposition the statusbar parts. It's called when the statusbar is resized.
 void CMainFrame::SetStatusParts()
 {
-    if (m_hyperlink.IsWindow())
+    const int progressWidth = DpiScaleInt(100);
+    const int gripWidth = DpiScaleInt(20);
+    int iconSide = GetStatusBar().GetClientRect().Height();
+
+    // Fill a vector with the status bar part widths.
+    std::vector<int> partWidths;
+    partWidths.push_back(GetTextPartWidth(m_hyperlink.GetLinkName()));
+    partWidths.push_back(progressWidth);
+    partWidths.push_back(iconSide);
+    partWidths.push_back(GetTextPartWidth(m_colored));
+    partWidths.push_back(GetTextPartWidth(LoadString(IDW_INDICATOR_CAPS)));
+    partWidths.push_back(GetTextPartWidth(LoadString(IDW_INDICATOR_NUM)));
+    partWidths.push_back(GetTextPartWidth(LoadString(IDW_INDICATOR_OVR)));
+    partWidths.push_back(GetTextPartWidth(LoadString(IDW_INDICATOR_SCRL)));
+
+    int sumWidths = 0;
+    std::vector<int>::iterator iter;
+    for (iter = partWidths.begin(); iter != partWidths.end(); ++iter)
     {
-        const int progressWidth = DpiScaleInt(100);
-        const int gripWidth = DpiScaleInt(20);
-        int iconSide = GetStatusBar().GetClientRect().Height();
-
-        // Fill a vector with the status bar part widths.
-        std::vector<int> partWidths;
-        partWidths.push_back(GetTextPartWidth(m_hyperlink.GetLinkName()));
-        partWidths.push_back(progressWidth);
-        partWidths.push_back(iconSide);
-        partWidths.push_back(GetTextPartWidth(m_colored));
-        partWidths.push_back(GetTextPartWidth(LoadString(IDW_INDICATOR_CAPS)));
-        partWidths.push_back(GetTextPartWidth(LoadString(IDW_INDICATOR_NUM)));
-        partWidths.push_back(GetTextPartWidth(LoadString(IDW_INDICATOR_OVR)));
-        partWidths.push_back(GetTextPartWidth(LoadString(IDW_INDICATOR_SCRL)));
-
-        int sumWidths = 0;
-        std::vector<int>::iterator iter;
-        for (iter = partWidths.begin(); iter != partWidths.end(); ++iter)
-        {
-            sumWidths += *iter;
-        }
-        sumWidths += gripWidth;
-
-        // Insert the width for the first status bar part into the vector.
-        CRect clientRect = GetClientRect();
-        const int minWidth = 300;
-        int width = MAX(minWidth, clientRect.right);
-        std::vector<int>::iterator begin = partWidths.begin();
-        partWidths.insert(begin, width - sumWidths);
-
-        // Create or resize the status bar parts.
-        for (iter = partWidths.begin(); iter != partWidths.end(); ++iter)
-        {
-            int part = static_cast<int>(iter - partWidths.begin());
-            GetStatusBar().SetPartWidth(part, *iter);
-        }
-
-        // Reposition the hyperlink over part 1.
-        CRect partRect = GetStatusBar().GetPartRect(1);
-        const int border = 2;
-        partRect.OffsetRect(border, 0);
-        m_hyperlink.SetWindowPos(0, partRect, SWP_SHOWWINDOW);
-
-        // Reposition the progress bar over part 2.
-        partRect = GetStatusBar().GetPartRect(2);
-        m_progressBar.SetWindowPos(0, partRect, SWP_SHOWWINDOW);
-
-        // Add the icon to part 3.
-        iconSide = iconSide - (iconSide % 8);
-        GetStatusBar().SetPartIcon(3, (HICON)GetApp()->LoadImage(MAKEINTRESOURCE(IDW_MAIN), IMAGE_ICON, iconSide, iconSide));
-
-        // Assign the colored text for part 4.
-        GetStatusBar().SetPartText(4, m_colored, SBT_OWNERDRAW);
+        sumWidths += *iter;
     }
+    sumWidths += gripWidth;
+
+    // Insert the width for the first status bar part into the vector.
+    CRect clientRect = GetClientRect();
+    const LONG minWidth = 300;
+    int width = std::max(minWidth, clientRect.right);
+    std::vector<int>::iterator begin = partWidths.begin();
+    partWidths.insert(begin, width - sumWidths);
+
+    // Create or resize the status bar parts.
+    for (iter = partWidths.begin(); iter != partWidths.end(); ++iter)
+    {
+        int part = static_cast<int>(iter - partWidths.begin());
+        GetStatusBar().SetPartWidth(part, *iter);
+    }
+
+    // Reposition the hyperlink over part 1.
+    CRect partRect = GetStatusBar().GetPartRect(1);
+    const int border = 2;
+    partRect.OffsetRect(border, 0);
+    if (m_hyperlink.IsWindow())
+        m_hyperlink.SetWindowPos(HWND_TOP, partRect, SWP_SHOWWINDOW);
+
+    // Reposition the progress bar over part 2.
+    partRect = GetStatusBar().GetPartRect(2);
+    if (m_progressBar.IsWindow())
+        m_progressBar.SetWindowPos(HWND_TOP, partRect, SWP_SHOWWINDOW);
+
+    // Add the icon to part 3.
+    iconSide = iconSide - (iconSide % 8);
+    GetStatusBar().SetPartIcon(3, (HICON)GetApp()->LoadImage(MAKEINTRESOURCE(IDW_MAIN), IMAGE_ICON, iconSide, iconSide));
+
+    // Assign the colored text for part 4.
+    GetStatusBar().SetPartText(4, m_colored, SBT_OWNERDRAW);
 }
 
 // Specifies the images used on menu items.
@@ -319,10 +324,24 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
-        // Display the exception.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-        return 0;
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }

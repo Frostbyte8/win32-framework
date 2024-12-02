@@ -1,9 +1,10 @@
-// Win32++   Version 9.5
-// Release Date: TBA
+// Win32++   Version 9.6.1
+// Release Date: 29th July 2024
 //
 //      David Nash
 //      email: dnash@bigpond.net.au
 //      url: https://sourceforge.net/projects/win32-framework
+//           https://github.com/DavidNash2024/Win32xx
 //
 //
 // Copyright (c) 2005-2024  David Nash
@@ -57,6 +58,22 @@
 namespace Win32xx
 {
 
+    struct MetaFileData   // A structure that contains the data members for CMetaFile.
+    {
+        // Constructor
+        MetaFileData() : metaFile(NULL) {}
+
+        HMETAFILE metaFile;
+    };
+
+    struct EnhMetaFileData    // A structure that contains the data members for CEnhMetaFile.
+    {
+        // Constructor
+        EnhMetaFileData() : enhMetaFile(NULL) {}
+
+        HENHMETAFILE enhMetaFile;
+    };
+
     ///////////////////////////////////////////////////////////////////////////////
     // CMetaFile wraps a HMETAFILE. CMetaFile can be used anywhere a HMETAFILE can
     // be used. CMetaFile objects are reference counted, so they can be safely
@@ -75,18 +92,10 @@ namespace Win32xx
         operator HMETAFILE() { return m_pData->metaFile; }
 
     private:
-        struct CMetaFile_Data   // A structure that contains the data members for CMetaFile
-        {
-            // Constructor
-            CMetaFile_Data() : metaFile(0) {}
-
-            HMETAFILE metaFile;
-        };
-
         CMetaFile(HMETAFILE metaFile);
         void Release();
 
-        Shared_Ptr<CMetaFile_Data> m_pData;
+        MetaDataPtr m_pData;
     };
 
 
@@ -109,17 +118,9 @@ namespace Win32xx
         operator HENHMETAFILE() { return m_pData->enhMetaFile; }
 
     private:
-        struct CEnhMetaFile_Data    // A structure that contains the data members for CEnhMetaFile.
-        {
-            // Constructor
-            CEnhMetaFile_Data() : enhMetaFile(0) {}
-
-            HENHMETAFILE enhMetaFile;
-        };
-
         CEnhMetaFile(HENHMETAFILE enhMetaFile);
         void Release();
-        Shared_Ptr<CEnhMetaFile_Data> m_pData;
+        EnhMetaDataPtr m_pData;
     };
 
 }
@@ -133,15 +134,13 @@ namespace Win32xx
     /////////////////////////////////////////////////////
     // Definitions for the the CMetaFile class
     //
-    inline CMetaFile::CMetaFile()
+    inline CMetaFile::CMetaFile() : m_pData(new MetaFileData)
     {
-        m_pData = new CMetaFile_Data;
     }
 
     // A private constructor used by CMetaFileDC.
-    inline CMetaFile::CMetaFile(HMETAFILE metaFile)
+    inline CMetaFile::CMetaFile(HMETAFILE metaFile) : m_pData(new MetaFileData)
     {
-        m_pData = new CMetaFile_Data;
         m_pData->metaFile = metaFile;
     }
 
@@ -158,9 +157,9 @@ namespace Win32xx
 
     inline CMetaFile& CMetaFile::operator=(const CMetaFile& rhs)
     {
-        CThreadLock mapLock(GetApp()->m_gdiLock);
         if (this != &rhs)
         {
+            CThreadLock mapLock(GetApp()->m_gdiLock);
             Release();
             m_pData = rhs.m_pData;
         }
@@ -174,7 +173,7 @@ namespace Win32xx
             CThreadLock mapLock(GetApp()->m_gdiLock);
 
         // Delete the metafile when the last copy goes out of scope.
-        if (m_pData.use_count() == 1 && m_pData->metaFile != 0)
+        if (m_pData.use_count() == 1 && m_pData->metaFile != NULL)
         {
             VERIFY(::DeleteMetaFile(m_pData->metaFile));
         }
@@ -184,15 +183,14 @@ namespace Win32xx
     /////////////////////////////////////////////////////
     // Definitions for the the CEnhMetaFile class
     //
-    inline CEnhMetaFile::CEnhMetaFile()
+    inline CEnhMetaFile::CEnhMetaFile() : m_pData(std::make_shared<EnhMetaFileData>())
     {
-        m_pData = new CEnhMetaFile_Data;
     }
 
     // A private constructor used by CEnhMetaFileDC.
     inline CEnhMetaFile::CEnhMetaFile(HENHMETAFILE enhMetaFile)
+        : m_pData(std::make_shared<EnhMetaFileData>())
     {
-        m_pData = new CEnhMetaFile_Data;
         m_pData->enhMetaFile = enhMetaFile;
     }
 
@@ -209,9 +207,9 @@ namespace Win32xx
 
     inline CEnhMetaFile& CEnhMetaFile::operator=(const CEnhMetaFile& rhs)
     {
-        CThreadLock mapLock(GetApp()->m_gdiLock);
         if (this != &rhs)
         {
+            CThreadLock mapLock(GetApp()->m_gdiLock);
             Release();
             m_pData = rhs.m_pData;
         }
@@ -224,7 +222,7 @@ namespace Win32xx
             CThreadLock mapLock(GetApp()->m_gdiLock);
 
         // Delete the enhanced metafile when the last copy goes out of scope.
-        if (m_pData.use_count() == 1 && m_pData->enhMetaFile != 0)
+        if (m_pData.use_count() == 1 && m_pData->enhMetaFile != NULL)
         {
             VERIFY(::DeleteEnhMetaFile(m_pData->enhMetaFile));
         }

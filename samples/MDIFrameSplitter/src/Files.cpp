@@ -49,12 +49,13 @@ void CViewFiles::InsertItems()
 void CViewFiles::OnAttach()
 {
     // Set the image lists.
-    int scale = DpiScaleInt(1);
-    m_smallImages.Create(scale * 16, scale * 15, ILC_COLOR32 | ILC_MASK, 1, 0);
-    CBitmap image(IDB_FILEVIEW);
-    image = DpiScaleUpBitmap(image);
-    m_smallImages.Add(image, RGB(255, 0, 255));
-    SetImageList(m_smallImages, LVSIL_SMALL);
+    CBitmap bmImage(IDB_FILEVIEW);
+    bmImage = DpiScaleUpBitmap(bmImage);
+    int scale = bmImage.GetSize().cy / 15;
+    CImageList smallImages;
+    smallImages.Create(scale * 16, scale * 15, ILC_COLOR32 | ILC_MASK, 1, 0);
+    smallImages.Add(bmImage, RGB(255, 0, 255));
+    SetImageList(smallImages, LVSIL_SMALL);
 
     // Set the report style.
     DWORD style = GetStyle();
@@ -62,12 +63,6 @@ void CViewFiles::OnAttach()
 
     SetColumns();
     InsertItems();
-}
-
-// Called when the window is destroyed.
-void CViewFiles::OnDestroy()
-{
-    SetImageList(0, LVSIL_SMALL);
 }
 
 // Respond to a mouse click on the window.
@@ -103,17 +98,27 @@ LRESULT CViewFiles::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
-
-
 
 
 ///////////////////////////////////////////////
@@ -125,6 +130,38 @@ CContainFiles::CContainFiles()
     SetDockCaption (_T("File View - Docking container"));
     SetView(m_viewFiles);
 }
+
+// Handle the window's messages.
+LRESULT CContainFiles::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    try
+    {
+        // Pass unhandled messages on for default processing.
+        return WndProcDefault(msg, wparam, lparam);
+    }
+
+    // Catch all unhandled CException types.
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
+    }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
+}
+
 
 /////////////////////////////////////////////////
 //  Definitions for the CDockFiles class
@@ -141,3 +178,33 @@ int CDockFiles::OnCreate(CREATESTRUCT& cs)
     return CDocker::OnCreate(cs);
 }
 
+// Handle the window's messages.
+LRESULT CDockFiles::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    try
+    {
+        // Pass unhandled messages on for default processing.
+        return WndProcDefault(msg, wparam, lparam);
+    }
+
+    // Catch all unhandled CException types.
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
+    }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
+}

@@ -91,7 +91,7 @@ LRESULT CView::OnDpiChanged(UINT, WPARAM, LPARAM lparam)
     // Resize the window.
     RECT* const pWindowRect = reinterpret_cast<RECT*>(lparam);
     assert(pWindowRect);
-    SetWindowPos(0, *pWindowRect, SWP_NOZORDER | SWP_NOACTIVATE);
+    SetWindowPos(HWND_TOP, *pWindowRect, SWP_NOZORDER | SWP_NOACTIVATE);
     SetRoundRegion();
 
     // Update the grap point for the new DPI.
@@ -199,7 +199,7 @@ void CView::PositionWindow()
     int y = pt.y - m_grabPoint.y;
 
     // Move the window.
-    SetWindowPos(0, x, y, 0, 0, SWP_NOSIZE);
+    SetWindowPos(HWND_TOP, x, y, 0, 0, SWP_NOSIZE);
 }
 
 // This function will be called automatically by Create. It provides an
@@ -222,12 +222,12 @@ void CView::PreRegisterClass(WNDCLASS& wc)
 {
     wc.hbrBackground = m_brush;                 // Background color
     wc.lpszClassName = _T("Round Window");      // Class name
-    wc.hCursor = ::LoadCursor(0, IDC_ARROW);     // Arrow cursor
+    wc.hCursor = ::LoadCursor(NULL, IDC_ARROW);     // Arrow cursor
 }
 
 void CView::SetRoundRegion()
 {
-    SetWindowRgn(0, TRUE);
+    SetWindowRgn(NULL, TRUE);
 
     // Create a circular region.
     CRgn rgn;
@@ -262,12 +262,24 @@ LRESULT CView::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }

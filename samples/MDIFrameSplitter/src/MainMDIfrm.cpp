@@ -115,7 +115,7 @@ BOOL CMainMDIFrame::OnFileExit()
 // Adds a new splitter MDI child.
 BOOL CMainMDIFrame::OnFileNew()
 {
-    AddMDIChild(new CSplitterMDIChild);
+    AddMDIChild(std::make_unique<CSplitterMDIChild>());
     return TRUE;
 }
 
@@ -152,7 +152,7 @@ LRESULT CMainMDIFrame::OnMouseActivate(UINT msg, WPARAM wparam, LPARAM lparam)
 {
     // Redraw all MDI children to update docker caption.
     std::vector<MDIChildPtr>::const_iterator iter;
-    for (iter = GetAllMDIChildren().begin(); iter < GetAllMDIChildren().end(); ++iter)
+    for (iter = GetAllMDIChildren().begin(); iter != GetAllMDIChildren().end(); ++iter)
     {
         (*iter)->RedrawWindow();
     }
@@ -204,13 +204,25 @@ LRESULT CMainMDIFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 

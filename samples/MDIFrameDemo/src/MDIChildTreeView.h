@@ -17,14 +17,12 @@ public:
 
 protected:
     // Virtual functions that override base class functions
-    virtual void OnDestroy();
     virtual void OnAttach();
+    virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
     CViewTree(const CViewTree&);               // Disable copy construction
     CViewTree& operator=(const CViewTree&);    // Disable assignment operator
-
-    CImageList m_normalImages;
 };
 
 
@@ -40,13 +38,14 @@ public:
 protected:
     // Virtual functions that override base class functions
     virtual int  OnCreate(CREATESTRUCT& cs);
+    virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
     CMDIChildTree(const CMDIChildTree&);                // Disable copy construction
     CMDIChildTree& operator=(const CMDIChildTree&);   // Disable assignment operator
 
-    CViewTree m_TreeView;
-    CMenu m_Menu;
+    CViewTree m_treeView;
+    CMenu m_menu;
 };
 
 #endif  //MDICHILDTREEVIEW_H

@@ -1,9 +1,10 @@
-// Win32++   Version 9.5
-// Release Date: TBA
+// Win32++   Version 9.6.1
+// Release Date: 29th July 2024
 //
 //      David Nash
 //      email: dnash@bigpond.net.au
 //      url: https://sourceforge.net/projects/win32-framework
+//           https://github.com/DavidNash2024/Win32xx
 //
 //
 // Copyright (c) 2005-2024  David Nash
@@ -90,28 +91,28 @@ namespace Win32xx
     template <class T>
     inline void CGlobalLock<T>::Lock()
     {
-        if (m_h != 0)
+        if (m_h != NULL)
         {
             m_p = reinterpret_cast<T*>(::GlobalLock(m_h));
             // Did the lock succeed?
-            if (m_p == 0)
+            if (m_p == NULL)
             {
                 // The handle is probably invalid
                 throw CWinException(GetApp()->MsgWndGlobalLock());
             }
         }
         else
-            m_p = 0;
+            m_p = NULL;
     }
 
     // Unlock the handle.
     template <class T>
     inline void CGlobalLock<T>::Unlock()
     {
-        if (m_h != 0)
+        if (m_h != NULL)
         {
             ::GlobalUnlock(m_h);
-            m_h = 0;
+            m_h = NULL;
         }
     }
 
@@ -179,7 +180,7 @@ namespace Win32xx
     // Definitions for the CWinApp class
     //
 
-    // Constructor
+    // Constructor.
     inline CWinApp::CWinApp() : m_callback(NULL)
     {
         static CCriticalSection cs;
@@ -187,9 +188,9 @@ namespace Win32xx
 
         // This assert fails if Win32++ has already been started.
         // There should only be one instance of CWinApp running at a time.
-        assert(SetnGetThis() == 0);
+        assert(SetnGetThis() == NULL);
 
-        if (SetnGetThis() == 0)
+        if (SetnGetThis() == NULL)
         {
             m_tlsData = ::TlsAlloc();
 
@@ -202,11 +203,11 @@ namespace Win32xx
             {
                 SetnGetThis(this);
 
-                // Set the instance handle
+                // Set the instance handle.
                 MEMORY_BASIC_INFORMATION mbi;
                 ZeroMemory(&mbi, sizeof(mbi));
                 static int address = 0;
-                VirtualQuery(&address, &mbi, sizeof(mbi));
+                ::VirtualQuery(&address, &mbi, sizeof(mbi));
                 assert(mbi.AllocationBase);
                 m_instance = (HINSTANCE)mbi.AllocationBase;
 
@@ -240,7 +241,7 @@ namespace Win32xx
             }
         }
 
-        // Do remaining tidy up
+        // Do remaining tidy up.
         m_allTLSData.clear();
         if (m_tlsData != TLS_OUT_OF_INDEXES)
         {
@@ -248,7 +249,7 @@ namespace Win32xx
             ::TlsFree(m_tlsData);
         }
 
-        SetnGetThis(0, true);
+        SetnGetThis(NULL, true);
         if (m_resource != m_instance)
             ::FreeLibrary(m_resource);
 
@@ -269,7 +270,7 @@ namespace Win32xx
         m_mapCGDIData.insert(std::make_pair(gdi, pData));
     }
 
-    // Adds a HIMAGELIST and Ciml_Data* pair to the map.
+    // Adds a HIMAGELIST and CIml_Data* pair to the map.
     inline void CWinApp::AddCImlData(HIMAGELIST images, CIml_Data* pData)
     {
         CThreadLock mapLock(m_wndLock);
@@ -283,64 +284,60 @@ namespace Win32xx
         m_mapCMenuData.insert(std::make_pair(menu, pData));
     }
 
-    // Retrieves a pointer to CDC_Data from the map
+    // Retrieves a pointer to CDC_Data from the map.
     inline CDC_Data* CWinApp::GetCDCData(HDC dc)
     {
-        std::map<HDC, CDC_Data*, CompareHDC>::const_iterator m;
-
-        // Find the CDC data mapped to this HDC
-        CDC_Data* pCDCData = 0;
         CThreadLock mapLock(m_gdiLock);
-        m = m_mapCDCData.find(dc);
 
+        // Find the CDC data mapped to this HDC.
+        std::map<HDC, CDC_Data*, CompareHDC>::const_iterator m;
+        CDC_Data* pCDCData = NULL;
+        m = m_mapCDCData.find(dc);
         if (m != m_mapCDCData.end())
             pCDCData = m->second;
 
         return pCDCData;
     }
 
-    // Retrieves a pointer to CGDI_Data from the map
+    // Retrieves a pointer to CGDI_Data from the map.
     inline CGDI_Data* CWinApp::GetCGDIData(HGDIOBJ object)
     {
-        std::map<HGDIOBJ, CGDI_Data*, CompareGDI>::const_iterator m;
-
-        // Find the CGDIObject data mapped to this HGDIOBJ
-        CGDI_Data* pCGDIData = 0;
         CThreadLock mapLock(m_gdiLock);
-        m = m_mapCGDIData.find(object);
 
+        // Find the CGDIObject data mapped to this HGDIOBJ.
+        std::map<HGDIOBJ, CGDI_Data*, CompareGDI>::const_iterator m;
+        CGDI_Data* pCGDIData = NULL;
+        m = m_mapCGDIData.find(object);
         if (m != m_mapCGDIData.end())
             pCGDIData = m->second;
 
         return pCGDIData;
     }
 
-    // Retrieves a pointer to CIml_Data from the map
+    // Retrieves a pointer to CIml_Data from the map.
     inline CIml_Data* CWinApp::GetCImlData(HIMAGELIST images)
     {
-        std::map<HIMAGELIST, CIml_Data*, CompareHIMAGELIST>::const_iterator m;
-
-        // Find the CImageList data mapped to this HIMAGELIST
-        CIml_Data* pCImlData = 0;
         CThreadLock mapLock(m_wndLock);
-        m = m_mapCImlData.find(images);
 
+        // Find the CImageList data mapped to this HIMAGELIST.
+        std::map<HIMAGELIST, CIml_Data*, CompareHIMAGELIST>::const_iterator m;
+        CIml_Data* pCImlData = NULL;
+        m = m_mapCImlData.find(images);
         if (m != m_mapCImlData.end())
             pCImlData = m->second;
 
         return pCImlData;
     }
 
-    // Retrieves a pointer to CMenu_Data from the map
+    // Retrieves a pointer to CMenu_Data from the map.
     inline CMenu_Data* CWinApp::GetCMenuData(HMENU menu)
     {
-        std::map<HMENU, CMenu_Data*, CompareHMENU>::const_iterator m;
-
-        // Find the CMenu data mapped to this HMENU
-        CMenu_Data* pCMenuData = 0;
         CThreadLock mapLock(m_wndLock);
-        m = m_mapCMenuData.find(menu);
 
+        // Find the CMenu data mapped to this HMENU.
+        std::map<HMENU, CMenu_Data*, CompareHMENU>::const_iterator m;
+        CMenu_Data* pCMenuData = NULL;
+        m = m_mapCMenuData.find(menu);
         if (m != m_mapCMenuData.end())
             pCMenuData = m->second;
 
@@ -350,14 +347,12 @@ namespace Win32xx
     // Retrieves the CWnd pointer associated with the specified wnd.
     inline CWnd* CWinApp::GetCWndFromMap(HWND wnd)
     {
-        // Allocate an iterator for our HWND map
-        std::map<HWND, CWnd*, CompareHWND>::const_iterator m;
-
-        // Find the CWnd pointer mapped to this HWND
-        CWnd* pWnd = 0;
         CThreadLock mapLock(m_wndLock);
-        m = m_mapHWND.find(wnd);
 
+        // Find the CWnd pointer mapped to this HWND.
+        std::map<HWND, CWnd*, CompareHWND>::const_iterator m;
+        CWnd* pWnd = NULL;
+        m = m_mapHWND.find(wnd);
         if (m != m_mapHWND.end())
             pWnd = m->second;
 
@@ -365,7 +360,7 @@ namespace Win32xx
     }
 
     // Retrieves a handle to the main window for this thread.
-    // Note: CFrame set's itself as the main window of its thread
+    // Note: CFrame set's itself as the main window of its thread.
     inline HWND CWinApp::GetMainWnd() const
     {
         TLSData* pTLSData = GetApp()->GetTlsData();
@@ -403,7 +398,7 @@ namespace Win32xx
     // Refer to LoadCursor in the Windows API documentation for more information.
     inline HCURSOR CWinApp::LoadStandardCursor(LPCTSTR cursorName) const
     {
-        return ::LoadCursor(0, cursorName);
+        return ::LoadCursor(NULL, cursorName);
     }
 
     // Loads the icon resource whose size conforms to the SM_CXICON and SM_CYICON system metric values.
@@ -427,7 +422,7 @@ namespace Win32xx
     // Refer to LoadIcon in the Windows API documentation for more information.
     inline HICON CWinApp::LoadStandardIcon(LPCTSTR iconName) const
     {
-        return ::LoadIcon(0, iconName);
+        return ::LoadIcon(NULL, iconName);
     }
 
     // Loads an icon, cursor, animated cursor, or bitmap image.
@@ -454,7 +449,7 @@ namespace Win32xx
         return ::LoadImage(GetResourceHandle(), MAKEINTRESOURCE (imageID), type, cx, cy, flags);
     }
 
-    // Frees the global memory handles for the printer.
+    // Frees the global memory handles for the application's printer.
     inline void CWinApp::ResetPrinterMemory()
     {
         m_devMode.Free();
@@ -475,11 +470,11 @@ namespace Win32xx
 
         VERIFY(::RegisterClass(&defaultWC));
 
-        // Retrieve the class information
+        // Retrieve the class information.
         ZeroMemory(&defaultWC, sizeof(defaultWC));
         VERIFY(::GetClassInfo(GetInstanceHandle(), className, &defaultWC));
 
-        // Save the callback address of CWnd::StaticWindowProc
+        // Save the callback address of CWnd::StaticWindowProc.
         assert(defaultWC.lpfnWndProc);  // Assert fails when running UNICODE build on ANSI OS.
         m_callback = defaultWC.lpfnWndProc;
         VERIFY(::UnregisterClass(className, GetInstanceHandle()));
@@ -498,21 +493,21 @@ namespace Win32xx
     // This function stores the 'this' pointer in a static variable.
     // Once stored, it can be used later to return the 'this' pointer.
     // CWinApp's constructor calls this function and sets the static variable.
-    // CWinApp's destructor resets pWinApp to 0.
-    inline CWinApp* CWinApp::SetnGetThis(CWinApp* pThis /*= 0*/, bool reset /*= false*/)
+    // CWinApp's destructor resets pWinApp to NULL.
+    inline CWinApp* CWinApp::SetnGetThis(CWinApp* pThis /*= NULL*/, bool reset /*= false*/)
     {
-        static CWinApp* pWinApp = 0;
+        static CWinApp* pWinApp = NULL;
 
         if (reset)
         {
-            pWinApp = 0;
+            pWinApp = NULL;
         }
         else
         {
-            if (pWinApp == 0)
+            if (pWinApp == NULL)
                 pWinApp = pThis;
             else
-                assert(pThis == 0);
+                assert(pThis == NULL);
         }
 
         return pWinApp;
@@ -539,7 +534,7 @@ namespace Win32xx
             ::FreeLibrary(m_resource);
 
         // Set the resources back to default.
-        if (resource == 0)
+        if (resource == NULL)
             resource = m_instance;
 
         m_resource = resource;
@@ -549,27 +544,24 @@ namespace Win32xx
     // and returns a pointer to the TLS data.
     inline void CWinApp::SetTlsData()
     {
+        CThreadLock TLSLock(m_appLock);
+
         TLSData* pTLSData = GetTlsData();
         if (pTLSData == NULL)
         {
-            pTLSData = new TLSData;
-            TLSDataPtr dataPtr(pTLSData);
-
-            CThreadLock TLSLock(m_appLock);
-            m_allTLSData.push_back(dataPtr); // store as a smart pointer
-
-            VERIFY(::TlsSetValue(m_tlsData, pTLSData));
+            TLSDataPtr dataPtr = std::make_unique<TLSData>();
+            VERIFY(::TlsSetValue(m_tlsData, dataPtr.get()));
+            m_allTLSData.push_back(std::move(dataPtr));
         }
     }
 
-    // Allocates the global memory for the default printer if required.
-    // Resets the global memory if we were using the default printer, and the
-    // default printer has changed.
+    // Updates the printer global memory if we were using the default printer,
+    // and the default printer has changed.
     inline void CWinApp::UpdateDefaultPrinter()
     {
         CThreadLock lock(GetApp()->m_printLock);
 
-        if (m_devNames.Get() == 0)
+        if (m_devNames.Get() == NULL)
         {
             // Allocate global printer memory by specifying the default printer.
             PRINTDLG pd;
@@ -582,7 +574,7 @@ namespace Win32xx
         }
         else
         {
-            // Global memory has already been allocated
+            // Global memory has already been allocated.
             if (CDevNames(m_devNames).IsDefaultPrinter())
             {
                 // Get current default printer
@@ -592,7 +584,7 @@ namespace Win32xx
                 pd.Flags = PD_RETURNDEFAULT;
                 ::PrintDlg(&pd);
 
-                if (pd.hDevNames == 0)
+                if (pd.hDevNames == NULL)
                 {
                     // Printer was default, but now there are no printers.
                     m_devMode.Free();
@@ -621,8 +613,9 @@ namespace Win32xx
         }
     }
 
-    // Updates the current printer global memory. It is assumed the old
-    // global memory has already been freed.
+    // Updates the current printer global memory with the specified memory
+    // handles. This function assumes the old global memory has already
+    // been freed.
     inline void CWinApp::UpdatePrinterMemory(HGLOBAL hDevMode, HGLOBAL hDevNames)
     {
         m_devMode.Reassign(hDevMode);
@@ -765,7 +758,7 @@ namespace Win32xx
     inline CString CWinApp::MsgPrintFound() const
     { return _T("No printer available."); }
 
-    // DDX anomaly prompting messages
+    // DDX anomaly prompting messages.
     inline CString CWinApp::MsgDDX_Byte() const
     { return _T("Please enter an integer between 0 and 255."); }
 
@@ -839,12 +832,12 @@ namespace Win32xx
 
     // Loads the string from a Windows resource.
     template <>
-    inline bool CStringT<CHAR>::LoadString(UINT id)
+    inline bool CStringA::LoadString(UINT id)
     {
         assert(GetApp());
 
         int startSize = 64;
-        CHAR* pTCharArray = 0;
+        CHAR* pTCharArray = NULL;
         std::vector<CHAR> vString;
         int chars = startSize;
 
@@ -869,12 +862,12 @@ namespace Win32xx
     // Loads the string from a Windows resource.
     // Refer to LoadString in the Windows API documentation for more information.
     template <>
-    inline bool CStringT<WCHAR>::LoadString(UINT id)
+    inline bool CStringW::LoadString(UINT id)
     {
         assert(GetApp());
 
         int startSize = 64;
-        WCHAR* pTCharArray = 0;
+        WCHAR* pTCharArray = NULL;
         std::vector<WCHAR> vString;
         int chars = startSize;
 

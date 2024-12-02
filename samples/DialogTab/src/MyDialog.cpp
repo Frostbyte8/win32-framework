@@ -6,6 +6,7 @@
 #include "MyDialog.h"
 #include "resource.h"
 
+using namespace std;
 
 /////////////////////////////////////
 // CButtonDialog function definitions
@@ -37,14 +38,25 @@ INT_PTR CButtonDialog::DialogProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return DialogProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 
 // Process the dialog's command messages (WM_COMMAND).
@@ -164,14 +176,25 @@ INT_PTR CComboBoxDialog::DialogProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return DialogProcDefault(msg, wparam, lparam);
     }
 
-    // catch all CException types
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 
 // Called before the dialog is displayed.
@@ -217,14 +240,25 @@ INT_PTR CMyDialog::DialogProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return DialogProcDefault(msg, wparam, lparam);
     }
 
-    // catch all CException types
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 
 // Called when the dialog window is destroyed.
@@ -243,8 +277,8 @@ BOOL CMyDialog::OnInitDialog()
 
     AttachItem(IDC_TAB1, m_tab);
 
-    m_pButtonDlg = static_cast<CButtonDialog*>(m_tab.AddTabPage(new CButtonDialog(IDD_BUTTONS), _T("Button Dialog")));
-    m_pComboDlg = static_cast<CComboBoxDialog*>(m_tab.AddTabPage(new CComboBoxDialog(IDD_COMBOBOXES), _T("ComboBox Dialog")));
+    m_pButtonDlg = static_cast<CButtonDialog*>(m_tab.AddTabPage(make_unique<CButtonDialog>(IDD_BUTTONS), _T("Button Dialog")));
+    m_pComboDlg = static_cast<CComboBoxDialog*>(m_tab.AddTabPage(make_unique<CComboBoxDialog>(IDD_COMBOBOXES), _T("ComboBox Dialog")));
     m_tab.SelectPage(0);
 
     // Add some checkmarks to buttons to the button dialog

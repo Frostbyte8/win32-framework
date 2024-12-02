@@ -16,6 +16,8 @@
 // Constructor for CMainFrame.
 CMainFrame::CMainFrame() : m_pIUIRibbon(0)
 {
+    // Set m_view as the view window of the frame.
+    SetView(m_view);
 }
 
 // Destructor for CMainFrame.
@@ -26,9 +28,6 @@ CMainFrame::~CMainFrame()
 // Create the frame window.
 HWND CMainFrame::Create(HWND parent)
 {
-    // Set m_view as the view window of the frame.
-    SetView(m_view);
-
     // Set the registry key name, and load the initial window position.
     // Use a registry key name like "CompanyName\\Application".
     LoadRegistrySettings(L"Win32++\\Ribbon Frame");
@@ -98,7 +97,7 @@ void CMainFrame::LoadFile(LPCTSTR fileName)
     catch (const CFileException& e)
     {
         // An exception occurred. Display the relevant information.
-        ::MessageBox(0, e.GetText(), L"Failed to Load File", MB_ICONWARNING);
+        ::MessageBox(NULL, e.GetText(), L"Failed to Load File", MB_ICONWARNING);
 
         m_pathName = L"";
         m_view.GetAllPoints().clear();
@@ -120,7 +119,7 @@ void CMainFrame::MRUFileOpen(UINT mruIndex)
     catch (const CFileException &e)
     {
         // An exception occurred. Display the relevant information.
-        ::MessageBox(0, e.GetText(), L"Failed to Load File", MB_ICONWARNING);
+        ::MessageBox(NULL, e.GetText(), L"Failed to Load File", MB_ICONWARNING);
 
         RemoveMRUEntry(mruText);
         m_view.GetAllPoints().clear();
@@ -182,7 +181,7 @@ LRESULT CMainFrame::OnDropFile(WPARAM wparam)
     catch (const CFileException& e)
     {
         // An exception occurred. Display the relevant information.
-        ::MessageBox(0, e.GetText(), L"Failed to Load File", MB_ICONWARNING);
+        ::MessageBox(NULL, e.GetText(), L"Failed to Load File", MB_ICONWARNING);
 
         m_view.GetAllPoints().clear();
     }
@@ -212,7 +211,7 @@ BOOL CMainFrame::OnFileOpen()
 {
     try
     {
-        CFileDialog fileDlg(TRUE, L"dat", 0, OFN_FILEMUSTEXIST, L"Scribble Files (*.dat)\0*.dat\0\0");
+        CFileDialog fileDlg(TRUE, L"dat", NULL, OFN_FILEMUSTEXIST, L"Scribble Files (*.dat)\0*.dat\0\0");
         fileDlg.SetTitle(L"Open File");
 
         // Bring up the file open dialog retrieve the selected filename.
@@ -226,7 +225,7 @@ BOOL CMainFrame::OnFileOpen()
     catch (const CFileException& e)
     {
         // An exception occurred. Display the relevant information.
-        ::MessageBox(0, e.GetText(), L"Failed to Load File", MB_ICONWARNING);
+        ::MessageBox(NULL, e.GetText(), L"Failed to Load File", MB_ICONWARNING);
 
         m_view.GetAllPoints().clear();
     }
@@ -248,7 +247,7 @@ BOOL CMainFrame::OnFilePrint()
         // Display a message box indicating why printing failed.
         CString message = CString(e.GetText()) + CString("\n") + e.GetErrorString();
         CString type = CString(e.what());
-        ::MessageBox(0, message, type, MB_ICONWARNING);
+        ::MessageBox(NULL, message, type, MB_ICONWARNING);
     }
 
     return TRUE;
@@ -268,7 +267,7 @@ BOOL CMainFrame::OnFileSave()
     catch (const CFileException& e)
     {
         // An exception occurred. Display the relevant information.
-        ::MessageBox(0, e.GetText(), L"Failed to Save File", MB_ICONWARNING);
+        ::MessageBox(NULL, e.GetText(), L"Failed to Save File", MB_ICONWARNING);
 
         m_view.GetAllPoints().clear();
     }
@@ -281,7 +280,7 @@ BOOL CMainFrame::OnFileSaveAs()
 {
     try
     {
-        CFileDialog FileDlg(FALSE, L"dat", 0, OFN_OVERWRITEPROMPT, L"Scribble Files (*.dat)\0*.dat\0\0");
+        CFileDialog FileDlg(FALSE, L"dat", NULL, OFN_OVERWRITEPROMPT, L"Scribble Files (*.dat)\0*.dat\0\0");
         FileDlg.SetTitle(L"Save File");
 
         // Bring up the file open dialog retrieve the selected filename.
@@ -299,7 +298,7 @@ BOOL CMainFrame::OnFileSaveAs()
     catch (const CFileException& e)
     {
         // An exception occurred. Display the relevant information.
-        ::MessageBox(0, e.GetText(), L"Failed to Save File", MB_ICONWARNING);
+        ::MessageBox(NULL, e.GetText(), L"Failed to Save File", MB_ICONWARNING);
 
         m_view.GetAllPoints().clear();
     }
@@ -323,7 +322,7 @@ BOOL CMainFrame::OnMRUList(const PROPERTYKEY* key, const PROPVARIANT* ppropvarVa
     catch (const CFileException &e)
     {
         // An exception occurred. Display the relevant information.
-        ::MessageBox(0, e.GetText(), L"Failed to Load File", MB_ICONWARNING);
+        ::MessageBox(NULL, e.GetText(), L"Failed to Load File", MB_ICONWARNING);
 
         m_view.GetAllPoints().clear();
     }
@@ -345,7 +344,7 @@ BOOL CMainFrame::OnPenColor(const PROPVARIANT* ppropvarValue, IUISimplePropertyS
             // Retrieve color.
             PROPVARIANT var;
             PropVariantInit(&var);
-            if (0 <= pCmdExProp->GetValue(UI_PKEY_Color, &var))
+            if (pCmdExProp->GetValue(UI_PKEY_Color, &var) >= 0)
             {
                 COLORREF color = PropVariantToUInt32WithDefault(var, 0);
                 m_view.SetPenColor(color);
@@ -462,13 +461,25 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 

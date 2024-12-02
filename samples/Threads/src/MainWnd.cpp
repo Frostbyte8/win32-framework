@@ -70,14 +70,13 @@ int CMainWindow::OnCreate(CREATESTRUCT&)
     //  goes out of scope.
     for (int i = 1 ; i <= m_maxWindows ; i++)
     {
-        MyThreadPtr threadPtr(new CMyWinThread(i, GetHwnd()));
-        m_threads.push_back(threadPtr);
+        m_threads.push_back(std::make_unique<CMyWinThread>(i, GetHwnd()));
     }
 
     // Create the threads belonging to the MyThread objects.
     // Each thread creates a TestWindow when it runs.
     std::vector<MyThreadPtr>::iterator iter;
-    for (iter = m_threads.begin(); iter < m_threads.end(); ++iter)
+    for (iter = m_threads.begin(); iter != m_threads.end(); ++iter)
     {
         try
         {
@@ -92,7 +91,7 @@ int CMainWindow::OnCreate(CREATESTRUCT&)
         {
             // Display the exception and allow the program to continue.
             CString Error = CString(e.GetText()) + "\n" + CString(e.GetErrorString());
-            ::MessageBox(0, Error, AtoT(e.what()), MB_ICONERROR) ;
+            ::MessageBox(NULL, Error, AtoT(e.what()), MB_ICONERROR) ;
         }
     }
 
@@ -130,7 +129,7 @@ LRESULT CMainWindow::OnCloseThread(WPARAM wparam)
 
     int threadNumber = static_cast<int>(wparam);
     std::vector<MyThreadPtr>::iterator iter;
-    for (iter = m_threads.begin(); iter < m_threads.end(); ++iter)
+    for (iter = m_threads.begin(); iter != m_threads.end(); ++iter)
     {
         if (threadNumber == (*iter)->GetThreadNumber())
         {
@@ -142,10 +141,11 @@ LRESULT CMainWindow::OnCloseThread(WPARAM wparam)
     return 0;
 }
 
+// Handle the window's messages.
 LRESULT CMainWindow::OnDpiChanged(UINT, WPARAM, LPARAM lparam)
 {
     LPRECT prc = reinterpret_cast<LPRECT>(lparam);
-    SetWindowPos(0, *prc, SWP_SHOWWINDOW);
+    SetWindowPos(HWND_TOP, *prc, SWP_SHOWWINDOW);
     m_edit.DPISetFont();
 
     return 0;
@@ -154,7 +154,7 @@ LRESULT CMainWindow::OnDpiChanged(UINT, WPARAM, LPARAM lparam)
 // Called in the main window is resized.
 LRESULT CMainWindow::OnSize()
 {
-    m_edit.SetWindowPos(0, GetClientRect(), 0);
+    m_edit.SetWindowPos(HWND_TOP, GetClientRect(), 0);
     return 0;
 }
 
@@ -189,13 +189,25 @@ LRESULT CMainWindow::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 

@@ -9,8 +9,17 @@
 #if defined (_MSC_VER) && (_MSC_VER == 1900) // == VS2015
 #pragma warning (disable : 4458) // disable warning: declaration hides class member
 #endif
+
+// Declare min and max for older versions of Visual Studio
+#if defined (_MSC_VER) && (_MSC_VER < 1920) // < VS2019
+using std::min;
+using std::max;
+#endif
+
 #include <gdiplus.h>
 #ifdef _MSC_VER
+
+
 #pragma warning (default : 4458) // return warning to default
 #endif
 
@@ -31,7 +40,7 @@ public:
 
     // Virtual functions that override public base class functions
     virtual ~CMainFrame();
-    virtual HWND Create(HWND parent = 0);
+    virtual HWND Create(HWND parent = NULL);
 
     void AddMenuIconFromPNG(UINT pngID, UINT disabledPngID, UINT menuID);
     void AddIconFromPNG(CImageList& images, UINT pngID);
@@ -62,9 +71,9 @@ private:
 
     // Message handlers
     LRESULT OnGetMinMaxInfo(UINT msg, WPARAM wparam, LPARAM lparam);
-    LRESULT  OnPreviewClose();
-    LRESULT  OnPreviewPrint();
-    LRESULT  OnPreviewSetup();
+    LRESULT OnPreviewClose();
+    LRESULT OnPreviewPrint();
+    LRESULT OnPreviewSetup();
 
     // Member variables
     CView m_view;
@@ -73,7 +82,6 @@ private:
     ULONG_PTR   m_gdiplusToken;
     CImageList m_toolbarImages;
     CImageList m_disabledImages;
-    CImageList m_menuImages;
 };
 
 #endif //MAINFRM_H

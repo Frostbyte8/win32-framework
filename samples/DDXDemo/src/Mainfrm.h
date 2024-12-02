@@ -35,7 +35,7 @@ CMainFrame : public CFrame                                                  /*
     public:
         CMainFrame();
         virtual ~CMainFrame() {}
-        virtual HWND Create(HWND parent = 0);
+        virtual HWND Create(HWND parent = NULL);
 
         CDoc&   TheDoc()   { return m_view.TheDoc(); }
         BOOL    UpdateDialog(BOOL bReadFromControl);
@@ -46,9 +46,11 @@ CMainFrame : public CFrame                                                  /*
        virtual BOOL    OnCommand(WPARAM wparam, LPARAM lparam);
        virtual int     OnCreate(CREATESTRUCT& cs);
        virtual void    OnInitialUpdate();
+       virtual void    OnMenuUpdate(UINT id);
        virtual void    PreCreate(CREATESTRUCT& cs);
        virtual void    SetupMenuIcons();
        virtual void    SetupToolBar();
+       virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
     private:
         CMainFrame(const CMainFrame&);               // Disable copy construction

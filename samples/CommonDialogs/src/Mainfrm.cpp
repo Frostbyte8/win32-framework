@@ -38,19 +38,8 @@ CMainFrame()                                                                /*
     :   m_view(IDD_MAIN_DIALOG), m_maxMRU(0), m_isTextWrap(TRUE),
         m_frameXY(100, 100), m_frameSize(700, 600)
 {
-}
-
-/*============================================================================*/
-    HWND CMainFrame::
-Create(HWND parent)                                                         /*
-
-    Create the frame window.
-*-----------------------------------------------------------------------------*/
-{
-      // Set m_view as the view window of the frame
+      // Set m_view as the view window of the frame.
     SetView(m_view);
-
-    return CFrame::Create(parent);
 }
 
 /*============================================================================*/
@@ -1147,7 +1136,7 @@ UpdateMRUMenu()                                                             /*
       // find in the leftmost submenu (i.e., the one with index 0)
     CMenu fileMenu = GetFrameMenu().GetSubMenu(0);
       // compute the index of the last entry in the MRU list
-    int last = static_cast<int>(MIN(GetMRUSize(), m_maxMRU)) - 1;
+    int last = static_cast<int>(std::min(static_cast<UINT>(GetMRUSize()), m_maxMRU)) - 1;
       // if there is no leftmost submenu, or if there are no entries to
       // post, or if we cannot modify the first entry to indicate an empty
       // MRU list, we cannot proceed

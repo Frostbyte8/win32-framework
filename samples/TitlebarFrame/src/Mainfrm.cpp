@@ -44,11 +44,14 @@ void CenterRectInRect(CRect* innerRect, const CRect& outerRect)
 //
 
 // Constructor.
-CMainFrame::CMainFrame() : m_hoveredButton(TitlebarButton::None),
+CMainFrame::CMainFrame() : m_preview(m_view),
+                           m_hoveredButton(TitlebarButton::None),
                            m_oldHoveredButton(TitlebarButton::None),
                            m_isToolbarShown(true),
                            m_isMiniFrame(false)
 {
+    // Set m_view as the view window of the frame.
+    SetView(m_view);
 }
 
 // Destructor.
@@ -59,11 +62,8 @@ CMainFrame::~CMainFrame()
 // Create the frame window.
 HWND CMainFrame::Create(HWND parent)
 {
-    //Set m_view as the view window of the frame
-    SetView(m_view);
-
-    // Set the registry key name, and load the initial window position
-    // Use a registry key name like "CompanyName\\Application"
+    // Set the registry key name, and load the initial window position.
+    // Use a registry key name like "CompanyName\\Application".
     LoadRegistrySettings(_T("Win32++\\MiniFrame"));
 
     return CFrame::Create(parent);
@@ -461,7 +461,7 @@ void CMainFrame::OnInitialUpdate()
 // Create the File Open dialog to choose the file to load.
 BOOL CMainFrame::OnFileOpen()
 {
-    CString filter = _T("Program Files (*.cpp; *.h)|*.cpp; *.h|All Files (*.*)|*.*||");
+    CString filter = "Program Files (*.cpp; *.h)|*.cpp; *.h|All Files (*.*)|*.*|";
     CFileDialog fileDlg(TRUE);    // TRUE for file open
     fileDlg.SetFilter(filter);
     fileDlg.SetDefExt(_T(".cpp"));
@@ -478,7 +478,7 @@ BOOL CMainFrame::OnFileOpen()
 // Create the File Save dialog to choose the file to save.
 BOOL CMainFrame::OnFileSave()
 {
-    CString filter = _T("Program Files (*.cpp; *.h)|*.cpp; *.h|All Files (*.*)|*.*||");
+    CString filter = "Program Files (*.cpp; *.h)|*.cpp; *.h|All Files (*.*)|*.*|";
     CFileDialog fileDlg(FALSE);    // FALSE for file save
     fileDlg.SetFilter(filter);
     fileDlg.SetDefExt(_T(".cpp"));
@@ -506,9 +506,6 @@ BOOL CMainFrame::OnFilePreview()
         // Create the preview window if required
         if (!m_preview.IsWindow())
             m_preview.Create(*this);
-
-        // Specify the source of the PrintPage function
-        m_preview.SetSource(m_view);
 
         // Set the preview's owner (for messages)
         m_preview.DoPrintPreview(*this);
@@ -870,7 +867,7 @@ LRESULT CMainFrame::OnPreviewClose()
     // Show the menu and toolbar.
     if (!m_isMiniFrame)
     {
-        ShowMenu(GetFrameMenu() != 0);
+        ShowMenu(GetFrameMenu() != nullptr);
     }
     ShowToolBar(m_isToolbarShown);
     UpdateSettings();
@@ -981,13 +978,25 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 

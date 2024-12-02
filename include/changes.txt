@@ -1,15 +1,213 @@
-Version 9.5
+Version 9.7
 ===========
+This version updates the library to support features available in C++14.
+Shared_ptr is now deprecated. It has been replaced by std::unique_ptr 
+and std::shared_ptr.
+
+Incompatibilities with previous versions
+----------------------------------------
+CDocker::NewDockFromID and CTabbedMDI::NewMDIChildFromID now returns
+a std::unique_ptr. Code that overrides these function will need to
+return a std:unique_ptr as well. For example:
+
+DockPtr CMainFrame::NewDockerFromID(int /*id*/)
+{
+    DockPtr docker;
+    switch(id)
+    {
+    case ID_CLASSES:
+        docker = std::make_unique<CDockClasses>();
+        break;
+    case ID_FILES:
+        docker = std::make_unique<CDockFiles>();
+        break;
+    default:
+        TRACE("Unknown Dock ID\n");
+        break;
+    }
+
+    return docker;
+}
+
 
 New Features and Enhancements
 -----------------------------
-* Added ClassicPrintDlg sample.
+ * Updated CDocker. Dockers are stored as std::unique_ptr.
+ * Updated CMDIFrame. MDIChild windows are stored as std::unique_ptr.
+ * Updated CMDITab. Tab windows are stored as std::unique_ptr.
+ * Updated CPropertySheet. CPropertyPage windows are stored as std::unique_ptr.
+ * Updated CTab. Tab windows are stored as std::unique_ptr.
+
+
+Changes in detail
+-----------------
+Added CDocker::AddDockedChild    - additional override for std::unique_ptr
+Added CDocker::AddUndockedChild  - additional override for std::unique_ptr
+Added CMDIFrameT::AddMDIChild    - Additional override for std::uniqe_ptr
+Added CPropertySheet::AddPage    - additional override for std::unique_ptr
+Added CTab::AddTabPage           - Additional override for std::uniqe_ptr
+Added CTabbedMDI::AddMDIChild    - Additional override for std::uniqe_ptr
+Modified CDocker::NewDockFromID  - returns a std::unique_ptr
+Modified CTabbedMDI::NewMDIChildFromID - returns a std::unique_ptr
+
+Shared_Ptr is now deprecated. It will be removed in future versions of Win32++/
+
+Version 9.6.1
+=============
+This version contains minor updates to CDocker and the docking samples.
+
+Version 9.6
+===========
+This version adds support for std::min and std::max. The MIN and MAX macros
+are now deprecated. Users should use std::min and std::max in place of the
+MIN and MAX macros.
+
+Support has been added for the C++ compiler from Embarcadero.
+
+This version also adds the ScintillaDemo sample. Scintilla is a free source code
+and text editing component. On Windows, Scintilla is a Windows control that can be
+as a direct replacement for a RichEdit control. Scintilla has a number of features
+missing RichEdit controls and has better support for printing.
+
+Scintilla can be downloaded from:
+https://www.scintilla.org/ScintillaDownload.html
+
+New Features and Enhancements
+-----------------------------
+ * Added support for the C++ compilers from Embarcadero. 
+    The samples include the project files for C++Builder 11 Community Edition
+    from Embarcadero.
+ 
+ * Added support for std::min and std::max.
+
+ * The MIN and MAX macros are are now depricated and will be removed in future
+    versions. Users should use std::min and std::max in place of the MIN and
+    MAX macros.
+
+ * Added the ScintillaDemo sample.
+    This sample demonstrates how to use the Scintilla control with Win32++
+    to develop a simple text editor.
+
+* The samples now use larger icons.
+    Larger icons are suitable for applications that are placed on the desktop
+    on higher resolution monitors.
+
+Changes in detail
+-----------------
+Added:   CString::Append
+Added:   CTab::SetTabIcon         Additional overload.
+
+Added:   ScintillaDemo sample.
+
+Added    Support for std::min and std::max.
+Removed: Support for Visual Studio 6.
+
+
+Version 9.5.2
+=============
+
+New Features and Enhancements
+-----------------------------
+ * Updated CString.
+    The CString constructor, operator+, operator+=, and operator<< overloads
+    now support CStringA and CStringW arguments in addition to the arguments
+    supported previously.
+ * Updated ToCString.
+    ToCString now supports CStringA and CStringW arguments in addition to the
+    arguments supported previously.
+ * Updated CTime.
+    Some CTime constructors have been updated, and others removed.
+ * Updated the docker samples to eliminate jitter when the dockers are resized.
+
+Changes in detail
+-----------------
+Added:  tm* ::GMTime(tm& atm, const time_t& t)              global function
+Added:  tm* ::LocalTime(tm& atm, const time_t& t)           global function
+
+Added CFrameT<T>::RemoveKbdHook()
+
+Added:  CStringA operator+(const CStringA& string1, const CStringA& string2)
+Added:  CStringW operator+(const CStringW& string1, const CStringW& string2)
+
+Added:  CString(const CStringA& str)
+Added:  CString(const CStringW& str)
+Added:  CString& operator=(const CStringA& str)
+Added:  CString& operator=(const CStringW& str)
+Added:  CString operator+(const CString& string1, const CStringA& string2)
+Added:  CString operator+(const CString& string1, const CStringW& string2)
+Added:  CString operator+(const CStringA& string1, const CString& string2)
+Added:  CString operator+(const CStringW& string1, const CString& string2)
+
+Added:  CString& operator+=(const CStringA& str);
+Added:  CString& operator+=(const CStringW& str);
+
+Added:  CString ToCString(const CStringA& string)
+Added:  CString ToCString(const CStringW& string)
+Added:  CString ToCString(const CString& string)
+
+Modified: CTime(int year, int month, int day, int hour, int min, int sec, int isDST = -1);
+Modified: CTime::GetDayOfWeek    Now returns value in the range 1 through 7
+
+Removed: CTime(UINT yr, UINT mo, UINT wkday, UINT nthwk, UINT hr, UINT min, UINT sec, int isDST = -1);
+Removed: CTime(UINT yr, UINT doy, UINT hr, UINT min, UINT sec, int isDST = -1);
+
+Removed: time_tm typedef
+Removed: timespan_t typedef
+
+Removed: CString::Left                    redundant
+Removed: CString::Mid                     redundant
+Removed: CString::right                   redundant
+Removed: CString::SpanExcluding           redundant
+Removed: CString::SpanIncluding           redundant
+Removed: CString::Tokenize                redundant
+
+
+Version 9.5.1
+=============
+This version has minor improvements to CDocker, CDockContainer and
+CResizer, and adds support for MinGW-w64 version 13.2.0.
+
+New Features and Enhancements
+-----------------------------
+* Updated CDocker and CDockContainer.
+   The dock hinting displayed when a docker is over a dock target has been
+   updated.
+* Updated CResizer.
+   The scroll positions are retained when the window's DPI changes.
+* Updated the Docker, DockContainer and DockTabbedMDI samples.
+   The DockContainer sample demonstrates how to prevent the frame's last
+   container from being undocked or closed.
+* Adds support for MinGW-w64 version 13.2.0.
+
+Changes in detail
+-----------------
+Added CDockContainer::UndockContainerGroup
+Added CResizer::OnAfterDpiChange
+Added CResizer::OnBeforeDpiChange
+Removed CDocker::OnWindowPosChanging
+Removed CTabbedMDI::OnDpiChangedBeforeParent
+
+
+Version 9.5
+===========
+This version adds a CustomPrintDlg sample. This sample provides an
+alternative to the PrintDlg and PrintDlgEx common dialogs which have had 
+their functionality downgraded in Windows 11.
+
+New Features and Enhancements
+-----------------------------
+* Added the CustomPrintDlg sample to provide an alternative to PrintDlg
+  and PrintDlgEx.
+* Added a new feature to the Themes sample. This sample now demonstrates 
+  how to specify the window's caption color on Windows 11.
+* CComboBoxEx, CHeader, CListView, CToolbar, and CTreeView now manage their
+  own image lists. There is no longer any need to keep a local copy of the
+  image list assigned to these controls to keep the image list in scope.
+* Updated CImageList.
+* Updated CTab and the TabDemo sample.
 * Optimized the redrawing of frames and dockers when moving windows between
   monitors with different display settings.
-* Simplified support for additional toolbars in frames. CFrameT now manages
-  the normal, disabled and hot image-lists for any additional toolbars.
-* Updated CTab and the TabDemo sample.
-* Updated the Themes sample.
+* Simplified support for additional toolbars in frames.
 
 Changes in detail
 -----------------
@@ -17,6 +215,7 @@ Added CDockContainer::SetTabsFontSize
 Added CDockContainer::SetTabsIconSize
 Added CFrameT::SetToolBarImages       Added overload for additional toolbars
 Added CImageList::CreateDragImage
+Added CPrintPreview::CPrintPreview    Additional constructor
 Added CTab::SetTabsFontSize
 Added CTab::SetTabsIconSize
 Added CWinApp::GetHDevMode
@@ -25,7 +224,24 @@ Added CWinApp::ResetPrinterMemory
 Added CWinApp::UpdateDefaultPrinter
 Added CWinApp::UpdatePrinterMemory
 
+Modified CDockContainer::SetTBImageList        removed CImageList& argument
+Modified CDockContainer::SetTBImageListDis     removed CImageList& argument
+Modified CDockContainer::SetTBImageListHot     removed CImageList& argument
+Modified CFrameT::SetTBImageList               removed CImageList& argument
+Modified CFrameT::SetTBImageListDis            removed CImageList& argument
+Modified CFrameT::SetTBImageListHot            removed CImageList& argument
+Modified CComboBoxEx::SetImageList             returns CImageList
+Modified CHeader::SetImageList                 returns CImageList
+Modified CListView::SetImageList               returns CImageList
+Modified CTab::SetImageList                    returns CImageList
+Modified CToolBar::SetDisableImageList         returns CImageList
+Modified CToolBar::SetHotImageList             returns CImageList
+Modified CToolBar::SetImageList                returns CImageList
+Modified CTreeView::SetImageList               returns CImageList
+
 Removed CTab::SetTabHeight
+Removed the PrintDialogEx sample
+Removed the MDIDockFrame sample
 
 
 Version 9.4
@@ -239,7 +455,7 @@ New Features and Enhancements
   Windows theme is using dark mode, and adjusts the frame's theme accordingly.
   The sample also uses a dialog that supports dark mode to display the 
   information about the application. 
-  This samples requires Windows 10 or higher.
+  This samples requires Windows 10 or later.
 
 Changes in Detail
 -----------------
@@ -288,7 +504,7 @@ Changes in Detail
 Added    CComboBox::GetComboBoxInfo
 Added    CEdit::GetTextLength
 Added    CFrameT::GetMenuIconHeight
-Added    CString::Remove             additional overload for a single character
+Added    CString::Remove                additional overload for a single character
 Added    CToolbar::SetButtonInfo        additional overload
 Modified CDialog::EndDialog             now only closes a modal dialog
 Modified CFrameT::AddDisabledMenuImage  removed iconWidth parameter
@@ -352,92 +568,6 @@ New Features and Enhancements
 * Added the TitlebarFrame sample.
   This sample demonstrates how to use a customized title bar with a frame.
   It demonstrates the frame in two modes: mini-frame and full-frame.
-
-
-Changes in Detail
------------------
-Moved the Alignment enum used by CResizer from global scope to CResizer.
-
-Added wxx_criticalsection.h  Win32++ library file
-Added wxx_hglobal.h          Win32++ library file
-Added wxx_messagepump.h      Win32++ library file
-Added wxx_setup.h            Win32++ library file
-Added wxx_thread.h           Win32++ library file
-
-Added PrintDialogEx          sample
-Added Titlebar               sample
-Added TitlebarFrame          sample
-
-Added CMessagePump           class
-Added CThreadT               class template
-Added CWorkThread            class, inherits from CThreadT<CObject>
-Modified CWinApp             inherits from CMessagePump
-Modified CWinThread          inherits from CThreadT<CMessagePump>
-
-Added MenuTheme::clrText     member variable
-
-Moved CWinThread::GetAcceleratorTable   to CMessagePump::GetAcceleratorTable
-Moved CWinThread::GetAcceleratorsWindow to CMessagePump::GetAcceleratorsWindow
-Moved CWinThread::InitInstance          to CMessagePump::InitInstance
-Moved CWinThread::MessageLoop           to CMessagePump::MessageLoop
-Moved CWinThread::OnIdle                to CMessagePump::OnIdle
-Moved CWinThread::PreTranslateMessage   to CMessagePump::PreTranslateMessage
-Moved CWinThread::Run                   to CMessagePump::Run
-Moved CWinThread::SetAccelerators       to CMessagePump::SetAccelerators
-
-Renamed UWM_PRINTNOW    to UWM_PREVIEWPRINT
-Renamed UWM_PRINTSETUP  to UWM_PREVIEWSETUP
-Renamed MAX_STRING_SIZE to WXX_MAX_STRING_SIZE
-
-Added template <class V>   CStringA ToCStringA(V)              global function template
-Added template <class V>   CStringW ToCStringW(V)              global function template
-Added template <class V>   CString  ToCString(V)               global function template
-Added template <class V>   CString& operator << (CString&, V)  global function template
-
-Added CAtoA::c_str                                             member function
-Added CAtoW::c_str                                             member function
-Added CDialog::Dialog                                          constructor
-Added CDialog::SetDialogFromID                                 member function
-Added CDialog::SetDialogResource                               member function
-Added CDialog::SetDialogTemplate                               member function
-Added CFrameT::SetMenuBar                                      member function
-Added CFrameT::SetReBar                                        member function
-Added CFrameT::SetStatusBar                                    member function
-Added CFrameT::SetStatusParts                                  member function
-Added CFrameT::SetToolBar                                      member function
-Added CRegKey::QueryBoolValue                                  member function
-Added CRegKey::SetBoolValue                                    member function
-Added CTab::SetListDialog                                      member function
-Added CWtoA::c_str                                             member function
-Added CWtoW::c_str                                             member function
-
-Modified CFrameT::GetMenuBar        no longer virtual          member function
-Modified CFrameT::GetReBar          no longer virtual          member function
-Modified CFrameT::GetStatusBar      no longer virtual          member function
-Modified CFrameT::SetToolBar        no longer virtual          member function
-
-Removed CDocker::IsDragAutoResize                              member function
-Removed CDocker::SetDragAutoResize                             member function
-Removed CRegKey::SetKeyValue                                   member function
-Removed CString(int)                                           constructor
-Removed CString(double)                                        constructor
-Removed CString operator+(const CString&, int)               global operator overload
-Removed CString operator+(const CString&, double)            global operator overload
-Removed CString operator+(int, const CString&)               global operator overload
-Removed CString operator+(double, const CString&)            global operator overload
-Removed CString& operator+=(int)                             global operator overload
-Removed CString& operator+=(double)                          global operator overload
-Removed CString& operator << (CString&, const TCHAR*)          global operator overload
-Removed CString& operator << (CString&, TCHAR)                 global operator overload
-Removed CString& operator << (CString&, int)                   global operator overload
-Removed CString& operator << (CString&, double)                global operator overload
-
-Removed WXX_MAX_MENU_STRING                                    global constant
-
-Updated CFile::CFile        added attributes parameter         constructor
-Updated CFile::Open         added attributes parameter         member function
-
-Removed support for WinCE.
 
 
 Version 8.9.1

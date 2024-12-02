@@ -13,6 +13,8 @@
 // Constructor for CMainFrame. Its called after CFrame's constructor.
 CMainFrame::CMainFrame()
 {
+    // Set m_view as the view window of the frame.
+    SetView(m_view);
 }
 
 // Destructor for CMainFrame.
@@ -23,9 +25,6 @@ CMainFrame::~CMainFrame()
 // Create the frame window.
 HWND CMainFrame::Create(HWND parent)
 {
-    // Set m_view as the view window of the frame.
-    SetView(m_view);
-
     // Set the registry key name, and load the initial window position.
     // Use a registry key name like "CompanyName\\Application".
     LoadRegistrySettings(_T("Win32++\\WinPlot"));
@@ -40,7 +39,7 @@ BOOL CMainFrame::OnCommand(WPARAM wparam, LPARAM)
 
     switch(id)
     {
-    case IDM_EDIT_FUNCTION:     return OnEditFunction();
+    case IDM_EDIT_FUNCTION:     return OnInputFunction();
     case IDM_FILE_EXIT:         return OnFileExit();
     case IDW_VIEW_STATUSBAR:    return OnViewStatusBar();
     case IDW_VIEW_TOOLBAR:      return OnViewToolBar();
@@ -70,7 +69,7 @@ int CMainFrame::OnCreate(CREATESTRUCT& cs)
     return CFrame::OnCreate(cs);
 }
 
-BOOL CMainFrame::OnEditFunction()
+BOOL CMainFrame::OnInputFunction()
 {
     if (m_view.GetInput().DoModal(*this) == IDOK)
     {
@@ -113,7 +112,8 @@ void CMainFrame::OnInitialUpdate()
     // The frame is now created.
     // Place any additional startup code here.
 
-    OnEditFunction();
+    m_view.GetInput().SetFunction(_T("sin(x)/x"));
+    OnInputFunction();
     TRACE("Frame created\n");
 }
 
@@ -161,12 +161,24 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }

@@ -1,9 +1,10 @@
-// Win32++   Version 9.5
-// Release Date: TBA
+// Win32++   Version 9.6.1
+// Release Date: 29th July 2024
 //
 //      David Nash
 //      email: dnash@bigpond.net.au
 //      url: https://sourceforge.net/projects/win32-framework
+//           https://github.com/DavidNash2024/Win32xx
 //
 //
 // Copyright (c) 2005-2024  David Nash
@@ -42,10 +43,6 @@
 
 #ifndef _WIN32XX_RECT_H_
 #define _WIN32XX_RECT_H_
-
-#include <winsock2.h>       // must include before windows.h
-#include <windows.h>        // For SIZE, POINT, RECT etc.
-#include "wxx_setup.h"      // For VERIFY
 
 
 // define useful macros from WindowsX.h
@@ -233,7 +230,7 @@ namespace Win32xx
     inline CPoint GetCursorPos()
     {
         CPoint pt;
-        VERIFY(::GetCursorPos(&pt));
+        ::GetCursorPos(&pt);
         return pt;
     }
 

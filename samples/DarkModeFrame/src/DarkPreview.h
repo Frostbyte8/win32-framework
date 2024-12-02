@@ -15,6 +15,7 @@ class CDarkPreview : public CPrintPreview<T>
 {
 public:
     CDarkPreview() : m_isDarkMode(false) {}
+    CDarkPreview(T& source) : CPrintPreview<T>(source), m_isDarkMode(false) {}
     virtual ~CDarkPreview() {}
 
     INT_PTR DialogProc(UINT msg, WPARAM wparam, LPARAM lparam);
@@ -59,7 +60,9 @@ inline INT_PTR CDarkPreview<T>::DialogProc(UINT msg, WPARAM wparam, LPARAM lpara
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
+        CString str;
+        str << e.GetText() << _T("\n") << e.GetErrorString();
+        ::MessageBox(NULL, str, _T("An exception occurred"), MB_ICONERROR);
 
         return 0;
     }

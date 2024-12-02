@@ -13,8 +13,10 @@
 
 //////////////////////////////////
 // CMainFrame function definitions
-CMainFrame::CMainFrame() : m_pIUIRibbon(0)
+CMainFrame::CMainFrame() : m_pIUIRibbon(NULL)
 {
+    // Set m_view as the view window of the frame.
+    SetView(m_view);
 }
 
 // Destructor for CMainFrame.
@@ -25,11 +27,8 @@ CMainFrame::~CMainFrame()
 // Create the frame window.
 HWND CMainFrame::Create(HWND parent)
 {
-    // Set m_view as the view window of the frame
-    SetView(m_view);
-
-    // Set the registry key name, and load the initial window position
-    // Use a registry key name like "CompanyName\\Application"
+    // Set the registry key name, and load the initial window position.
+    // Use a registry key name like "CompanyName\\Application".
     LoadRegistrySettings(L"Win32++\\Ribbon Frame");
 
     // Load the settings from the registry with 4 MRU entries
@@ -177,7 +176,7 @@ void CMainFrame::OnFileExit()
 
 void CMainFrame::OnFileOpen()
 {
-    CFileDialog fileDlg(TRUE, L"dat", 0, OFN_FILEMUSTEXIST, L"Scribble Files (*.dat)\0*.dat\0\0");
+    CFileDialog fileDlg(TRUE, L"dat", NULL, OFN_FILEMUSTEXIST, L"Scribble Files (*.dat)\0*.dat\0\0");
     fileDlg.SetTitle(L"Open File");
 
     // Bring up the file open dialog retrieve the selected filename
@@ -291,7 +290,7 @@ void CMainFrame::OnFileSave()
 
 void CMainFrame::OnFileSaveAs()
 {
-    CFileDialog fileDlg(FALSE, L"dat", 0, OFN_OVERWRITEPROMPT, L"Scribble Files (*.dat)\0*.dat\0\0");
+    CFileDialog fileDlg(FALSE, L"dat", NULL, OFN_OVERWRITEPROMPT, L"Scribble Files (*.dat)\0*.dat\0\0");
     fileDlg.SetTitle(L"Save File");
 
     // Bring up the file open dialog retrieve the selected filename
@@ -321,11 +320,13 @@ LRESULT CMainFrame::OnGetAllPoints()
 
 void CMainFrame::OnInitialUpdate()
 {
+    using namespace std;
+
     // Add some Dockers to the Ribbon Frame
     DWORD style = DS_CLIENTEDGE; // The style added to each docker
     int dockWidth = DpiScaleInt(150);
-    CDocker* pDock1 = AddDockedChild(new CDockFiles, DS_DOCKED_LEFT | style, dockWidth);
-    CDocker* pDock2 = AddDockedChild(new CDockFiles, DS_DOCKED_RIGHT | style, dockWidth);
+    CDocker* pDock1 = AddDockedChild(make_unique<CDockFiles>(), DS_DOCKED_LEFT | style, dockWidth);
+    CDocker* pDock2 = AddDockedChild(make_unique<CDockFiles>(), DS_DOCKED_RIGHT | style, dockWidth);
 
     assert(pDock1->GetContainer());
     assert(pDock2->GetContainer());
@@ -483,13 +484,24 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
-}
 
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
+}

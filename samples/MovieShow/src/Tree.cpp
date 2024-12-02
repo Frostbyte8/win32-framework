@@ -35,7 +35,7 @@ bool CViewTree::IsBoxSetUnique(LPCTSTR text, HTREEITEM item)
     {
         if (childItem != item)
         {
-            if (0 == lstrcmp(GetItemText(childItem), text))
+            if (lstrcmp(GetItemText(childItem), text) == 0)
             {
                 isUnique = false;
                 break;
@@ -65,12 +65,6 @@ BOOL CViewTree::OnBeginLabelEdit(LPARAM lparam)
     return TRUE;
 }
 
-// Called when the treeview window is destroyed.
-void CViewTree::OnDestroy()
-{
-    SetImageList(0, LVSIL_SMALL);
-}
-
 // Called in response to a WM_DPICHANGED_BEFOREPARENT message that is sent to child
 // windows after a DPI change. A WM_DPICHANGED_BEFOREPARENT is only received when the
 // application is DPI_AWARENESS_PER_MONITOR_AWARE.
@@ -91,7 +85,7 @@ BOOL CViewTree::OnEndLabelEdit(LPARAM lparam)
 
     // Use the new text unless the user cancelled the edit
     LPTSTR text = pTVDispInfo->item.pszText;
-    if ((text != 0) && (lstrlen(text) != 0))
+    if ((text != nullptr) && (lstrlen(text) != 0))
         m_itemText.GetWindowText(GetEditControl());
 
     // Ensure the boxset name is unique. Append (2) etc. if required.
@@ -116,13 +110,13 @@ BOOL CViewTree::OnEndLabelEdit(LPARAM lparam)
 
     if (oldText != m_itemText)
     {
-        std::list<MovieInfo>::iterator it;
         std::list<MovieInfo>* data;
         data = (std::list<MovieInfo>*)GetAncestor().SendMessage(UWM_GETMOVIESDATA, 0, 0);
-        for (it = data->begin(); it != data->end(); ++it)
+        assert(data);
+        for (auto& i : *data)
         {
-            if ((*it).boxset == oldText)
-                (*it).boxset = m_itemText;
+            if (i.boxset == oldText)
+                i.boxset = m_itemText;
         }
     }
 
@@ -184,8 +178,9 @@ BOOL CViewTree::OnSelChanged()
 // Set the treeview styles before the window is created.
 void CViewTree::PreCreate(CREATESTRUCT& cs)
 {
-    cs.dwExStyle = WS_EX_CLIENTEDGE;
-    cs.style = TVS_NOTOOLTIPS | TVS_SHOWSELALWAYS | TVS_EDITLABELS | TVS_FULLROWSELECT | WS_CHILD;
+    CTreeView::PreCreate(cs);
+    cs.dwExStyle |= WS_EX_CLIENTEDGE;
+    cs.style |= TVS_NOTOOLTIPS | TVS_SHOWSELALWAYS | TVS_EDITLABELS | TVS_FULLROWSELECT;
 }
 
 // Adjusts the listview image sizes in response to window DPI changes.
@@ -193,19 +188,20 @@ void CViewTree::SetDPIImages()
 {
     //set the image lists
     int size = DpiScaleInt(24);
-    m_imlNormal.Create(size, size, ILC_COLOR32, 1, 0);
+    CImageList normalImages;
+    normalImages.Create(size, size, ILC_COLOR32, 1, 0);
 
-    m_imlNormal.AddIcon(IDI_LIBRARY);
-    m_imlNormal.AddIcon(IDI_MOVIES);
-    m_imlNormal.AddIcon(IDI_BOXSET);
-    m_imlNormal.AddIcon(IDI_CALENDAR);
-    m_imlNormal.AddIcon(IDI_FAVOURITES);
-    m_imlNormal.AddIcon(IDI_MASK);
-    m_imlNormal.AddIcon(IDI_VIOLIN);
-    m_imlNormal.AddIcon(IDI_SEARCH);
-    m_imlNormal.AddIcon(IDI_EYE);
+    normalImages.AddIcon(IDI_LIBRARY);
+    normalImages.AddIcon(IDI_MOVIES);
+    normalImages.AddIcon(IDI_BOXSET);
+    normalImages.AddIcon(IDI_CALENDAR);
+    normalImages.AddIcon(IDI_FAVOURITES);
+    normalImages.AddIcon(IDI_MASK);
+    normalImages.AddIcon(IDI_VIOLIN);
+    normalImages.AddIcon(IDI_SEARCH);
+    normalImages.AddIcon(IDI_EYE);
 
-    SetImageList(m_imlNormal, LVSIL_NORMAL);
+    SetImageList(normalImages, TVSIL_NORMAL);
 
     // Reset the item indentation.
     int imageWidth = size;
@@ -215,8 +211,7 @@ void CViewTree::SetDPIImages()
 // Swaps the two specified treeview items.
 void CViewTree::Swap(HTREEITEM item1, HTREEITEM item2)
 {
-    TVITEM tv1;
-    ZeroMemory(&tv1, sizeof(tv1));
+    TVITEM tv1{};
     tv1.mask = TVIF_HANDLE | TVIF_IMAGE | TVIF_TEXT;
     tv1.hItem = item1;
     GetItem(tv1);
@@ -225,8 +220,7 @@ void CViewTree::Swap(HTREEITEM item1, HTREEITEM item2)
     tv1.cchTextMax = str1.GetLength();
     tv1.pszText = const_cast<LPTSTR>(str1.c_str());
 
-    TVITEM tv2;
-    ZeroMemory(&tv2, sizeof(tv2));
+    TVITEM tv2{};
     tv2.mask = TVIF_HANDLE | TVIF_IMAGE | TVIF_TEXT;
     tv2.hItem = item2;
     GetItem(tv2);
@@ -258,14 +252,26 @@ LRESULT CViewTree::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(nullptr, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(nullptr, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 
 /////////////////////////////////
@@ -279,4 +285,34 @@ CDockTree::CDockTree()
 
     // Set the width of the splitter bar
     SetBarWidth(8);
+}
+
+// Handle messages for the docktree window.
+LRESULT CDockTree::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    try
+    {
+        return WndProcDefault(msg, wparam, lparam);
+    }
+
+    // Catch all unhandled CException types.
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(nullptr, str1, str2, MB_ICONERROR);
+    }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(nullptr, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }

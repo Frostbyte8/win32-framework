@@ -34,6 +34,7 @@ CMainFrame()                                                                /*
 *-----------------------------------------------------------------------------*/
     :   m_wrapOption(WRAP_NONE)
 {
+    SetView(m_richView);
 }
 
 /*============================================================================*/
@@ -43,10 +44,9 @@ Create(HWND parent)                                                         /*
     Create the frame window.
 *-----------------------------------------------------------------------------*/
 {
-    SetView(m_richView);
-      // Set the registry key name, and load persistent data
+      // Set the registry key name, and load persistent data.
     LoadRegistrySettings(FRAME_REGISTRY_KEY);
-      // Load the MRU settings from the registry: allow MAXMRU entries
+      // Load the MRU settings from the registry: allow MAXMRU entries.
     LoadRegistryMRUSettings(MAXMRU);
 
     return CFrame::Create(parent);
@@ -521,7 +521,7 @@ QuickPrint(CPrintDialog& printDlg)                                          /*
 {
     CPrintDialog dlg(PD_USEDEVMODECOPIESANDCOLLATE | PD_RETURNDC);
     HDC hPrinter = dlg.GetPrinterDC();
-    if (hPrinter == 0)
+    if (hPrinter == NULL)
     {
         MessageBox(_T("Quick Print requires a printer"),_T("No Printer found"),
             MB_ICONWARNING);
@@ -654,7 +654,9 @@ WndProc(UINT msg, WPARAM wparam, LPARAM lparam)                             /*
     catch (const CException& e)
     {
           // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
+        CString str;
+        str << e.GetText() << _T("\n") << e.GetErrorString();
+        ::MessageBox(NULL, str, _T("An exception occurred"), MB_ICONERROR);
         return 0;
     }
 }

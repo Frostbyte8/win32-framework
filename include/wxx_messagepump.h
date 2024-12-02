@@ -1,9 +1,10 @@
-// Win32++   Version 9.5
-// Release Date: TBA
+// Win32++   Version 9.6.1
+// Release Date: 29th July 2024
 //
 //      David Nash
 //      email: dnash@bigpond.net.au
 //      url: https://sourceforge.net/projects/win32-framework
+//           https://github.com/DavidNash2024/Win32xx
 //
 //
 // Copyright (c) 2005-2024  David Nash
@@ -62,7 +63,7 @@ namespace Win32xx
 
         while (status != 0)
         {
-            // While idle, perform idle processing until OnIdle returns FALSE
+            // While idle, perform idle processing until OnIdle returns FALSE.
             while (!::PeekMessage(&msg, 0, 0, 0, PM_NOREMOVE) && OnIdle(count) != FALSE)
             {
                 count++;
@@ -70,7 +71,7 @@ namespace Win32xx
 
             count = 0;
 
-            // Now wait until we get a message
+            // Now wait until we get a message.
             if ((status = ::GetMessage(&msg, NULL, 0, 0)) == -1)
                 return -1;
 
@@ -101,7 +102,7 @@ namespace Win32xx
     {
         BOOL isProcessed = FALSE;
 
-        // only pre-translate mouse and keyboard input events
+        // Only pre-translate mouse and keyboard input events.
         if ((msg.message >= WM_KEYFIRST && msg.message <= WM_KEYLAST) ||
             (msg.message >= WM_MOUSEFIRST && msg.message <= WM_MOUSELAST))
         {
@@ -111,7 +112,7 @@ namespace Win32xx
             else
             {
                 // Search the chain of parents for pretranslated messages.
-                for (HWND wnd = msg.hwnd; wnd != 0; wnd = ::GetParent(wnd))
+                for (HWND wnd = msg.hwnd; wnd != NULL; wnd = ::GetParent(wnd))
                 {
                     CWnd* pWnd = GetApp()->GetCWndFromMap(wnd);
                     if (pWnd)
@@ -130,21 +131,21 @@ namespace Win32xx
     // Calls InitInstance and runs the message loop.
     inline int CMessagePump::Run()
     {
-        // InitInstance runs the App's initialization code
+        // InitInstance runs the App's initialization code.
         if (InitInstance())
         {
-            // Dispatch the window messages
+            // Dispatch the window messages.
             return MessageLoop();
         }
         else
         {
-            TRACE("InitInstance failed!  Terminating the thread\n");
+            TRACE("\n*** ERROR:InitInstance failed!  Terminating the thread. ***\n\n");
             ::PostQuitMessage(-1);
             return -1;
         }
     }
 
-    // accel is the handle of the accelerator table
+    // accel is the handle of the accelerator table.
     // accelWnd is the window handle for translated messages.
     inline void CMessagePump::SetAccelerators(HACCEL accel, HWND accelWnd)
     {

@@ -52,7 +52,7 @@ BOOL CView::LoadFileImage(LPCTSTR filename)
     }
 
     SetScrollSizes(totalSize);
-    return (m_image.GetHandle()!= 0);
+    return (m_image.GetHandle()!= NULL);
 }
 
 // Select the printer, and call QuickPrint.
@@ -69,11 +69,11 @@ void CView::Print(LPCTSTR docName)
 }
 
 // Prints the image on either the preview pane or the printer.
-void CView::PrintPage(CDC& dc, UINT)
+void CView::PrintPage(CDC& dc, int)
 {
     try
     {
-        if (m_image.GetHandle() != 0)
+        if (m_image.GetHandle() != NULL)
         {
             BITMAP bitmap = m_image.GetBitmapData();
             int bmWidth = bitmap.bmWidth;
@@ -159,7 +159,7 @@ BOOL CView::SaveFileImage(LPCTSTR fileName)
        CBitmapInfoPtr pbmi(m_image);
 
        // Create the reference DC for GetDIBits to use
-       CMemDC memDC(0);
+       CMemDC memDC(NULL);
 
        // Use GetDIBits to create a DIB from our DDB, and extract the colour data
        VERIFY(memDC.GetDIBits(m_image, 0, pbmi->bmiHeader.biHeight, NULL, pbmi, DIB_RGB_COLORS));
@@ -294,13 +294,25 @@ LRESULT CView::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 

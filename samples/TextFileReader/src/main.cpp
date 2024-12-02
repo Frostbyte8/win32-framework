@@ -1,4 +1,4 @@
-/* (02-Aug-2016) [Tab/Indent: 4/4][Line/Box: 80/74]                 (main.cpp) *
+/* (27-Apr-2024) [Tab/Indent: 4/4][Line/Box: 80/74]                 (main.cpp) *
 ********************************************************************************
 |                                                                              |
 |                Authors: Robert Tausworthe, David Nash, 2020                  |
@@ -40,13 +40,13 @@ WinMain(HINSTANCE, HINSTANCE, LPSTR, int )                                  /*
       // Create and check the semaphore that limits the number of
       // simultaneously executing instances of this application
       // to m_nInstances.
-    LPCTSTR semaphoreName = _T("Win32++_CommonDialogsDemo");
+    LPCTSTR semaphoreName = _T("Win32++_TextFileReader");
     LONG     nInstances = 1; // number of allowed instances
 
     CSemaphore sf(nInstances, nInstances, semaphoreName, NULL);
     if (WaitForSingleObject(sf, 0) == WAIT_TIMEOUT)
     {
-        ::MessageBox(0, _T("The allowed number of instances of this\n")
+        ::MessageBox(NULL, _T("The allowed number of instances of this\n")
         _T("application are already running."), _T("Stop"),
         MB_OK | MB_ICONSTOP | MB_TASKMODAL);
         sf.ReleaseSemaphore(1, NULL);

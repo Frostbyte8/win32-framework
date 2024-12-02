@@ -32,11 +32,11 @@ class CMainFrame : public CDockFrame
 public:
     CMainFrame();
     virtual ~CMainFrame();
-    virtual HWND Create(HWND parent = 0);
+    virtual HWND Create(HWND parent = NULL);
 
 protected:
     // Virtual functions that override base class functions
-    virtual CDocker* NewDockerFromID(int dockID);
+    virtual DockPtr NewDockerFromID(int dockID);
     virtual void    OnClose();
     virtual BOOL    OnCommand(WPARAM wparam, LPARAM lparam);
     virtual int     OnCreate(CREATESTRUCT& cs);
@@ -45,6 +45,7 @@ protected:
     virtual LRESULT OnInitMenuPopup(UINT msg, WPARAM wparam, LPARAM lparam);
     virtual void    OnMenuUpdate(UINT id);
     virtual void    PreCreate(CREATESTRUCT& cs);
+    virtual void    RecalcDockLayout();
     virtual BOOL    SaveRegistrySettings();
     virtual void    SetupMenuIcons();
     virtual void    SetupToolBar();

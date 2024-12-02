@@ -1,4 +1,4 @@
-/* (03-Mar-2020) [Tab/Indent: 8/8][Line/Box: 80/74]                  (MRU.cpp) *
+/* (06-May-2024) [Tab/Indent: 8/8][Line/Box: 80/74]                  (MRU.cpp) *
 ********************************************************************************
 |                                                                              |
 |               Authors: Robert C. Tausworthe, David Nash, 2020                |
@@ -182,7 +182,7 @@ UpdateMenu()                                                                /*
         return;
 
       // compute thesize of the MRU list
-    size_t nMRU = MIN(m_MRUEntries.size(), m_maxMRU);
+    size_t nMRU = std::min(m_MRUEntries.size(), m_maxMRU);
       // insert the empty MRU list label in the top slot
     fileMenu.ModifyMenu(IDW_FILE_MRU_FILE1, MF_BYCOMMAND,
         IDW_FILE_MRU_FILE1, m_emptyMRUListLabel.c_str());

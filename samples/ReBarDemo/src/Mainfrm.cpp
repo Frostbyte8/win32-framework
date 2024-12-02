@@ -13,6 +13,8 @@
 // Constructor.
 CMainFrame::CMainFrame()
 {
+    // Set m_view as the view window of the frame.
+    SetView(m_view);
 }
 
 // Destructor.
@@ -23,9 +25,6 @@ CMainFrame::~CMainFrame()
 // Create the frame window.
 HWND CMainFrame::Create(HWND parent)
 {
-    //Set m_view as the view window of the frame
-    SetView(m_view);
-
     // Set the registry key name, and load the initial window position.
     // Use a registry key name like "CompanyName\\Application".
     LoadRegistrySettings(_T("Win32++\\ReBarDemo"));
@@ -50,7 +49,7 @@ void CMainFrame::DpiScaleReBar()
 
     // Resize the rebar band holding the arrow toolbar.
     CSize sizeToolBar = m_toolBar.GetMaxSize();
-    int minxy = MIN(sizeToolBar.cx, sizeToolBar.cy);
+    int minxy = std::min(sizeToolBar.cx, sizeToolBar.cy);
     m_reBar.ResizeBand(0, CSize(minxy, minxy));
 }
 
@@ -264,11 +263,12 @@ void CMainFrame::RecalcLayout()
     // Resize the status bar
     if (GetStatusBar().IsWindow() && GetStatusBar().IsWindowVisible())
     {
-        GetStatusBar().SetWindowPos(0, 0, 0, 0, 0, SWP_SHOWWINDOW);
+        GetStatusBar().SetWindowPos(HWND_DESKTOP, 0, 0, 0, 0, SWP_SHOWWINDOW);
         GetStatusBar().Invalidate();
         if (IsUsingMenuStatus())
             GetStatusBar().SetWindowText(GetStatusText());
 
+        SetStatusParts();
         SetStatusIndicators();
     }
 
@@ -308,7 +308,7 @@ void CMainFrame::SetReBarPos()
         cxRB += m_reBar.GetRowHeight(u);
 
     CRect rc = CFrame::GetViewRect();
-    int cyRB = MIN(cxRB, rc.Height());
+    int cyRB = std::min(cxRB, rc.Height());
 
     DWORD style = m_reBar.GetStyle();
     style &= CCS_VERT | CCS_BOTTOM; // Filter unwanted styles
@@ -316,19 +316,19 @@ void CMainFrame::SetReBarPos()
     switch(style)
     {
     case CCS_LEFT:
-        m_reBar.SetWindowPos(0, 0, rc.top, cxRB, rc.Height(), SWP_SHOWWINDOW);
+        m_reBar.SetWindowPos(HWND_DESKTOP, 0, rc.top, cxRB, rc.Height(), SWP_SHOWWINDOW);
         m_toolBar.PressButton(IDM_LEFT, TRUE);
         break;
     case CCS_RIGHT:
-        m_reBar.SetWindowPos(0, rc.Width() - cxRB, rc.top, cxRB, rc.Height(), SWP_SHOWWINDOW);
+        m_reBar.SetWindowPos(HWND_DESKTOP, rc.Width() - cxRB, rc.top, cxRB, rc.Height(), SWP_SHOWWINDOW);
         m_toolBar.PressButton(IDM_RIGHT, TRUE);
         break;
     case CCS_BOTTOM:
-        m_reBar.SetWindowPos(0, 0, rc.bottom - cyRB, rc.Width(), cyRB, SWP_SHOWWINDOW);
+        m_reBar.SetWindowPos(HWND_DESKTOP, 0, rc.bottom - cyRB, rc.Width(), cyRB, SWP_SHOWWINDOW);
         m_toolBar.PressButton(IDM_BOTTOM, TRUE);
         break;
     default:
-        m_reBar.SetWindowPos(NULL, 0, rc.top, rc.Width(), cyRB, SWP_SHOWWINDOW);
+        m_reBar.SetWindowPos(HWND_DESKTOP, 0, rc.top, rc.Width(), cyRB, SWP_SHOWWINDOW);
         m_toolBar.PressButton(IDM_TOP, TRUE);
         break;
     }
@@ -396,13 +396,25 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 

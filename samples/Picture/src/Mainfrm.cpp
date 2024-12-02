@@ -14,6 +14,8 @@
 // Constructor.
 CMainFrame::CMainFrame() : m_isDPIChanging(false)
 {
+    // Set m_view as the view window of the frame.
+    SetView(m_view);
 }
 
 // Destructor.
@@ -24,14 +26,11 @@ CMainFrame::~CMainFrame()
 // Create the frame window.
 HWND CMainFrame::Create(HWND parent)
 {
-    //Set m_view as the view window of the frame
-    SetView(m_view);
-
-    // Set the registry key name, and load the initial window position
-    // Use a registry key name like "CompanyName\\Application"
+    // Set the registry key name, and load the initial window position.
+    // Use a registry key name like "CompanyName\\Application".
     LoadRegistrySettings(_T("Win32++\\Picture Sample"));
 
-    // Load the settings from the registry with 4 MRU entries
+    // Load the settings from the registry with 4 MRU entries.
     LoadRegistryMRUSettings(4);
 
     return CFrame::Create(parent);
@@ -44,7 +43,7 @@ void CMainFrame::DpiScaleToolBar()
     if (GetToolBar().IsWindow())
     {
         // Reset the toolbar images.
-        SetToolBarImages(RGB(192, 192, 192), IDW_MAIN, 0, 0);
+        SetToolBarImages(RGB(192, 192, 192), IDW_MAIN, IDB_TOOLBAR24_HOT, IDB_TOOLBAR24_DIS);
     }
 }
 
@@ -112,6 +111,7 @@ LRESULT CMainFrame::OnDpiChanged(UINT, WPARAM, LPARAM)
     ResetMenuMetrics();
     UpdateSettings();
     DpiScaleToolBar();
+    ClearMenuIcons();
     SetupMenuIcons();
     RecalcLayout();
 
@@ -219,6 +219,23 @@ BOOL CMainFrame::OnFileSaveAs()
     return TRUE;
 }
 
+// Called before the dropdown menu is displayed.
+void CMainFrame::OnMenuUpdate(UINT id)
+{
+    switch (id)
+    {
+    case IDM_FILE_SAVE:
+    {
+        // Enable FileSave menu item if a picture is loaded.
+        UINT enabled = m_view.GetPicture() != NULL ? MF_ENABLED : MF_GRAYED;
+        GetFrameMenu().EnableMenuItem(id, enabled);
+        break;
+    }
+    }
+
+    CFrame::OnMenuUpdate(id);
+}
+
 // Called when the frame's position has changed.
 LRESULT CMainFrame::OnWindowPosChanged(UINT msg, WPARAM wparam, LPARAM lparam)
 {
@@ -271,6 +288,14 @@ void CMainFrame::SetupToolBar()
     SetToolBarImages(RGB(192,192,192), IDW_MAIN, IDB_TOOLBAR24_HOT, IDB_TOOLBAR24_DIS);
 }
 
+// Called by CPictureApp::OnIdle to update toolbar buttons
+void CMainFrame::UpdateToolbar()
+{
+    // Enable the FileSave toolbar button if a picture is loaded.
+    BOOL enabled = (m_view.GetPicture() != NULL);
+    GetToolBar().EnableButton(IDM_FILE_SAVE, enabled);
+}
+
 // Process the frame's window messages.
 LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
 {
@@ -286,12 +311,24 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }

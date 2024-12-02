@@ -49,10 +49,11 @@ BEGIN
         MENUITEM "Prevent &Undocking",          IDM_NO_UNDOCK, CHECKED
         MENUITEM "Prevent &Resizing",           IDM_NO_RESIZE, CHECKED
         MENUITEM "Prevent Dock &Left or Right", IDM_NO_DOCK_LR, CHECKED
-        MENUITEM "Prevent Dock Close",          IDM_NO_DOCK_CLOSE, CHECKED
+        MENUITEM "Disable Close Button",        IDM_NO_DOCK_CLOSE, CHECKED
         MENUITEM "Disable Dock Caption",        IDM_NO_DOCK_CAPTION, CHECKED
         MENUITEM SEPARATOR
-        MENUITEM "&Default Layout",             IDM_DOCK_DEFAULT
+        MENUITEM "&Default Dock Layout",        IDM_DOCK_DEFAULT
+        MENUITEM "Default Dock &Styles",        IDM_STYLES_DEFAULT
         MENUITEM "&Close All",                  IDM_DOCK_CLOSEALL
     END
     POPUP "&Help"

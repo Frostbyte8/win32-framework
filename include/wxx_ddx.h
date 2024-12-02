@@ -1,9 +1,10 @@
-// Win32++   Version 9.5
-// Release Date: TBA
+// Win32++   Version 9.6.1
+// Release Date: 29th July 2024
 //
 //      David Nash
 //      email: dnash@bigpond.net.au
 //      url: https://sourceforge.net/projects/win32-framework
+//           https://github.com/DavidNash2024/Win32xx
 //
 //
 // Copyright (c) 2005-2024  David Nash
@@ -102,7 +103,6 @@ namespace Win32xx
     {
 
     public:
-        // Constructor/destructor
         CDataExchange();
         virtual ~CDataExchange();
 
@@ -211,11 +211,11 @@ namespace Win32xx
     inline CDataExchange::CDataExchange()
     {
         m_id = 0;
-        m_lastControl = 0;
-        m_lastEditControl = 0;
+        m_lastControl = NULL;
+        m_lastEditControl = NULL;
         m_isEditLastControl = FALSE;
         m_retrieveAndValidate = FALSE;
-        m_parent = 0;
+        m_parent = NULL;
     }
 
 
@@ -244,7 +244,7 @@ namespace Win32xx
 
             throw CUserException(message);
         }
-        else if (m_lastControl != 0 && m_isEditLastControl)
+        else if (m_lastControl != NULL && m_isEditLastControl)
         {
             // limit the control max-chars automatically
             WPARAM wparam = static_cast<WPARAM>(count);
@@ -280,19 +280,20 @@ namespace Win32xx
             if ((nMin != zero && nMin > val) ||
                 (nMax != zero && nMax < val))
             {
-                // retrieve the control ID
+                // Retrieve the control ID.
                 int id = static_cast<int>(::GetWindowLongPtr(m_lastControl, GWLP_ID));
                 CString str;
-                str << _T("Warning: Date-Time data is out of range ")
-                        << _T("in control ID ") << id << _T(" \n");
+                str << _T("*** WARNING: Date-Time data is out of range ")
+                        << _T("in control ID ") << id << _T(". ***\n");
                 TRACE(str);
 
                 return;
             }
         }
 
-        // Set the given DateTime range
+        // Set the given DateTime range.
         SYSTEMTIME sta[2];
+        ZeroMemory(&sta, sizeof(sta));
         sta[0] = min;
         sta[1] = max;
 
@@ -312,8 +313,8 @@ namespace Win32xx
 
         if (!m_retrieveAndValidate)
         {
-            // Just leave a debugging trace if writing to a control
-            TRACE(_T("Warning: control data is out of range.\n"));
+            // Just leave a debugging trace if writing to a control.
+            TRACE(_T("*** WARNING: control data is out of range. ***\n"));
             return; // don't throw
         }
 
@@ -349,10 +350,10 @@ namespace Win32xx
         if (min <= value && value <= max)
             return;
 
-        // just leave a debugging trace if writing to a control
+        // Just leave a debugging trace if writing to a control.
         if (!m_retrieveAndValidate)
         {
-            TRACE(_T("Warning: current control data is out of range.\n"));
+            TRACE(_T("*** WARNING: current control data is out of range. ***\n"));
             return;     // don't stop
         }
 
@@ -387,14 +388,15 @@ namespace Win32xx
             {
                 int id = static_cast<int>(::GetWindowLongPtr(m_lastControl, GWLP_ID));
                 CString str;
-                str << _T("Warning: Calendar data is out of range ")
-                        << _T("in control ID ") << id << _T(" \n");
+                str << _T("*** WARNING: Calendar data is out of range ")
+                        << _T("in control ID ") << id << _T(". ***\n");
                 TRACE(str);
                 return;     // continue on
             }
         }
 
         SYSTEMTIME minMax[2];
+        ZeroMemory(&minMax, sizeof(minMax));
         DWORD limit = GDTR_MIN | GDTR_MAX;
         memcpy(&minMax[0], &min, sizeof(SYSTEMTIME));
         memcpy(&minMax[1], &max, sizeof(SYSTEMTIME));
@@ -427,18 +429,18 @@ namespace Win32xx
             if (min > value || max < value)
             {
     #ifdef _DEBUG
-                // just leave a trace if writing to the control
+                // Just leave a trace if writing to the control.
                 int id = static_cast<int>(::GetWindowLongPtr(m_lastControl, GWLP_ID));
                 CString str;
-                str << _T("Warning: slider position is outside given ")
-                        << _T("limits in the control with ID ") << id << _T(" \n");
+                str << _T("*** WARNING: slider position is outside given ")
+                        << _T("limits in the control with ID ") << id << _T(". ***\n");
                 TRACE(str);
     #endif
                 return;     // don't stop now
             }
         }
 
-        // set the range tuple
+        // Set the range tuple.
         ::SendMessage(m_lastControl,TBM_SETRANGEMIN, static_cast<WPARAM>(FALSE),
                       static_cast<LPARAM>(min));
         ::SendMessage(m_lastControl, TBM_SETRANGEMAX, static_cast<WPARAM>(TRUE),
@@ -465,8 +467,8 @@ namespace Win32xx
             // just leave a debugging trace if writing to a control
             int id = static_cast<int>(::GetWindowLongPtr(m_lastControl, GWLP_ID));
             CString str;
-            str << _T("Warning: value is outside limits in control with ID ")
-                    << id << _T(" \n");
+            str << _T("*** WARNING: value is outside limits in control with ID ")
+                    << id << _T(". ***\n");
             TRACE(str);
             return;     // don't stop
         }
@@ -491,7 +493,7 @@ namespace Win32xx
     // to the specified CWnd. Controls are only attached once.
     inline void CDataExchange::DDX_Control(UINT id, CWnd& control)
     {
-        if (!control.IsWindow())    // not subclassed yet
+        if (!control.IsWindow())    // Not subclassed yet.
         {
             assert (!m_retrieveAndValidate);
             HWND handle = PrepareCtrl(id);
@@ -541,7 +543,7 @@ namespace Win32xx
         HWND control = PrepareCtrl(id);
         if (m_retrieveAndValidate)
         {
-            // get the current edit item text or drop list static where possible
+            // Get the current edit item text or drop list static where possible.
             int length = ::GetWindowTextLength(control);
             if (length > 0)
             {
@@ -564,7 +566,7 @@ namespace Win32xx
                 reinterpret_cast<LPARAM>(value.c_str()) == CB_ERR))
             {
                 // Value was not found, so just set the edit text.
-                // (this will be ignored if the control is a DROPDOWNLIST)
+                // (This will be ignored if the control is a DROPDOWNLIST.)
                 ::SetWindowText(control, value);
             }
         }
@@ -591,17 +593,17 @@ namespace Win32xx
         }
         else if (value != _T(""))   // write to control
         {
-            // set current selection based on data string
+            // Set current selection based on data string.
             int i = static_cast<int>(::SendMessage(control, CB_FINDSTRINGEXACT,
                 static_cast<WPARAM>(-1), reinterpret_cast<LPARAM>(value.c_str())));
             if (i < 0)
             {
-                // set the edit text (will be ignored if a DROPDOWNLIST)
+                // Set the edit text (will be ignored if a DROPDOWNLIST).
                 ::SetWindowText(control, value);
             }
             else
             {
-                // select it
+                // Select it.
                 ::SendMessage(control, CB_SETCURSEL, static_cast<WPARAM>(i), 0);
             }
         }
@@ -623,8 +625,8 @@ namespace Win32xx
             if (value < 0 || value > 2)
             {
                 CString str;
-                str << _T("Warning: dialog data checkbox value ")
-                        << value << _T(" out of range.\n");
+                str << _T("*** WARNING: dialog data checkbox value ")
+                        << value << _T(" out of range. ***\n");
                 TRACE(str);
                 value = 0;  // set default to off
             }
@@ -705,8 +707,8 @@ namespace Win32xx
 
             if (index == LB_ERR)
             {
-                // value string was not found
-                CString str = CString(_T("Warning: listbox item was not found:  ")) + value + _T(" \n");
+                // The value string was not found.
+                CString str = CString(_T("*** WARNING: listbox item was not found:  ")) + value + _T(". ***\n");
                 TRACE(str);
             }
         }
@@ -726,7 +728,7 @@ namespace Win32xx
         HWND control = PrepareCtrl(id);
         if (m_retrieveAndValidate)
         {
-            // Read and return the CString value
+            // Read and return the CString value.
             DDX_LBString(id, value);
         }
         else if (!value.IsEmpty())
@@ -745,7 +747,7 @@ namespace Win32xx
             }
             else
             {
-                // select it
+                // Select it.
                 ::SendMessage(control, LB_SETCURSEL, static_cast<WPARAM>(index), 0);
             }
         }
@@ -813,20 +815,20 @@ namespace Win32xx
         bool isRadioButton = (::GetWindowLongPtr(control, GWL_STYLE) & (BS_RADIOBUTTON | BS_AUTORADIOBUTTON)) != 0;
         assert(isRadioButton);
 
-        // preset the returned value to empty in case no button is set
+        // Preset the returned value to empty in case no button is set.
         if (m_retrieveAndValidate)
             value = -1;
 
-        // traverse all buttons in the group: we've already established
-        // there's a group, so set up for the radio buttons in the group
+        // Traverse all buttons in the group.
+        // There's a group, so set up for the radio buttons in the group.
         firstInGroup = FALSE;
-        for (int button = 0; control != 0 && !firstInGroup; )
+        for (int button = 0; control != NULL && !firstInGroup; )
         {
-            if (isRadioButton) // this control in the group is a radio button
+            if (isRadioButton)
             {
-                if (m_retrieveAndValidate) // if asked to read the control
+                if (m_retrieveAndValidate)
                 {
-                    if (::SendMessage(control, BM_GETCHECK, 0, 0) == BST_CHECKED) // is this button set?
+                    if (::SendMessage(control, BM_GETCHECK, 0, 0) == BST_CHECKED) // Is this button set?
                     {
                         // Record the value the first time, but if it happens again, there
                         // is an error--only one button checked is allowed.
@@ -834,9 +836,8 @@ namespace Win32xx
                         value = button;
                     }
                 }
-                else // if asked to select the radio button,
+                else
                 {
-                    // then select it
                     WPARAM wparam = static_cast<WPARAM>(button == value);
                     ::SendMessage(control, BM_SETCHECK, wparam, 0);
                 }
@@ -844,8 +845,8 @@ namespace Win32xx
             }
             else
             {
-                TRACE(_T("Warning: there is a non-radio button in "));
-                TRACE(_T("a radio button group.\n"));
+                TRACE(_T("*** Warning: there is a non-radio button in "));
+                TRACE(_T("a radio button group. ***\n"));
             }
 
             // Check the next window in the group, if any.
@@ -1150,10 +1151,10 @@ namespace Win32xx
 
         if (!m_retrieveAndValidate)
         {
-            TRACE(_T("Warning: CDataExchange::Fail() called while "));
-            TRACE(_T("writing to a control.\n"));
+            TRACE(_T("*** WARNING: CDataExchange::Fail() called while "));
+            TRACE(_T("writing to a control. ***\n"));
         }
-        else if (m_lastControl != 0)
+        else if (m_lastControl != NULL)
         {
             if (m_isEditLastControl) // if the offender is an edit control
             {
@@ -1163,9 +1164,9 @@ namespace Win32xx
             }
         }
         else
-        {   // merely announce
-            TRACE(_T("Error: validation failed with no control to "));
-            TRACE(_T("restore focus to.\n"));
+        {
+            TRACE(_T("*** WARNING: validation failed with no control to "));
+            TRACE(_T("restore focus to. ***\n"));
         }
     }
 
@@ -1178,7 +1179,7 @@ namespace Win32xx
         // record the default action and parent window
         m_retrieveAndValidate = retrieveAndValidate;
         m_parent       = dlgWnd;
-        m_lastControl  = 0;
+        m_lastControl  = NULL;
     }
 
     // Find the handle to the control whose numeric identifier is id and

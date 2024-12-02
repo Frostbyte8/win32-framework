@@ -24,8 +24,10 @@ public:
     virtual ~CMyTabbedMDI() {}
 
 protected:
-    // Virtual functions that override base class functions
-    virtual CWnd* NewMDIChildFromID(int mdiChild);
+    // Virtual functions that override base class functions.
+    virtual WndPtr NewMDIChildFromID(int mdiChild);
+    virtual LRESULT OnWindowPosChanged(UINT msg, WPARAM wparam, LPARAM lparam);
+    virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
     CMyTabbedMDI(const CMyTabbedMDI&);               // Disable copy construction
@@ -33,4 +35,3 @@ private:
 };
 
 #endif
-

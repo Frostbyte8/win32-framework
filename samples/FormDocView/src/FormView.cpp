@@ -27,31 +27,35 @@ INT_PTR CFormView::DialogProc(UINT msg, WPARAM wparam, LPARAM lparam)
     {
         m_resizer.HandleMessage(msg, wparam, lparam);
 
-        switch (msg)
-        {
-        case WM_SIZE:  return OnSize(msg, wparam, lparam);
-        }
+    //    switch (msg)
+    //    {
+    //
+    //    }
 
         // Pass unhandled messages on to parent DialogProc.
         return DialogProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
-}
 
-void CFormView::DpiScaleImage()
-{
-    m_patternImage.LoadBitmap(IDB_BITMAP1);
-    m_patternImage = DpiScaleUpBitmap(m_patternImage);
-    LPARAM lparam = reinterpret_cast<LPARAM>(m_patternImage.GetHandle());
-    m_picture.SendMessage(STM_SETIMAGE, IMAGE_BITMAP, lparam);
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 
 // Returns a reference to CDoc.
@@ -172,20 +176,23 @@ BOOL CFormView::OnInitDialog()
 // Suppress closing the dialog when the return key is pressed.
 void CFormView::OnOK()
 {
-    SetDlgItemText(IDC_STATUS, _T("OK Button Pressed."));
-    TRACE("OK Button Pressed.\n");
+    SetDlgItemText(IDC_STATUS, _T("Button Pressed."));
+    TRACE("Button Pressed.\n");
 }
 
 // Called when check box A is clicked.
 BOOL CFormView::OnCheckA()
 {
     TRACE("Check Box A\n");
-    bool isCheck = (IsDlgButtonChecked(ID_CHECK_A) == BST_CHECKED);
-    GetDoc().SetCheckA(isCheck);
+
+    bool isChecked = !GetDoc().GetCheckA(); // Toggled
+    UINT checkFlag = isChecked ? BST_CHECKED : BST_UNCHECKED;
+    CheckDlgButton(ID_CHECK_A, checkFlag);
+    GetDoc().SetCheckA(isChecked);
 
     CString str("Box A ");
-    LPCSTR checked = isCheck ? "checked" : "unchecked";
-    SetDlgItemText(IDC_STATUS, str + checked);
+    str += isChecked ? "checked" : "unchecked";
+    SetDlgItemText(IDC_STATUS, str);
     return TRUE;
 }
 
@@ -193,12 +200,14 @@ BOOL CFormView::OnCheckA()
 BOOL CFormView::OnCheckB()
 {
     TRACE("Check Box B\n");
-    bool isCheck = (IsDlgButtonChecked(ID_CHECK_B) == BST_CHECKED);
-    GetDoc().SetCheckB(isCheck);
+    bool isChecked = !GetDoc().GetCheckB(); // Toggled
+    UINT checkFlag = isChecked ? BST_CHECKED : BST_UNCHECKED;
+    CheckDlgButton(ID_CHECK_B, checkFlag);
+    GetDoc().SetCheckB(isChecked);
 
     CString str("Box B ");
-    LPCSTR checked = isCheck ? "checked" : "unchecked";
-    SetDlgItemText(IDC_STATUS, str + checked);
+    str += isChecked ? "checked" : "unchecked";
+    SetDlgItemText(IDC_STATUS, str);
     return TRUE;
 }
 
@@ -206,12 +215,14 @@ BOOL CFormView::OnCheckB()
 BOOL CFormView::OnCheckC()
 {
     TRACE("Check Box C\n");
-    bool isCheck = (IsDlgButtonChecked(ID_CHECK_C) == BST_CHECKED);
-    GetDoc().SetCheckC(isCheck);
+    bool isChecked = !GetDoc().GetCheckC();  // Toggled
+    UINT checkFlag = isChecked ? BST_CHECKED : BST_UNCHECKED;
+    CheckDlgButton(ID_CHECK_C, checkFlag);
+    GetDoc().SetCheckC(isChecked);
 
     CString str("Box C ");
-    LPCSTR checked = isCheck ? "checked" : "unchecked";
-    SetDlgItemText(IDC_STATUS, str + checked);
+    str += isChecked ? "checked" : "unchecked";
+    SetDlgItemText(IDC_STATUS, str);
     return TRUE;
 }
 
@@ -230,12 +241,3 @@ BOOL CFormView::OnRangeOfIDs(UINT idFirst, UINT idLast, UINT idClicked)
     return TRUE;
 }
 
-INT_PTR CFormView::OnSize(UINT msg, WPARAM wparam, LPARAM lparam)
-{
-    // Perform default processing first.
-    FinalWindowProc(msg, wparam, lparam);
-
-    // Set the image size.
-    DpiScaleImage();
-    return 0;
-}

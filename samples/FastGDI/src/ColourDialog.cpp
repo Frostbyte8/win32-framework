@@ -49,10 +49,10 @@ void CColourDialog::CreateImagePreviews()
     }
 
     // Create the Device Contexts and compatible bitmaps.
-    CMemDC dest1DC(0);
-    CMemDC dest2DC(0);
-    CMemDC memDC(0);
-    CClientDC desktopDC(0);
+    CClientDC desktopDC(HWND_DESKTOP);
+    CMemDC dest1DC(desktopDC);
+    CMemDC dest2DC(desktopDC);
+    CMemDC memDC(desktopDC);
     m_previewImage.CreateCompatibleBitmap(desktopDC, widthDest, heightDest);
     m_previewOrigImage.CreateCompatibleBitmap(desktopDC, widthDest, heightDest);
     memDC.SelectObject(m_image);
@@ -82,14 +82,26 @@ INT_PTR CColourDialog::DialogProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return DialogProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 
 // Process the command messages (WM_COMMAND) from the dialog's controls.
@@ -193,7 +205,7 @@ BOOL CColourDialog::OnTextChange(HWND editCtrl)
     if (editCtrl == m_blueEdit)
         m_blueSlider.SetPos(value, TRUE);
 
-    if (m_previewImage.GetHandle() != 0)
+    if (m_previewImage.GetHandle() != NULL)
         UpdatePreview();
 
     return TRUE;
@@ -231,9 +243,9 @@ void CColourDialog::Paint()
 void CColourDialog::UpdatePreview()
 {
     // Copy m_hbmPreviewOrig to m_hbmPreview.
-    CMemDC Mem1DC(0);    // Compatible with the desktop
+    CMemDC Mem1DC(NULL);    // Compatible with the desktop
     Mem1DC.SelectObject(m_previewOrigImage);
-    CMemDC Mem2DC(0);    // Compatible with the desktop
+    CMemDC Mem2DC(NULL);    // Compatible with the desktop
     Mem2DC.SelectObject(m_previewImage);
     int cx = m_preview.GetWindowRect().Width();
     int cy = m_preview.GetWindowRect().Height();

@@ -1,4 +1,4 @@
-/* (14-Nov-2016) [Tab/Indent: 4/4][Line/Box: 80/74]                   (View.h) *
+/* (06-May-2024) [Tab/Indent: 4/4][Line/Box: 80/74]                   (View.h) *
 ********************************************************************************
 |                                                                              |
 |               Authors: Robert C. Tausworthe, David Nash, 2020                |
@@ -56,6 +56,7 @@ protected:
     virtual LRESULT OnPaint(UINT msg, WPARAM wparam, LPARAM lparam);
     virtual void    PreCreate(CREATESTRUCT &cs);
     virtual void    Serialize(CArchive &ar);
+    virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
     CView(const CView&);               // Disable copy construction

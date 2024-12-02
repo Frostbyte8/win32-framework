@@ -10,12 +10,8 @@
 class CWorkerSocket;
 class CTCPClientDlg;
 
-
-// Note: Modern C++ compilers can use these typedefs instead.
-// typedef std::shared_ptr<CWorkerSocket> ServerSocketPtr;
-// typedef std::shared_ptr<CTCPClientDlg> TCPClientDlgPtr;
-typedef Shared_Ptr<CWorkerSocket> ServerSocketPtr;
-typedef Shared_Ptr<CTCPClientDlg> TCPClientDlgPtr;
+typedef std::shared_ptr<CWorkerSocket> ServerSocketPtr;
+typedef std::shared_ptr<CTCPClientDlg> TCPClientDlgPtr;
 
 
 //////////////////////////////////////////////////////////////
@@ -31,7 +27,8 @@ public:
     void Send();
 
 protected:
-    // Virtual functions that override base class functions
+    // Virtual functions that override base class functions.
+    virtual INT_PTR DialogProc(UINT msg, WPARAM wparam, LPARAM lparam);
     virtual BOOL OnCommand(WPARAM wparam, LPARAM lparam);
     virtual void OnClose();
     virtual void OnDestroy();

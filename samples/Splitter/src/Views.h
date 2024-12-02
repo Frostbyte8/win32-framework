@@ -38,6 +38,7 @@ public:
 protected:
     // Virtual functions that override base class functions
     virtual void OnAttach();
+    virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
     CViewText(const CViewText&);                // Disable copy construction
@@ -68,8 +69,6 @@ private:
 
     // Message handlers
     LRESULT OnDpiChangedBeforeParent(UINT msg, WPARAM wparam, LPARAM lparam);
-
-    CImageList m_smallImages;
 };
 
 /////////////////////////////////////////////
@@ -96,8 +95,6 @@ private:
 
     // Message handlers
     LRESULT OnDpiChangedBeforeParent(UINT msg, WPARAM wparam, LPARAM lparam);
-
-    CImageList m_smallImages;
 };
 
 #endif // VIEWS_H

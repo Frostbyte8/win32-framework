@@ -24,6 +24,17 @@ void CViewRect::OnDestroy()
     KillTimer(1);
 }
 
+void CViewRect::OnDraw(CDC& dc)
+{
+    std::vector<RectData>::const_iterator it;
+    for (it = m_rects.begin(); it != m_rects.end(); ++it)
+    {
+        dc.CreateSolidBrush((*it).color);
+        CRect rc = (*it).rect;
+        dc.Rectangle(rc.left, rc.top, rc.right, rc.bottom);
+    }
+}
+
 // Respond to a mouse click on the window.
 LRESULT CViewRect::OnMouseActivate(UINT msg, WPARAM wparam, LPARAM lparam)
 {
@@ -52,26 +63,45 @@ LRESULT CViewRect::OnSize(UINT, WPARAM wparam, LPARAM lparam)
 // Responds to the timer event. Displays a random rectangle.
 LRESULT CViewRect::OnTimer(UINT, WPARAM, LPARAM)
 {
-    int red, green, blue;
-    int left, right, top, bottom;
-    left   = rand () % m_cxClientMax;
-    right  = rand () % m_cxClientMax;
-    top    = rand () % m_cyClientMax;
-    bottom = rand () % m_cyClientMax;
-    red    = rand () & 255;
-    green  = rand () & 255;
-    blue   = rand () & 255;
+    if (m_rects.size() < 100)
+    {
+        int red, green, blue;
+        int left, right, top, bottom;
+        left   = rand () % m_cxClientMax;
+        right  = rand () % m_cxClientMax;
+        top    = rand () % m_cyClientMax;
+        bottom = rand () % m_cyClientMax;
+        red    = rand () & 255;
+        green  = rand () & 255;
+        blue   = rand () & 255;
 
-    CClientDC RectDC(*this);
-    RectDC.CreateSolidBrush (RGB (red, green, blue));
+        CClientDC RectDC(*this);
+        COLORREF color(RGB(red, green, blue));
+        RectDC.CreateSolidBrush (color);
 
-    int rcLeft   = (left < right) ? left : right;
-    int rcTop    = (top < bottom) ? top  : bottom;
-    int rcRight  = (left > right) ? left : right;
-    int rcBottom = (top > bottom) ? top  : bottom;
-    RectDC.Rectangle(rcLeft, rcTop, rcRight, rcBottom);
+        int rcLeft   = (left < right) ? left : right;
+        int rcTop    = (top < bottom) ? top  : bottom;
+        int rcRight  = (left > right) ? left : right;
+        int rcBottom = (top > bottom) ? top  : bottom;
+        RectDC.Rectangle(rcLeft, rcTop, rcRight, rcBottom);
+
+        RectData rectData(color, CRect(rcLeft, rcTop, rcRight, rcBottom));
+        m_rects.push_back(rectData);
+    }
 
     return 0;
+}
+
+// Set the CREATESTURCT parameters before the window is created.
+void CViewRect::PreCreate(CREATESTRUCT& cs)
+{
+    // Call base class to set defaults.
+    CWnd::PreCreate(cs);
+    cs.style |= WS_CLIPCHILDREN;
+
+    // Add the WS_EX_COMPOSITED to reduce flicker.
+    if (GetWinVersion() >= 3000)  // Windows 10 or later.
+        cs.dwExStyle |= WS_EX_COMPOSITED;
 }
 
 // Processes the window's window messages.
@@ -89,13 +119,26 @@ LRESULT CViewRect::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
+
 

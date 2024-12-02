@@ -582,7 +582,7 @@ int CBrowserWindow::OnCreate(CREATESTRUCT& cs)
 
     // Create the tabs and start the browser.
     if (!LaunchBrowser())
-        ::MessageBox(0, L"Failed to launch browser", L"Error", MB_OK);
+        ::MessageBox(nullptr, L"Failed to launch browser", L"Error", MB_OK);
 
     return 0;
 }
@@ -860,12 +860,36 @@ void CBrowserWindow::UpdateMinWindowSize()
 // Process the window messages.
 LRESULT CBrowserWindow::WndProc(UINT message, WPARAM wparam, LPARAM lparam)
 {
-    switch (message)
+    try
     {
-    case WM_GETMINMAXINFO:  return OnGetMinMaxInfo(message, wparam, lparam);
-    case WM_DPICHANGED:     return OnDPIChanged(message, wparam, lparam);
-    case WM_SIZE:           return OnSize(message, wparam, lparam);
-    default:                return WndProcDefault(message, wparam, lparam);
+        switch (message)
+        {
+        case WM_GETMINMAXINFO:  return OnGetMinMaxInfo(message, wparam, lparam);
+        case WM_DPICHANGED:     return OnDPIChanged(message, wparam, lparam);
+        case WM_SIZE:           return OnSize(message, wparam, lparam);
+        default:                return WndProcDefault(message, wparam, lparam);
+        }
     }
+
+    // Catch all unhandled CException types.
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
+    }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
     return 0;
+
 }

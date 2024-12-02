@@ -15,8 +15,10 @@
 //
 
 // Constructor for CMainFrame.
-CMainFrame::CMainFrame() : m_isToolbarShown(true)
+CMainFrame::CMainFrame() : m_preview(m_view), m_isToolbarShown(true)
 {
+    // Set m_view as the view window of the frame.
+    SetView(m_view);
 }
 
 // Destructor for CMainFrame.
@@ -27,9 +29,6 @@ CMainFrame::~CMainFrame()
 // Create the frame window.
 HWND CMainFrame::Create(HWND parent)
 {
-    // Set m_view as the view window of the frame
-    SetView(m_view);
-
     // Normally we would use LoadRegistrySettings here, but this
     // is omitted in this sample. We use an ini file instead.
 
@@ -104,7 +103,7 @@ BOOL CMainFrame::OnFileExit()
 // Create the File Open dialog to choose the file to load.
 BOOL CMainFrame::OnFileOpen()
 {
-    CString filter = _T("Program Files (*.cpp; *.h)|*.cpp; *.h|All Files (*.*)|*.*||");
+    CString filter = "Program Files (*.cpp; *.h)|*.cpp; *.h|All Files (*.*)|*.*|";
     CFileDialog fileDlg(TRUE);    // TRUE for file open
     fileDlg.SetFilter(filter);
     fileDlg.SetDefExt(_T(".cpp"));
@@ -121,7 +120,7 @@ BOOL CMainFrame::OnFileOpen()
 // Create the File Save dialog to choose the file to save.
 BOOL CMainFrame::OnFileSave()
 {
-    CString filter = _T("Program Files (*.cpp; *.h)|*.cpp; *.h|All Files (*.*)|*.*||");
+    CString filter = "Program Files (*.cpp; *.h)|*.cpp; *.h|All Files (*.*)|*.*|";
     CFileDialog fileDlg(FALSE);    // FALSE for file save
     fileDlg.SetFilter(filter);
     fileDlg.SetDefExt(_T(".cpp"));
@@ -149,9 +148,6 @@ BOOL CMainFrame::OnFilePreview()
         // Create the preview window if required.
         if (!m_preview.IsWindow())
             m_preview.Create(*this);
-
-        // Specify the source of the PrintPage function.
-        m_preview.SetSource(m_view);
 
         // Set the preview's owner for notification messages.
         m_preview.DoPrintPreview(*this);
@@ -230,7 +226,7 @@ LRESULT CMainFrame::OnPreviewClose()
     SetView(m_view);
 
     // Show the menu and toolbar
-    ShowMenu(GetFrameMenu() != 0);
+    ShowMenu(GetFrameMenu() != NULL);
     ShowToolBar(m_isToolbarShown);
     UpdateSettings();
 
@@ -295,28 +291,43 @@ int CMainFrame::TtoI(LPCTSTR string)
 // Returns the path used for the INI file.
 CString CMainFrame::GetINIPath()
 {
-    CString filePath = GetAppDataPath();
-
-    if (!filePath.IsEmpty())
+    CString appDataPath = GetAppDataPath();
+    CString subfolder = _T("Win32++\\INIFrame");
+    if (!appDataPath.IsEmpty())
     {
         // Create the directory if required
-        filePath += _T("\\Win32++");
-        ::CreateDirectory(filePath, NULL);
-        filePath += _T("\\INIFrame");
-        ::CreateDirectory(filePath, NULL);
+        int from = 0;
+        int to = subfolder.GetLength();
+        while (from < to)
+        {
+            int next = subfolder.Find(_T("\\"), from);
+            if (next < 0)
+                next = to;
 
-        DWORD attributes = GetFileAttributes(filePath);
+            CString add = subfolder.Mid(from, next - from);
+            appDataPath += _T("\\") + add;
+
+            if (!::CreateDirectory(appDataPath, NULL) && GetLastError() != ERROR_ALREADY_EXISTS)
+            {
+                CString msg = appDataPath + _T("Directory creation error.");
+                throw CUserException(msg);
+            }
+
+            from = ++next;
+        }
+
+        DWORD attributes = GetFileAttributes(appDataPath);
         if ((attributes == INVALID_FILE_ATTRIBUTES) || !(attributes & FILE_ATTRIBUTE_DIRECTORY))
-            throw CFileException(filePath, _T("Failed to access app directory"));
+            throw CFileException(appDataPath, _T("Failed to access app directory"));
 
         // Note: on Win2000 and above we could create the folders in a single step:
-        // FilePath += _T("\\Win32++\\INIFrame");
+        // appDataPath += _T("\\Win32++\\INIFrame");
         // SHCreateDirectory(NULL, FilePath);   // supported on Win2000 and above
     }
     else
-        filePath = _T(".");
+        appDataPath = _T(".");
 
-    return filePath;
+    return appDataPath;
 }
 
 // Load values to, or restore values from the ini file.
@@ -338,8 +349,10 @@ void CMainFrame::SerializeINI(BOOL isStoring)
             CRect rc = wndpl.rcNormalPosition;
             UINT left = rc.left;
             UINT top = rc.top;
-            UINT width = MAX(rc.Width(), 100);
-            UINT height = MAX(rc.Height(), 50);
+            UINT width = rc.Width();
+            UINT height = rc.Height();
+            width = std::max(width, 100U);
+            height = std::max(height, 50U);
             UINT showCmd = wndpl.showCmd;
 
             ::WritePrivateProfileString(NULL, NULL, NULL, fileName);
@@ -379,7 +392,7 @@ void CMainFrame::SerializeINI(BOOL isStoring)
 #ifdef MONITOR_DEFAULTTONULL
 
                 HMONITOR monitor = ::MonitorFromPoint(midpoint, MONITOR_DEFAULTTONULL);
-                if (monitor == 0)
+                if (monitor == NULL)
                     throw CUserException();
 
                 MONITORINFO mi;
@@ -480,13 +493,24 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
-}
 
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
+}

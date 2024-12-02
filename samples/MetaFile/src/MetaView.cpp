@@ -28,7 +28,7 @@ int CMetaView::OnCreate(CREATESTRUCT&)
 
     CEnhMetaFileDC metaDC;
     // Creates an enhanced MetaFile called "Pattern.emf", and also the EnhMetaFile device context
-    metaDC.CreateEnhanced(0, _T("Pattern.emf"), NULL, NULL);
+    metaDC.CreateEnhanced(NULL, _T("Pattern.emf"), NULL, NULL);
 
     // Draw to the Metafile device context
     metaDC.Rectangle(0, 0, 100, 100);
@@ -51,9 +51,9 @@ void CMetaView::OnDraw(CDC& dc)
     CRect rcClient = GetClientRect();
     int cxClient = rcClient.Width();
     int cyClient = rcClient.Height();
-    SetMapMode(dc, MM_ANISOTROPIC);
-    SetWindowExtEx(dc, 1000, 1000, NULL);
-    SetViewportExtEx(dc, cxClient, cyClient, NULL);
+    dc.SetMapMode(MM_ANISOTROPIC);
+    dc.SetWindowExtEx(1000, 1000, NULL);
+    dc.SetViewportExtEx(cxClient, cyClient, NULL);
 
     CRect rc(0, 0, 100, 100);
 
@@ -89,13 +89,25 @@ LRESULT CMetaView::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 

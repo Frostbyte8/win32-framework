@@ -8,14 +8,20 @@
 #include "SearchDialog.h"
 #include "UserMessages.h"
 
-#ifdef _MSC_VER
-#pragma warning (disable : 4458) // disable declaration hides class member warning
+#if defined (_MSC_VER) && (_MSC_VER == 1900) // == VS2015
+#pragma warning (disable : 4458) // disable warning: declaration hides class member
+#endif
+
+// Declare min and max for older versions of Visual Studio
+#if defined (_MSC_VER) && (_MSC_VER < 1920) // < VS2019
+using std::min;
+using std::max;
 #endif
 
 #include <gdiplus.h>
 
-#ifdef _MSC_VER
-#pragma warning (default : 4458) // enable declaration hides class member warning
+#if defined(_MSC_VER) && (_MSC_VER == 1900)
+#pragma warning (default : 4458) // return warning to default
 #endif
 
 #if defined (_MSC_VER) && (_MSC_VER >= 1400)
@@ -28,6 +34,11 @@
 #if defined (_MSC_VER) && (_MSC_VER >= 1400)
 #pragma warning ( pop )  // ( disable : 26812 )    enum type is unscoped.
 #endif // (_MSC_VER) && (_MSC_VER >= 1400)
+
+// For C++Builder
+#if defined (__BORLANDC__) && !(_WIN64)
+#pragma comment(lib, "shell32.lib")
+#endif
 
 using namespace MediaInfoDLL;
 using namespace Gdiplus;
@@ -77,10 +88,12 @@ int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
 //
 
 // Constructor.
-CMainFrame::CMainFrame() : m_thread(ThreadProc, this), m_searchItem(0), m_pDockTree(0),
-                           m_pDockDialog(0), m_isDirty(false), m_boxSetsItem(0),
-                           m_dialogWidth(0), m_treeHeight(0)
+CMainFrame::CMainFrame() : m_thread(ThreadProc, this), m_searchItem(nullptr), m_pDockTree(nullptr),
+                           m_pDockDialog(nullptr), m_isDirty(false), m_boxSetsItem(0),
+                           m_dialogHeight(0), m_treeWidth(0)
 {
+    // Set m_view as the view window of the frame.
+    SetView(m_viewList);
 }
 
 // Destructor.
@@ -91,10 +104,10 @@ CMainFrame::~CMainFrame()
 // Clears the contents of the movie info dialog.
 void CMainFrame::ClearDisplay()
 {
-    GetViewDialog().GetTitle().SetWindowText(0);
-    GetViewDialog().GetYear().SetWindowText(0);
-    GetViewDialog().GetActors().SetWindowText(0);
-    GetViewDialog().GetInfo().SetWindowText(0);
+    GetViewDialog().GetTitle().SetWindowText(nullptr);
+    GetViewDialog().GetYear().SetWindowText(nullptr);
+    GetViewDialog().GetActors().SetWindowText(nullptr);
+    GetViewDialog().GetInfo().SetWindowText(nullptr);
     GetViewDialog().SetPicture().SetImageData().clear();
     GetViewDialog().RedrawWindow();
 }
@@ -108,11 +121,8 @@ void CMainFrame::ClearList()
 // Create the frame window.
 HWND CMainFrame::Create(HWND parent)
 {
-    //Set m_view as the view window of the frame
-    SetView(m_viewList);
-
-    // Set the registry key name, and load the initial window position
-    // Use a registry key name like "CompanyName\\Application"
+    // Set the registry key name, and load the initial window position.
+    // Use a registry key name like "CompanyName\\Application".
     LoadRegistrySettings(L"Win32++\\MovieShow");
 
     m_genres.push_back(L"Action, Crime, Thriller, War, Western");
@@ -144,7 +154,7 @@ void CMainFrame::FillImageData(const CString& source, std::vector<BYTE>& dest)
     {
         // Use a vector for an array of BYTE
         std::vector<BYTE> sourceData(bufferSize, 0);
-        BYTE* pSource = &sourceData.front();
+        BYTE* pSource = sourceData.data();
         ::CryptStringToBinary(source.c_str(), (DWORD)source.GetLength(), CRYPT_STRING_BASE64, pSource, &bufferSize, nullptr, nullptr);
 
         // Convert the binary data to an IStream
@@ -165,7 +175,7 @@ void CMainFrame::FillImageData(const CString& source, std::vector<BYTE>& dest)
                     Bitmap* img = (Bitmap*)image.GetThumbnailImage(280, 420, nullptr, nullptr);
 
                     IStream* stream = nullptr;
-                    HRESULT hr = ::CreateStreamOnHGlobal(0, TRUE, &stream);
+                    HRESULT hr = ::CreateStreamOnHGlobal(nullptr, TRUE, &stream);
                     if (!SUCCEEDED(hr))
                         return;
 
@@ -201,10 +211,9 @@ void CMainFrame::FillList()
     // Lock this function for thread safety
     CThreadLock lock(m_cs);
 
-    std::list<MovieInfo>::const_iterator iter;
-    for (iter = m_moviesData.begin(); iter != m_moviesData.end(); ++iter)
+    for(const auto& i : m_moviesData)
     {
-        GetViewList().AddItem(*iter);
+        GetViewList().AddItem(i);
     }
 
     m_splashThread.GetSplash()->Hide();
@@ -224,11 +233,10 @@ void CMainFrame::FillListFromAllBoxSets()
     // Lock this function for thread safety
     CThreadLock lock(m_cs);
 
-    std::list<MovieInfo>::const_iterator iter;
-    for (iter = m_moviesData.begin(); iter != m_moviesData.end(); ++iter)
+    for (const auto& i : m_moviesData)
     {
-        if ((*iter).boxset != L"")
-            GetViewList().AddItem(*iter);
+        if (i.boxset != L"")
+            GetViewList().AddItem(i);
     }
 
     m_splashThread.GetSplash()->Hide();
@@ -248,11 +256,10 @@ void CMainFrame::FillListFromBoxSet(LPCTSTR boxset)
     // Lock this function for thread safety
     CThreadLock lock(m_cs);
 
-    std::list<MovieInfo>::const_iterator iter;
-    for (iter = m_moviesData.begin(); iter != m_moviesData.end(); ++iter)
+    for (const auto& i : m_moviesData)
     {
-        if ((*iter).boxset == boxset)
-            GetViewList().AddItem(*iter);
+        if (i.boxset == boxset)
+            GetViewList().AddItem(i);
     }
 
     m_splashThread.GetSplash()->Hide();
@@ -276,12 +283,11 @@ void CMainFrame::FillListFromDateRange(LPCTSTR dateRange)
     CString Year1 = str.Left(4);
     CString Year2 = str.Right(4);
 
-    std::list<MovieInfo>::const_iterator iter;
-    for (iter = m_moviesData.begin(); iter != m_moviesData.end(); ++iter)
+    for (const auto& i : m_moviesData)
     {
-        CString year = (*iter).releaseDate.Left(4);
-        if (((year >= Year1) && (year <= Year2)) && (*iter).videoType == L"Movies")
-            GetViewList().AddItem(*iter);
+        CString year = i.releaseDate.Left(4);
+        if (((year >= Year1) && (year <= Year2)) && i.videoType == L"Movies")
+            GetViewList().AddItem(i);
     }
 
     m_splashThread.GetSplash()->Hide();
@@ -301,11 +307,10 @@ void CMainFrame::FillListFromFlags(DWORD mask)
     // Lock this function for thread safety
     CThreadLock lock(m_cs);
 
-    std::list<MovieInfo>::const_iterator iter;
-    for (iter = m_moviesData.begin(); iter != m_moviesData.end(); ++iter)
+    for (const auto& i : m_moviesData)
     {
-        if ((*iter).flags & mask)
-            GetViewList().AddItem(*iter);
+        if (i.flags & mask)
+            GetViewList().AddItem(i);
     }
 
     m_splashThread.GetSplash()->Hide();
@@ -321,11 +326,10 @@ void CMainFrame::FillListFromGenre(LPCTSTR genre)
     // Lock this function for thread safety
     CThreadLock lock(m_cs);
 
-    std::list<MovieInfo>::const_iterator iter;
-    for (iter = m_moviesData.begin(); iter != m_moviesData.end(); ++iter)
+    for (const auto& i : m_moviesData)
     {
-        if (((*iter).genre.Find(genre, 0) >= 0) && (*iter).videoType == L"Movies")
-            GetViewList().AddItem(*iter);
+        if ((i.genre.Find(genre, 0) >= 0) && i.videoType == L"Movies")
+            GetViewList().AddItem(i);
     }
 
     GetViewList().SetLastColumnWidth();
@@ -366,12 +370,11 @@ void CMainFrame::FillListFromSearch()
 
     for (UINT i = 0; i < m_foundMovies.size(); ++i)
     {
-        MoviesData::iterator it;
-        for (it = m_moviesData.begin(); it != m_moviesData.end(); ++it)
+        for (const auto& j :m_moviesData)
         {
-            if (&(*it) == m_foundMovies[i])
+            if (&j == m_foundMovies[i])
             {
-                GetViewList().AddItem(*it);
+                GetViewList().AddItem(j);
                 break;
             }
         }
@@ -394,11 +397,10 @@ void CMainFrame::FillListFromType(LPCTSTR videoType)
     // Lock this function for thread safety
     CThreadLock lock(m_cs);
 
-    std::list<MovieInfo>::const_iterator iter;
-    for (iter = m_moviesData.begin(); iter != m_moviesData.end(); ++iter)
+    for (const auto& i : m_moviesData)
     {
-        if ((*iter).videoType.Find(videoType, 0) >= 0)
-            GetViewList().AddItem(*iter);
+        if (i.videoType.Find(videoType, 0) >= 0)
+            GetViewList().AddItem(i);
     }
 
     m_splashThread.GetSplash()->Hide();
@@ -418,22 +420,21 @@ void CMainFrame::FillTreeItems()
     HTREEITEM moviesItem = GetViewTree().InsertItem(L"Movies", 1, 1, libraryItem);
 
     m_boxSetsItem = GetViewTree().InsertItem(L"Box Sets", 2, 2, moviesItem);
-    std::list<CString>::iterator it;
-    for (it = m_boxSets.begin(); it != m_boxSets.end(); ++it)
+    for (const auto& i : m_boxSets)
     {
-        GetViewTree().InsertItem((*it), 2, 2, m_boxSetsItem);
+        GetViewTree().InsertItem(i, 2, 2, m_boxSetsItem);
     }
 
     HTREEITEM genreItem = GetViewTree().InsertItem(L"Genre", 5, 5, moviesItem);
-    for (it = m_genres.begin(); it != m_genres.end(); ++it)
+    for (const auto& i : m_genres)
     {
-        GetViewTree().InsertItem((*it), 5, 5, genreItem);
+        GetViewTree().InsertItem(i, 5, 5, genreItem);
     }
 
     HTREEITEM decadesItem = GetViewTree().InsertItem(L"Release Dates", 3, 3, moviesItem);
-    for (it = m_decades.begin(); it != m_decades.end(); ++it)
+    for (const auto& i : m_decades)
     {
-        GetViewTree().InsertItem((*it), 3, 3, decadesItem);
+        GetViewTree().InsertItem(i, 3, 3, decadesItem);
     }
 
     GetViewTree().InsertItem(L"Live Performances", 6, 6, libraryItem);
@@ -516,6 +517,7 @@ bool CMainFrame::IsVideoFile(const CString& filename) const
 {
     int dot = filename.ReverseFind(L'.');
     CString ext = filename.Mid(dot + 1, lstrlen(filename));
+    ext.MakeLower();
 
     return (ext == L"m4v" || ext == L"mp4" || ext == L"mov");
 }
@@ -584,7 +586,7 @@ void CMainFrame::LoadMovies()
 
     CString DataPath = GetDataPath();
     CString DataFile = GetDataPath() + L"\\" + L"MovieData.bin";
-    SHCreateDirectoryEx(0, DataPath.c_str(), nullptr);
+    SHCreateDirectoryEx(nullptr, DataPath.c_str(), nullptr);
 
     if (PathFileExists(DataFile))
     {
@@ -594,15 +596,13 @@ void CMainFrame::LoadMovies()
             m_splashThread.GetSplash()->ShowText(L"", this);
             m_splashThread.GetSplash()->ShowText(L"Loading Library", this);
 
-            CArchive ar(DataFile, CArchive::load);
-            std::vector<MovieInfo>::iterator it;
-
             // Lock this code for thread safety
             CThreadLock lock(m_cs);
 
             m_moviesData.clear();
             TRACE("Loading Movies Data\n");
 
+            CArchive ar(DataFile, CArchive::load);
             UINT nBoxSets;
             ar >> nBoxSets;
             for (UINT i = 0; i < nBoxSets; ++i)
@@ -616,7 +616,7 @@ void CMainFrame::LoadMovies()
             ar >> size;
             for (UINT i = 0; i < size; ++i)
             {
-                MovieInfo mi;
+                MovieInfo mi{};
 
                 ar >> mi.fileName;
                 ArchiveObject ao(&mi.lastModifiedTime, sizeof(FILETIME));
@@ -646,7 +646,7 @@ void CMainFrame::LoadMovies()
         {
             m_splashThread.GetSplash()->Hide();
             Trace(e.GetErrorString()); Trace("\n");
-            ::MessageBox(0, L"Failed to load Movie Library", L"Error", MB_OK);
+            ::MessageBox(nullptr, L"Failed to load Movie Library", L"Error", MB_OK);
             m_moviesData.clear();
             m_boxSets.clear();
         }
@@ -674,23 +674,23 @@ BOOL CMainFrame::LoadRegistrySettings(LPCTSTR szKeyName)
         {
             try
             {
-                DWORD dwDialogWidth = 0;
-                DWORD dwTreeHeight = 0;
+                DWORD dwDialogHeight = 0;
+                DWORD dwTreeWidth = 0;
 
-                if (ERROR_SUCCESS != Key.QueryDWORDValue(L"Dialog Width", dwDialogWidth))
+                if (ERROR_SUCCESS != Key.QueryDWORDValue(L"Dialog Width", dwDialogHeight))
                     throw CUserException(L"QueryDWORDValue Failed");
-                if (ERROR_SUCCESS != Key.QueryDWORDValue(L"Tree Height", dwTreeHeight))
+                if (ERROR_SUCCESS != Key.QueryDWORDValue(L"Tree Height", dwTreeWidth))
                     throw CUserException(L"QueryDWORDValue Failed");
 
-                m_dialogWidth = dwDialogWidth;
-                m_treeHeight = dwTreeHeight;
+                m_dialogHeight = dwDialogHeight;
+                m_treeWidth = dwTreeWidth;
                 return TRUE;
             }
 
             catch (const CUserException&)
             {
-                m_dialogWidth = 0;
-                m_treeHeight = 0;
+                m_dialogHeight = 0;
+                m_treeWidth = 0;
             }
         }
     }
@@ -722,15 +722,14 @@ BOOL CMainFrame::OnAddFolder()
         {
             CString DataPath = GetDataPath();
             CString DataFile = GetDataPath() + L"\\" + L"MovieData.bin";
-            ::SHCreateDirectoryEx(0, DataPath.c_str(), nullptr);
+            ::SHCreateDirectoryEx(nullptr, DataPath.c_str(), nullptr);
 
             {
                 // Lock this code for thread safety
                 CThreadLock lock(m_cs);
 
                 // Remove entries from the library if the file has been removed
-                std::list<MovieInfo>::iterator it = m_moviesData.begin();
-                while (it != m_moviesData.end())
+                for (auto it = m_moviesData.begin(); it != m_moviesData.end();)
                 {
                     if (!::PathFileExists((*it).fileName))
                     {
@@ -751,7 +750,7 @@ BOOL CMainFrame::OnAddFolder()
                 do
                     if (!fileFound.IsDots())
                     {
-                        FoundFileInfo ffi;
+                        FoundFileInfo ffi{};
                         ffi.fileName = fileFound.GetFilePath();
 
                         if (IsVideoFile(ffi.fileName))
@@ -764,7 +763,7 @@ BOOL CMainFrame::OnAddFolder()
             }
 
             // Create the thread and run ThreadProc
-            m_thread.CreateThread(0, 0, 0);
+            m_thread.CreateThread(0, 0, nullptr);
         }
     }
     else
@@ -850,13 +849,11 @@ void CMainFrame::OnClose()
 
         CString DataPath = GetDataPath();
         CString DataFile = GetDataPath() + L"\\" + L"MovieData.bin";
-        ::SHCreateDirectoryEx(0, DataPath.c_str(), nullptr);
+        ::SHCreateDirectoryEx(nullptr, DataPath.c_str(), nullptr);
 
         try
         {
             CArchive ar(DataFile, CArchive::store);
-            std::list<MovieInfo>::iterator it;
-
             std::vector<CString> boxSets = GetBoxSets();
             ar << UINT(boxSets.size());
             for (size_t i = 0; i < boxSets.size(); ++i)
@@ -865,25 +862,25 @@ void CMainFrame::OnClose()
             }
 
             ar << UINT(m_moviesData.size());
-            for (it = m_moviesData.begin(); it != m_moviesData.end(); ++it)
+            for (auto& i : m_moviesData)
             {
-                ar << (*it).fileName;
-                ArchiveObject ao(&(*it).lastModifiedTime, sizeof(FILETIME));
+                ar << i.fileName;
+                ArchiveObject ao(&i.lastModifiedTime, sizeof(FILETIME));
                 ar << ao;
-                ar << (*it).movieName;
-                ar << (*it).duration;
-                ar << (*it).releaseDate;
-                ar << (*it).description;
-                ar << (*it).genre;
-                ar << (*it).actors;
-                ar << (*it).videoType;
-                ar << (*it).boxset;
-                ar << (*it).flags;
+                ar << i.movieName;
+                ar << i.duration;
+                ar << i.releaseDate;
+                ar << i.description;
+                ar << i.genre;
+                ar << i.actors;
+                ar << i.videoType;
+                ar << i.boxset;
+                ar << i.flags;
 
-                UINT ImageDataSize = UINT((*it).imageData.size());
+                UINT ImageDataSize = UINT(i.imageData.size());
                 ar << ImageDataSize;
                 if (ImageDataSize > 0)
-                    ar.Write(&(*it).imageData[0], ImageDataSize);
+                    ar.Write(&i.imageData[0], ImageDataSize);
             }
             TRACE("\nSave Movies data complete \n ");
         }
@@ -891,7 +888,7 @@ void CMainFrame::OnClose()
         catch (const CFileException& e)
         {
             Trace(e.GetErrorString()); Trace("\n");
-            ::MessageBox(0, L"Failed to store Movie Library", L"Error", MB_OK);
+            ::MessageBox(nullptr, L"Failed to store Movie Library", L"Error", MB_OK);
         }
     }
 
@@ -953,21 +950,27 @@ int CMainFrame::OnCreate(CREATESTRUCT& cs)
     // Frames have all options enabled by default.
     // Use the following functions to disable options.
 
-    // This app has a toolbar, but no menu (or menubar)
+    // This app has a toolbar, but no menu (or menubar).
 
-       UseIndicatorStatus(FALSE);    // Don't show keyboard indicators in the StatusBar.
-       UseMenuStatus(FALSE);         // Don't show menu descriptions in the StatusBar.
+    UseIndicatorStatus(FALSE);    // Don't show keyboard indicators in the StatusBar.
+    UseMenuStatus(FALSE);         // Don't show menu descriptions in the StatusBar.
     // UseOwnerDrawnMenu(FALSE);     // Don't use owner draw for popup menu items.
     // UseReBar(FALSE);              // Don't use a ReBar.
     // UseStatusBar(FALSE);          // Don't use a StatusBar.
     // UseThemes(FALSE);             // Don't use themes.
     // UseToolBar(FALSE);            // Don't use a ToolBar.
 
-       // Create the splash screen
-       m_splashThread.CreateThread();
+    // Create the splash screen.
+    m_splashThread.CreateThread();
 
-    // call the base class function
-    return CDockFrame::OnCreate(cs);
+    // call the base class function.
+    CDockFrame::OnCreate(cs);
+
+    // Set the color of the frame's caption.
+    COLORREF color = GetReBarTheme().clrBkgnd1;
+    SetCaptionColor(color);
+
+    return 0;
 }
 
 // Called in response to favourites on the toolbar or the
@@ -1018,14 +1021,17 @@ void CMainFrame::OnInitialUpdate()
 {
     SetRedraw(FALSE);
 
-    // Add the dialog.
-    int width = m_dialogWidth ? m_dialogWidth : (GetViewRect().Width() / 3);
-    DWORD dockStyle = DS_NO_UNDOCK | DS_NO_CAPTION;
-    m_pDockDialog = static_cast<CDockDialog*>(AddDockedChild(new CDockDialog, dockStyle | DS_DOCKED_LEFT, width));
-
     // Add the tree view.
-    int height = m_treeHeight ? m_treeHeight : GetViewRect().Height() / 3;
-    m_pDockTree = static_cast<CDockTree*>(m_pDockDialog->AddDockedChild(new CDockTree, dockStyle | DS_DOCKED_TOP, height));
+    DWORD dockStyle = DS_NO_UNDOCK | DS_NO_CAPTION;
+    int width = m_treeWidth ? m_treeWidth : (GetViewRect().Width() / 3);
+    m_pDockTree = static_cast<CDockTree*>(AddDockedChild(std::make_unique<CDockTree>(),
+        dockStyle | DS_DOCKED_LEFT, width));
+
+    // Add the dialog.
+    int height = m_dialogHeight ? m_dialogHeight : 2 * GetViewRect().Height() / 3;
+    dockStyle = dockStyle | DS_CLIENTEDGE;
+    m_pDockDialog = static_cast<CDockDialog*>(m_pDockTree->AddDockedChild(
+        std::make_unique<CDockDialog>(), dockStyle | DS_DOCKED_BOTTOM, height));
 
     // Fill the tree view and list view.
     LoadMovies();
@@ -1141,7 +1147,7 @@ LRESULT CMainFrame::OnRClickListItem()
     CPoint screenPoint = GetCursorPos();
 
     // Start the popup menu.
-    m_popupMenu.TrackPopupMenuEx(TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_VERTICAL, screenPoint.x, screenPoint.y, *this, nullptr/*&tpm*/);
+    m_popupMenu.TrackPopupMenuEx(TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_VERTICAL, screenPoint.x, screenPoint.y, *this, nullptr);
 
     return 0;
 }
@@ -1153,8 +1159,7 @@ LRESULT CMainFrame::OnRClickTreeItem()
     CPoint screenPoint = GetCursorPos();
     CPoint clientPoint = screenPoint;
     GetViewTree().ScreenToClient(clientPoint);
-    TVHITTESTINFO tv;
-    ZeroMemory(&tv, sizeof(tv));
+    TVHITTESTINFO tv{};
     tv.pt = clientPoint;
     HTREEITEM item = GetViewTree().HitTest(tv);
     if (item != 0)
@@ -1169,7 +1174,7 @@ LRESULT CMainFrame::OnRClickTreeItem()
         m_boxSetMenu = topMenu.GetSubMenu(0);
 
         // Start the popup menu.
-        m_boxSetMenu.TrackPopupMenuEx(TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_VERTICAL, screenPoint.x, screenPoint.y, *this, nullptr/*&tpm*/);
+        m_boxSetMenu.TrackPopupMenuEx(TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_VERTICAL, screenPoint.x, screenPoint.y, *this, nullptr);
     }
 
     HTREEITEM parent = GetViewTree().GetParentItem(item);
@@ -1180,7 +1185,7 @@ LRESULT CMainFrame::OnRClickTreeItem()
         m_boxSetMenu = topMenu.GetSubMenu(0);
 
         // Start the popup menu
-        m_boxSetMenu.TrackPopupMenuEx(TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_VERTICAL, screenPoint.x, screenPoint.y, *this, nullptr/*&tpm*/);
+        m_boxSetMenu.TrackPopupMenuEx(TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_VERTICAL, screenPoint.x, screenPoint.y, *this, nullptr);
     }
 
     return 0;
@@ -1196,11 +1201,10 @@ BOOL CMainFrame::OnRemoveBoxSet()
     // Lock this function for thread safety
     CThreadLock lock(m_cs);
 
-    std::list<MovieInfo>::iterator it;
-    for (it = m_moviesData.begin(); it != m_moviesData.end(); ++it)
+    for (auto& i : m_moviesData)
     {
-        if ((*it).boxset == str)
-            (*it).boxset = L"";
+        if (i.boxset == str)
+            i.boxset = L"";
     }
 
     GetViewTree().DeleteItem(item);
@@ -1226,8 +1230,7 @@ BOOL CMainFrame::OnRemoveFile()
 
     for (UINT i = 0; i < filenames.size(); ++i)
     {
-        MoviesData::iterator it;
-        for (it = m_moviesData.begin(); it != m_moviesData.end(); ++it)
+        for (auto it = m_moviesData.begin(); it != m_moviesData.end();)
         {
             if ((*it).fileName == filenames[i])
             {
@@ -1236,6 +1239,8 @@ BOOL CMainFrame::OnRemoveFile()
                 m_isDirty = true;
                 break;
             }
+            else
+                it++;
         }
     }
 
@@ -1267,8 +1272,6 @@ BOOL CMainFrame::OnSearch()
         // Lock this code for thread safety
         CThreadLock lock(m_cs);
 
-        std::list<MovieInfo>::const_iterator iter;
-
         // Find movies matching each title word.
         if (!dlg.GetTitleString().IsEmpty())
         {
@@ -1276,10 +1279,10 @@ BOOL CMainFrame::OnSearch()
 
             for (UINT i = 0; i < words.size(); ++i)
             {
-                for (iter = m_moviesData.begin(); iter != m_moviesData.end(); ++iter)
+                for (const auto& j : m_moviesData)
                 {
-                    if (IsWordInString((*iter).movieName, words[i]))
-                        m_foundMovies.push_back(&(*iter));
+                    if (IsWordInString(j.movieName, words[i]))
+                        m_foundMovies.push_back(&j);
                 }
             }
         }
@@ -1290,10 +1293,10 @@ BOOL CMainFrame::OnSearch()
             std::vector<CString> words = GetWords(dlg.GetActorsString());
             for (UINT i = 0; i < words.size(); ++i)
             {
-                for (iter = m_moviesData.begin(); iter != m_moviesData.end(); ++iter)
+                for (auto& j : m_moviesData)
                 {
-                    if (IsWordInString((*iter).actors, words[i]))
-                        m_foundMovies.push_back(&(*iter));
+                    if (IsWordInString(j.actors, words[i]))
+                        m_foundMovies.push_back(&j);
                 }
             }
         }
@@ -1304,10 +1307,10 @@ BOOL CMainFrame::OnSearch()
             std::vector<CString> words = GetWords(dlg.GetInfoString());
             for (UINT i = 0; i < words.size(); ++i)
             {
-                for (iter = m_moviesData.begin(); iter != m_moviesData.end(); ++iter)
+                for (const auto& j : m_moviesData)
                 {
-                    if (IsWordInString((*iter).description, words[i]))
-                        m_foundMovies.push_back(&(*iter));
+                    if (IsWordInString(j.description, words[i]))
+                        m_foundMovies.push_back(&j);
                 }
             }
         }
@@ -1524,12 +1527,12 @@ BOOL CMainFrame::SaveRegistrySettings()
             if (ERROR_SUCCESS != Key.Open(HKEY_CURRENT_USER, KeyName))
                 throw CUserException(L"RegCreateKeyEx failed");
 
-            DWORD cxDialog = DWORD(m_pDockDialog->GetDockSize());
-            DWORD cyTree = DWORD(m_pDockTree->GetDockSize());
+            DWORD cyDialog = DWORD(m_pDockDialog->GetDockSize());
+            DWORD cxTree = DWORD(m_pDockTree->GetDockSize());
 
-            if (ERROR_SUCCESS != Key.SetDWORDValue(L"Dialog Width", cxDialog))
+            if (ERROR_SUCCESS != Key.SetDWORDValue(L"Dialog Width", cyDialog))
                 throw CUserException(L"SetDWORDValue failed");
-            if (ERROR_SUCCESS != Key.SetDWORDValue(L"Tree Height", cyTree))
+            if (ERROR_SUCCESS != Key.SetDWORDValue(L"Tree Height", cxTree))
                 throw CUserException(L"SetDWORDValue failed");
 
             return CDockFrame::SaveRegistrySettings();
@@ -1554,6 +1557,23 @@ BOOL CMainFrame::SaveRegistrySettings()
     }
 
     return FALSE;
+}
+
+// This function uses the DwmSetWindowAttribute Windows API function to set
+// the caption color. The DWMWA_CAPTION_COLOR option requires Windows 11.
+void CMainFrame::SetCaptionColor(COLORREF color)
+{
+    HMODULE dwmapi = ::LoadLibrary(_T("Dwmapi.dll"));
+    if (dwmapi != 0)
+    {
+        typedef UINT WINAPI DWMSETWINDOWATTRIBUE(HWND, DWORD, LPCVOID, DWORD);
+        DWMSETWINDOWATTRIBUE* pDwmSetWindowAttribute = reinterpret_cast<DWMSETWINDOWATTRIBUE*>(
+            reinterpret_cast<void*>(::GetProcAddress(dwmapi, "DwmSetWindowAttribute")));
+
+        const int DWMWA_CAPTION_COLOR = 35;
+        pDwmSetWindowAttribute(*this, DWMWA_CAPTION_COLOR, &color, sizeof(color));
+        ::FreeLibrary(dwmapi);
+    }
 }
 
 // Adds icons for popup menus.
@@ -1647,8 +1667,7 @@ UINT WINAPI CMainFrame::ThreadProc(void* pVoid)
 
             CString fullName = pFrame->m_filesToAdd[i].fileName;
             bool isFileInLibrary = false;
-            std::list<MovieInfo>::iterator it = pFrame->m_moviesData.begin();
-            while (it != pFrame->m_moviesData.end())
+            for ( auto it = pFrame->m_moviesData.begin(); it != pFrame->m_moviesData.end();)
             {
                 if ((*it).fileName == fullName)
                 {
@@ -1679,7 +1698,7 @@ UINT WINAPI CMainFrame::ThreadProc(void* pVoid)
             if (!isFileInLibrary)
             {
                 pFrame->m_isDirty = true;
-                MovieInfo mi;
+                MovieInfo mi{};
                 pFrame->LoadMovieInfoFromFile(pFrame->m_filesToAdd[i], mi);
 
                 // Lock this code for thread safety.
@@ -1693,7 +1712,7 @@ UINT WINAPI CMainFrame::ThreadProc(void* pVoid)
     else
     {
         // Report the error in a message  box.
-        ::MessageBox(0, MI.Inform().c_str(), L"Error", MB_OK);
+        ::MessageBox(nullptr, MI.Inform().c_str(), L"Error", MB_OK);
     }
 
 
@@ -1737,13 +1756,25 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(nullptr, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(nullptr, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 

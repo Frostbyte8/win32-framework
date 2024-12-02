@@ -295,7 +295,7 @@ void CMyListView::DoDisplay()
 
     if(m_csfCurFolder.GetIShellFolder())
     {
-        HCURSOR  hCur = ::LoadCursor(0, IDC_WAIT);
+        HCURSOR  hCur = ::LoadCursor(NULL, IDC_WAIT);
         hCur = ::SetCursor(hCur);
 
         // Turn redrawing off in the ListView.
@@ -342,16 +342,16 @@ void CMyListView::DoItemMenu(LPINT pItems, UINT items, CPoint& point)
 
             if(SUCCEEDED(result))
             {
-                CMenu Popup;
-                Popup.CreatePopupMenu();
-                if(Popup.GetHandle())
+                CMenu popup;
+                popup.CreatePopupMenu();
+                if(popup.GetHandle())
                 {
-                    result = ccm.QueryContextMenu(Popup, 0, 1, 0x7fff, CMF_NORMAL | CMF_EXPLORE);
+                    result = ccm.QueryContextMenu(popup, 0, 1, 0x7fff, CMF_NORMAL | CMF_EXPLORE);
                     if(SUCCEEDED(result))
                     {
                         ccm.GetContextMenu2(m_ccm2);
                         UINT  idCmd;
-                        idCmd = Popup.TrackPopupMenu(TPM_LEFTALIGN | TPM_RETURNCMD | TPM_RIGHTBUTTON,
+                        idCmd = popup.TrackPopupMenu(TPM_LEFTALIGN | TPM_RETURNCMD | TPM_RIGHTBUTTON,
                                     point.x, point.y, *this, NULL);
 
                         if(idCmd)
@@ -404,8 +404,10 @@ void CMyListView::EnumObjects(CShellFolder& folder, Cpidl& cpidlParent)
             // Fill in the TV_ITEM structure for this item.
             lvItem.mask = LVIF_PARAM | LVIF_TEXT | LVIF_IMAGE | LVIF_STATE;
 
-            // Store a pointer to the ListItemData in the lParam and m_pItems.
-            ListItemDataPtr pItem(new ListItemData(cpidlParent, cpidlRel, folder));
+            // Create the ListItemDataPtr unique_ptr.
+            ListItemDataPtr pItem = std::make_unique<ListItemData>(cpidlParent, cpidlRel, folder);
+
+            // Store a pointer to the ListItemData in the lParam.
             lvItem.lParam = reinterpret_cast<LPARAM>(pItem.get());
 
             TCHAR fileName[MAX_PATH];
@@ -434,9 +436,9 @@ void CMyListView::EnumObjects(CShellFolder& folder, Cpidl& cpidlParent)
                 pItem->m_fileType = sfi.szTypeName;
             }
 
-            // m_pItems is a vector of smart pointers. The memory allocated by
-            // new is automatically deleted when the vector goes out of scope.
-            m_pItems.push_back(pItem);
+            // m_pItems is a vector of unique pointers. The object is
+            // automatically deleted when the vector goes out of scope.
+            m_pItems.push_back(std::move(pItem));
 
             // Text and images are done on a callback basis.
             lvItem.pszText = LPSTR_TEXTCALLBACK;
@@ -483,7 +485,7 @@ ULONGLONG CMyListView::FileTimeToULL(FILETIME ft)
 }
 
 // Retrieves the file's size and stores the text in string.
-BOOL CMyListView::GetFileSizeText(ULONGLONG fileSize, LPTSTR string)
+void CMyListView::GetFileSizeText(ULONGLONG fileSize, LPTSTR string)
 {
     // Convert the fileSize to a string using Locale information.
     CString preFormat;
@@ -507,30 +509,42 @@ BOOL CMyListView::GetFileSizeText(ULONGLONG fileSize, LPTSTR string)
 
     postFormat += _T(" KB");
     StrCopy(string, postFormat, maxSize);
-    return TRUE;
 }
 
 // Retrieves the file's last write time and stores the text in string.
-BOOL CMyListView::GetLastWriteTime(FILETIME modified, LPTSTR string)
+void CMyListView::GetLastWriteTime(FILETIME modified, LPTSTR string)
 {
-    // Convert the last-write time to local time.
-    SYSTEMTIME localSysTime;
+    SYSTEMTIME localSysTime, utcTime;
     FILETIME localFileTime;
-    ::FileTimeToLocalFileTime(&modified, &localFileTime);
-    ::FileTimeToSystemTime(&localFileTime, &localSysTime);
+    ZeroMemory(&localSysTime, sizeof(localSysTime));
+    ZeroMemory(&utcTime, sizeof(utcTime));
+    ZeroMemory(&localFileTime, sizeof(localFileTime));
 
-    // Build a string showing the date and time with regional settings.
+    // Convert the last-write time to local time.
+    if (GetWinVersion() > 2501)
+    {
+        // For Windows Vista and later.
+        ::FileTimeToSystemTime(&modified, &utcTime);
+        ::SystemTimeToTzSpecificLocalTime(NULL, &utcTime, &localSysTime);
+    }
+    else
+    {
+        // For Windows XP and earlier.
+        ::FileTimeToLocalFileTime(&modified, &localFileTime);
+        ::FileTimeToSystemTime(&localFileTime, &localSysTime);
+    }
+
+    // Convert the localSysTime into date and time text strings with regional settings.
     const int maxChars = 32;
     TCHAR time[maxChars];
     TCHAR date[maxChars];
     ::GetDateFormat(LOCALE_USER_DEFAULT, DATE_SHORTDATE, &localSysTime, NULL, date, maxChars-1);
     ::GetTimeFormat(LOCALE_USER_DEFAULT, TIME_NOSECONDS, &localSysTime, NULL, time, maxChars-1);
 
-    StrCopy(string, date, maxChars);
-    ::lstrcat(string, _T(" "));
-    ::lstrcat(string, time);
-
-    return TRUE;
+    // Assign the date and time text strings to the string variable.
+    CString dateTime;
+    dateTime << date << " " << time;
+    StrCopy(string, dateTime, maxChars);
 }
 
 // Called when the window handle (HWND) is attached to CMyListView.
@@ -561,6 +575,12 @@ void CMyListView::OnAttach()
 
     // Set initial the view style as report
     ViewReport();
+
+    // Disable double click on the list-view's header.
+    m_header.Attach(GetHeader());
+    LONG_PTR style = static_cast<LONG_PTR>(m_header.GetClassLongPtr(GCL_STYLE));
+    style = style & ~CS_DBLCLKS;
+    m_header.SetClassLongPtr(GCL_STYLE, style);
 }
 
 // Called when the window is destroyed.
@@ -710,9 +730,9 @@ LRESULT CMyListView::OnNotifyReflect(WPARAM, LPARAM lparam)
 // Sets the CREATESTRUCT parameters before the window is created.
 void CMyListView::PreCreate(CREATESTRUCT& cs)
 {
-    cs.style = WS_TABSTOP | WS_CHILD | WS_VISIBLE | LVS_AUTOARRANGE |
-            LVS_ICON | LVS_SHAREIMAGELISTS | LVS_SHOWSELALWAYS;
-    cs.dwExStyle = WS_EX_CLIENTEDGE;
+    CListView::PreCreate(cs);
+    cs.style |= WS_TABSTOP | LVS_AUTOARRANGE | LVS_ICON | LVS_SHOWSELALWAYS;
+    cs.dwExStyle |= WS_EX_CLIENTEDGE;
 }
 
 // Sets the up and down sort arrows in the listview's header.
@@ -840,14 +860,26 @@ LRESULT CMyListView::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 
 ///////////////////////////////////

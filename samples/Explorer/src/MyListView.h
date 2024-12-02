@@ -34,6 +34,7 @@ public:
     virtual ~CMyListView();
     void DisplayFolder(CShellFolder& parentFolder, Cpidl& cpidlParent, Cpidl& cpidlRel);
     void DoDisplay();
+    CHeader& GetListHeader() { return m_header; }
     BOOL SetHeaderSortImage(int  columnIndex, int showArrow);
     void SortColumn(int column, bool isSortDown);
     void ViewLargeIcons();
@@ -78,12 +79,9 @@ private:
         Cpidl        m_cpidlFull;     // Fully Qualified PIDL
         Cpidl        m_cpidlRel;      // Relative PIDL
         CShellFolder m_parentFolder;  // Parent IShellFolder
-
     };  // class ListItemData (nested class)
 
-    // Note: Modern C++ compilers can use this typedef instead.
-    // typedef std::shared_ptr<ListItemData> ListItemDataPtr;
-    typedef Shared_Ptr<ListItemData> ListItemDataPtr;
+    typedef std::unique_ptr<ListItemData> ListItemDataPtr;
 
     static int CALLBACK CompareFunction(LPARAM param1, LPARAM param2, LPARAM pSortViewItems);
     static ULONGLONG FileTimeToULL(FILETIME ft);
@@ -93,11 +91,12 @@ private:
     void DoDefault(int item);
     void DoItemMenu(LPINT pItems, UINT items, CPoint& ptScreen);
     void EnumObjects(CShellFolder& cPFolder, Cpidl& cpidlFull);
-    BOOL GetFileSizeText(ULONGLONG fileSize, LPTSTR string);
-    BOOL GetLastWriteTime(FILETIME modified, LPTSTR string);
+    void GetFileSizeText(ULONGLONG fileSize, LPTSTR string);
+    void GetLastWriteTime(FILETIME modified, LPTSTR string);
     void SetImageLists();
 
     // Member variables
+    CHeader       m_header;          // The list-view's header control
     Cpidl         m_cpidlCurFull;    // Fully qualified pidl
     CShellFolder  m_csfCurFolder;    // Current Folder
     CContextMenu2 m_ccm2;

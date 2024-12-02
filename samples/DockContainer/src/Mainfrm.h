@@ -5,6 +5,8 @@
 #ifndef MAINFRM_H
 #define MAINFRM_H
 
+#include "MainContainer.h"
+
 
 // The docker identifiers (dock IDs)
 const int ID_DOCK_CLASSES1 = 1;
@@ -26,19 +28,21 @@ class CMainFrame : public CDockFrame
 public:
     CMainFrame();
     virtual ~CMainFrame();
-    virtual HWND Create(HWND parent = 0);
+    virtual HWND Create(HWND parent = NULL);
 
 protected:
     // Virtual functions that override base class functions
-    virtual CDocker* NewDockerFromID(int id);
+    virtual DockPtr NewDockerFromID(int id);
     virtual BOOL OnCommand(WPARAM wparam, LPARAM lparam);
     virtual int  OnCreate(CREATESTRUCT& cs);
     virtual void OnInitialUpdate();
     virtual void OnMenuUpdate(UINT id);
     virtual void PreCreate(CREATESTRUCT& cs);
+    virtual void RecalcDockLayout();
     virtual BOOL SaveRegistrySettings();
     virtual void SetupMenuIcons();
     virtual void SetupToolBar();
+    virtual void UndockContainerGroup();
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
@@ -60,7 +64,7 @@ private:
     void SetContainerTabsAtTop(bool isAtTop);
 
     // Member variables
-    CDockContainer m_view;
+    CMainContainer m_view;
     bool m_isContainerTabsAtTop;
     bool m_hideSingleTab;
 };

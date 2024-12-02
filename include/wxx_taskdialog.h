@@ -1,9 +1,10 @@
-// Win32++   Version 9.5
-// Release Date: TBA
+// Win32++   Version 9.6.1
+// Release Date: 29th July 2024
 //
 //      David Nash
 //      email: dnash@bigpond.net.au
 //      url: https://sourceforge.net/projects/win32-framework
+//           https://github.com/DavidNash2024/Win32xx
 //
 //
 // Copyright (c) 2005-2024  David Nash
@@ -72,7 +73,7 @@ namespace Win32xx
         void AddRadioButtonGroup(int firstRadioButtonID, int lastRadioButtonID);
         void ClickButton(int buttonID) const;
         void ClickRadioButton(int radioButtonID) const;
-        HRESULT DoModal(HWND parent = 0);
+        HRESULT DoModal(HWND parent = NULL);
         void ElevateButton(int buttonID, BOOL isElevated) const;
         void EnableButton(int buttonID, BOOL isEnabled) const;
         void EnableRadioButton(int buttonID, BOOL isEnabled) const;
@@ -126,17 +127,7 @@ namespace Win32xx
     private:
         struct TaskButton
         {
-            TaskButton(int id, LPCWSTR text) : buttonID(id)
-            {
-                if (IS_INTRESOURCE(text))        // support MAKEINTRESOURCE
-                {
-                    UINT textID = static_cast<UINT>(reinterpret_cast<UINT_PTR>(text));
-                    buttonText.LoadString(textID);
-                }
-                else
-                    buttonText = text;
-            }
-
+            TaskButton(int id, LPCWSTR text);  // Constructor
             int buttonID;
             CStringW buttonText;
         };
@@ -185,7 +176,7 @@ namespace Win32xx
     // Adds a command control or push button to the Task Dialog.
     inline void CTaskDialog::AddCommandControl(int buttonID, LPCWSTR caption)
     {
-        assert (GetHwnd() == 0);
+        assert (GetHwnd() == NULL);
 
         TaskButton tb(buttonID, caption);
         m_buttons.push_back(tb);
@@ -194,17 +185,17 @@ namespace Win32xx
     // Adds a radio button to the Task Dialog.
     inline void CTaskDialog::AddRadioButton(int radioButtonID, LPCWSTR caption)
     {
-        assert (GetHwnd() == 0);
+        assert (GetHwnd() == NULL);
 
         TaskButton tb(radioButtonID, caption);
         m_radioButtons.push_back(tb);
     }
 
     // Adds a range of radio buttons to the Task Dialog.
-    // Assumes the resource ID of the button and it's string match
+    // Assumes the resource ID of the button and it's string match.
     inline void CTaskDialog::AddRadioButtonGroup(int firstRadioButtonID, int lastRadioButtonID)
     {
-        assert (GetHwnd() == 0);
+        assert (GetHwnd() == NULL);
         assert(firstRadioButtonID > 0);
         assert(lastRadioButtonID > firstRadioButtonID);
 
@@ -234,9 +225,9 @@ namespace Win32xx
 
     // Creates and displays the Task Dialog.
     // Refer to TaskDialogIndirect in the Windows API documentation for more information.
-    inline HRESULT CTaskDialog::DoModal(HWND parent /* = 0 */)
+    inline HRESULT CTaskDialog::DoModal(HWND parent /* = NULL */)
     {
-        assert (GetHwnd() == 0);
+        assert (GetHwnd() == NULL);
         m_selectedButtonID = 0;
         m_selectedRadioButtonID = 0;
         m_verificationCheckboxState = FALSE;
@@ -248,6 +239,7 @@ namespace Win32xx
         for (it = m_buttons.begin(); it != m_buttons.end(); ++it)
         {
             TASKDIALOG_BUTTON tb;
+            ZeroMemory(&tb, sizeof(tb));
             tb.nButtonID = (*it).buttonID;
             tb.pszButtonText = (*it).buttonText;
             buttons.push_back(tb);
@@ -258,12 +250,13 @@ namespace Win32xx
         for (it = m_radioButtons.begin(); it != m_radioButtons.end(); ++it)
         {
             TASKDIALOG_BUTTON tb;
+            ZeroMemory(&tb, sizeof(tb));
             tb.nButtonID = (*it).buttonID;
             tb.pszButtonText = (*it).buttonText;
             radioButtons.push_back(tb);
         }
 
-        m_wnd = 0;
+        m_wnd = NULL;
 
         // Fill the TASKDIALOGCONFIG struct.
         m_tc.cbSize = sizeof(m_tc);
@@ -370,21 +363,21 @@ namespace Win32xx
     // Returns the ID of the selected button.
     inline int CTaskDialog::GetSelectedButtonID() const
     {
-        assert (GetHwnd() == 0);
+        assert (GetHwnd() == NULL);
         return m_selectedButtonID;
     }
 
     // Returns the ID of the selected radio button.
     inline int CTaskDialog::GetSelectedRadioButtonID() const
     {
-        assert (GetHwnd() == 0);
+        assert (GetHwnd() == NULL);
         return m_selectedRadioButtonID;
     }
 
     // Returns the state of the verification check box.
     inline BOOL CTaskDialog::GetVerificationCheckboxState() const
     {
-        assert (GetHwnd() == 0);
+        assert (GetHwnd() == NULL);
         return m_verificationCheckboxState;
     }
 
@@ -414,7 +407,7 @@ namespace Win32xx
     // Called when the user selects a button or command link.
     inline BOOL CTaskDialog::OnTDButtonClicked(int)
     {
-        // return TRUE to prevent the task dialog from closing
+        // Return TRUE to prevent the task dialog from closing.
         return FALSE;
     }
 
@@ -480,7 +473,7 @@ namespace Win32xx
     //  TDCBF_CLOSE_BUTTON      Close button
     inline void CTaskDialog::SetCommonButtons(TASKDIALOG_COMMON_BUTTON_FLAGS commonButtons)
     {
-        assert (GetHwnd() == 0);
+        assert (GetHwnd() == NULL);
         m_tc.dwCommonButtons = commonButtons;
     }
 
@@ -501,14 +494,14 @@ namespace Win32xx
     // Can be either a button ID or one of the common buttons.
     inline void CTaskDialog::SetDefaultButton(int buttonID)
     {
-        assert (GetHwnd() == 0);
+        assert (GetHwnd() == NULL);
         m_tc.nDefaultButton = buttonID;
     }
 
     // Sets the default radio button.
     inline void CTaskDialog::SetDefaultRadioButton(int radioButtonID)
     {
-        assert (GetHwnd() == 0);
+        assert (GetHwnd() == NULL);
         m_tc.nDefaultRadioButton = radioButtonID;
     }
 
@@ -516,7 +509,7 @@ namespace Win32xx
     // task dialog manager will calculate the ideal width.
     inline void CTaskDialog::SetDialogWidth(UINT width /*= 0*/)
     {
-        assert (GetHwnd() == 0);
+        assert (GetHwnd() == NULL);
         m_tc.cxWidth = width;
     }
 
@@ -631,7 +624,7 @@ namespace Win32xx
     //  TDF_POSITION_RELATIVE_TO_WINDOW, TDF_RTL_LAYOUT, TDF_NO_DEFAULT_RADIO_BUTTON, TDF_CAN_BE_MINIMIZED.
     inline void CTaskDialog::SetOptions(TASKDIALOG_FLAGS flags)
     {
-        assert (GetHwnd() == 0);
+        assert (GetHwnd() == NULL);
         m_tc.dwFlags = flags;
     }
 
@@ -685,7 +678,7 @@ namespace Win32xx
     // Sets the text for the verification check box.
     inline void CTaskDialog::SetVerificationCheckboxText(LPCWSTR verificationText)
     {
-        assert (GetHwnd() == 0);
+        assert (GetHwnd() == NULL);
         m_verificationText = FillString(verificationText);
         m_tc.pszVerificationText = m_verificationText;
     }
@@ -693,7 +686,7 @@ namespace Win32xx
     // Sets the Task Dialog's window title.
     inline void CTaskDialog::SetWindowTitle(LPCWSTR windowTitle)
     {
-        assert (GetHwnd() == 0);
+        assert (GetHwnd() == NULL);
         m_windowTitle = FillString(windowTitle);
         m_tc.pszWindowTitle = m_windowTitle;
     }
@@ -704,21 +697,21 @@ namespace Win32xx
         CTaskDialog* t = static_cast<CTaskDialog*>(GetCWndPtr(wnd));
         if (t == NULL)
         {
-            // The CTaskDialog pointer wasn't found in the map, so add it now
+            // The CTaskDialog pointer wasn't found in the map, so add it now.
 
-            // Retrieve the pointer to the TLS Data
+            // Retrieve the pointer to the TLS Data.
             TLSData* pTLSData = GetApp()->GetTlsData();
             assert(pTLSData);
             if (pTLSData)
             {
-                // Retrieve pointer to CTaskDialog object from Thread Local Storage TLS
+                // Retrieve pointer to CTaskDialog object from Thread Local Storage TLS.
                 t = static_cast<CTaskDialog*>(pTLSData->pWnd);
                 assert(t);
                 pTLSData->pWnd = NULL;
 
                 if (t != NULL)
                 {
-                    // Store the CTaskDialog pointer in the HWND map
+                    // Store the CTaskDialog pointer in the HWND map.
                     t->m_wnd = wnd;
                     t->AddToMap();
                 }
@@ -814,6 +807,18 @@ namespace Win32xx
         WPARAM wparam = static_cast<WPARAM>(element);
         LPARAM lparam = reinterpret_cast<LPARAM>(newText);
         SendMessage(TDM_UPDATE_ELEMENT_TEXT, wparam, lparam);
+    }
+
+    // Constructor for the nested TaskButton struct.
+    inline CTaskDialog::TaskButton::TaskButton(int id, LPCWSTR text) : buttonID(id)
+    {
+        if (IS_INTRESOURCE(text))        // support MAKEINTRESOURCE
+        {
+            UINT textID = static_cast<UINT>(reinterpret_cast<UINT_PTR>(text));
+            buttonText.LoadString(textID);
+        }
+        else
+            buttonText = text;
     }
 
 }

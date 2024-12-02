@@ -7,10 +7,19 @@ types of view windows to be displayed simultaneously. The more common SDI
 
 CMainMDIFrame inherits from CMDIDockFrame to enable docking support.
 
+Caveat
+======
+Multiple-document interface (MDI) applications are officially discouraged
+by Microsoft. They do not render properly with Per-Monitor (V2) DPI Awareness.
+
+Win32++ provides the CTabbedMDI class which can be used as an alternative to
+MDI applications.
+
 Features demonstrated in this example
 =====================================
-* Use of CMDIFrame and CMDIChild classes to implement a MDI frame
-* Adding a docker to a MDI frame.
+* Use of CMDIDockFrame to implement a MDI docking frame.
+* Adding other dockers to the MDI docking frame.
+* Adding MDI children to the MDI docking frame.
 * Enabling/Disabling various frame features in OnCreate, namely:
    - show/hide toolbar and menu status in the status bar.
    - show/hide indicators in the status bar.
@@ -20,6 +29,5 @@ Features demonstrated in this example
 * Setting the MDI Frame's toolbar.  
 * Setting the view window for the CMDIChid.
 * Setting the separate menu for the CMDIChild.
-* Responding to the MDI specific commands in CMDIFrame::OnCommand
-* Using a CMDIFrame as a Docker
-* Adding other Dockers to the CMDIFrame
+* Responding to the MDI specific commands such as cascade and tile in OnCommand.
+

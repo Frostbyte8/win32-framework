@@ -6,9 +6,18 @@
 #include "Mainfrm.h"
 #include "resource.h"
 
+#ifndef INVALID_FILE_ATTRIBUTES
+  #define INVALID_FILE_ATTRIBUTES ((DWORD)-1)
+#endif
+
 #ifndef SF_USECODEPAGE
   #define SF_USECODEPAGE    0x0020
 #endif
+
+// Encoding IDs
+const int ANSI = 0;            // Default for plain text
+const int UTF8 = 1;            // Default for rich text
+const int UTF16LE = 2;
 
 
 ///////////////////////////////////
@@ -16,9 +25,12 @@
 //
 
 // Constructor.
-CMainFrame::CMainFrame() : m_encoding(ANSI), m_isToolbarShown(true),
-                           m_isWrapped(false), m_isRTF(false), m_oldFocus(0)
+CMainFrame::CMainFrame() : m_preview(m_richView),
+                           m_encoding(ANSI), m_isToolbarShown(true),
+                           m_isWrapped(false), m_isRTF(false), m_oldFocus(NULL)
+
 {
+    SetView(m_richView);
 }
 
 // Destructor.
@@ -59,13 +71,11 @@ void CMainFrame::ClearContents()
 // Create the frame window.
 HWND CMainFrame::Create(HWND parent)
 {
-    SetView(m_richView);
-
-    // Set the registry key name, and load the initial window position
-    // Use a registry key name like "CompanyName\\Application"
+    // Set the registry key name, and load the initial window position.
+    // Use a registry key name like "CompanyName\\Application".
     LoadRegistrySettings(_T("Win32++\\Notepad Sample"));
 
-    // Load the settings from the registry with 5 MRU entries
+    // Load the settings from the registry with 5 MRU entries.
     LoadRegistryMRUSettings(5);
 
     return CFrame::Create(parent);
@@ -82,7 +92,7 @@ void CMainFrame::DetermineEncoding(CFile& file)
         try
         {
             file.SeekToBegin();
-            DWORD testlen = MIN(1024, (DWORD)fileLength);
+            DWORD testlen = std::min(1024, static_cast<int>(fileLength));
             std::vector<byte> buffer(testlen);
             file.Read(&buffer.front(), testlen);
 
@@ -99,7 +109,7 @@ void CMainFrame::DetermineEncoding(CFile& file)
         catch (const CFileException& e)
         {
             CString str = CString("Failed to read from ") + e.GetFileName();
-            ::MessageBox(0, str, AtoT(e.what()), MB_ICONWARNING);
+            ::MessageBox(NULL, str, AtoT(e.what()), MB_ICONWARNING);
         }
     }
 
@@ -133,7 +143,7 @@ DWORD CALLBACK CMainFrame::MyStreamInCallback(DWORD cookie, LPBYTE pBuffer, LONG
     *bytesRead = 0;
     DWORD bytesToRead = static_cast<DWORD>(cb);
     if (!::ReadFile(file, pBuffer, bytesToRead, bytesRead, NULL))
-        ::MessageBox(0, _T("ReadFile Failed"), _T(""), MB_OK);
+        ::MessageBox(NULL, _T("ReadFile Failed"), _T(""), MB_OK);
 
     return 0;
 }
@@ -248,7 +258,7 @@ LRESULT CMainFrame::OnDpiChanged(UINT msg, WPARAM wparam, LPARAM lparam)
 // Called in response to the EN_DROPFILES notification.
 void CMainFrame::OnDropFiles(HDROP dropInfo)
 {
-    UINT length = ::DragQueryFile(dropInfo, 0, 0, 0);
+    UINT length = ::DragQueryFile(dropInfo, 0, NULL, 0);
     int bufferLength = static_cast<int>(length);
     if (length > 0)
     {
@@ -418,11 +428,8 @@ BOOL CMainFrame::OnFilePreview()
         if (!m_preview.IsWindow())
             m_preview.Create(*this);
 
-        // Specify the source of the PrintPage function.
-        m_preview.SetSource(m_richView);
-
         // Set the preview's owner for notification messages, and number of pages.
-        UINT maxPage = m_richView.CollatePages();
+        int maxPage = m_richView.CollatePages(printerDC);
         m_preview.DoPrintPreview(*this, maxPage);
 
         // Save the current Focus.
@@ -442,7 +449,7 @@ BOOL CMainFrame::OnFilePreview()
         // An exception occurred. Display the relevant information.
         MessageBox(e.GetText(), _T("Print Preview Failed"), MB_ICONWARNING);
         SetView(m_richView);
-        ShowMenu(GetFrameMenu() != 0);
+        ShowMenu(GetFrameMenu() != NULL);
         ShowToolBar(m_isToolbarShown);
     }
 
@@ -540,7 +547,17 @@ BOOL CMainFrame::OnFileSave()
     if (m_pathName.IsEmpty())
         OnFileSaveAs();
     else
-        WriteFile(m_pathName);
+    {
+        DWORD dwAttrib = GetFileAttributes(m_pathName);
+        if (dwAttrib != INVALID_FILE_ATTRIBUTES)
+        {
+            CString str = "This file already exists.\nDo you want to replace it?";
+            if (IDYES == MessageBox(str, _T("Confirm Save"), MB_ICONWARNING | MB_OKCANCEL))
+                WriteFile(m_pathName);
+        }
+        else
+            WriteFile(m_pathName);
+    }
 
     return TRUE;
 }
@@ -574,15 +591,6 @@ void CMainFrame::OnInitialUpdate()
 {
     DragAcceptFiles(TRUE);
     SetWindowTitle();
-
-    // Select the ANSI radio button
-    int menuItem = GetFrameMenu().FindMenuItem(_T("&Encoding"));
-    if (menuItem >= 0)
-    {
-        CMenu ThemeMenu = GetFrameMenu().GetSubMenu(menuItem);
-        ThemeMenu.CheckMenuRadioItem(IDM_ENC_ANSI, IDM_ENC_UTF16, IDM_ENC_ANSI, MF_BYCOMMAND);
-    }
-
     m_richView.SetFocus();
     SetEncoding(ANSI);
 
@@ -596,26 +604,35 @@ void CMainFrame::OnInitialUpdate()
 // Updates menu items before they are displayed.
 void CMainFrame::OnMenuUpdate(UINT id)
 {
-    UINT displayed = MF_GRAYED;
-    UINT checked = MF_UNCHECKED;
+    UINT enabled;
+    UINT checked;
 
     switch (id)
     {
     case IDM_OPTIONS_WRAP:
     {
-        if (m_isWrapped)
-            checked = MF_CHECKED;
-
+        checked = m_isWrapped ? MF_CHECKED : MF_GRAYED;
         GetFrameMenu().CheckMenuItem(id, checked);
+        break;
+    }
+    case IDM_ENC_UTF8:
+    {
+        // Only enable UTF-8 for plain text mode.
+        enabled = m_isRTF ? MF_GRAYED : MF_ENABLED;
+        GetFrameMenu().EnableMenuItem(id, enabled);
         break;
     }
     case IDM_ENC_UTF16:
     {
         // Only enable UTF-16 for plain text mode.
-        if (!m_isRTF)
-            displayed = MF_ENABLED;
-
-        GetFrameMenu().EnableMenuItem(id, displayed);
+        enabled = m_isRTF? MF_GRAYED : MF_ENABLED;
+        GetFrameMenu().EnableMenuItem(id, enabled);
+        break;
+    }
+    case IDM_FILE_SAVE:
+    {
+        enabled = m_richView.GetModify() ? MF_ENABLED : MF_GRAYED;
+        GetFrameMenu().EnableMenuItem(id, enabled);
         break;
     }
     case IDM_EDIT_COPY:
@@ -624,36 +641,26 @@ void CMainFrame::OnMenuUpdate(UINT id)
     {
         CHARRANGE range;
         m_richView.GetSel(range);
-        if (range.cpMin != range.cpMax)
-            displayed = MF_ENABLED;
-
-        GetFrameMenu().EnableMenuItem(IDM_EDIT_COPY, displayed);
-        GetFrameMenu().EnableMenuItem(IDM_EDIT_CUT, displayed);
-        GetFrameMenu().EnableMenuItem(IDM_EDIT_DELETE, displayed);
+        enabled = (range.cpMin != range.cpMax)? MF_ENABLED : MF_GRAYED;
+        GetFrameMenu().EnableMenuItem(id, enabled);
         break;
     }
     case IDM_EDIT_PASTE:
     {
-        if (m_richView.CanPaste(CF_TEXT))
-            displayed = MF_ENABLED;
-
-        GetFrameMenu().EnableMenuItem(IDM_EDIT_PASTE, displayed);
+        enabled = m_richView.CanPaste(CF_TEXT)? MF_ENABLED : MF_GRAYED;
+        GetFrameMenu().EnableMenuItem(id, enabled);
         break;
     }
     case IDM_EDIT_REDO:
     {
-        if (m_richView.CanRedo())
-            displayed = MF_ENABLED;
-
-        GetFrameMenu().EnableMenuItem(IDM_EDIT_REDO, displayed);
+        enabled = m_richView.CanRedo()? MF_ENABLED : MF_GRAYED;
+        GetFrameMenu().EnableMenuItem(id, enabled);
         break;
     }
     case IDM_EDIT_UNDO:
     {
-        if (m_richView.CanUndo())
-            displayed = MF_ENABLED;
-
-        GetFrameMenu().EnableMenuItem(IDM_EDIT_UNDO, displayed);
+        enabled = m_richView.CanUndo()? MF_ENABLED : MF_GRAYED;
+        GetFrameMenu().EnableMenuItem(id, enabled);
         break;
     }
     }
@@ -722,7 +729,7 @@ BOOL CMainFrame::OnOptionsFont()
 // Turn word wrap on or off.
 BOOL CMainFrame::OnOptionsWrap()
 {
-    m_richView.SetTargetDevice(0, m_isWrapped);
+    m_richView.SetTargetDevice(NULL, m_isWrapped);
     m_isWrapped = !m_isWrapped;
     return TRUE;
 }
@@ -734,7 +741,7 @@ LRESULT CMainFrame::OnPreviewClose()
     SetView(m_richView);
 
     // Show the menu and toolbar
-    ShowMenu(GetFrameMenu() != 0);
+    ShowMenu(GetFrameMenu() != NULL);
     ShowToolBar(m_isToolbarShown);
     UpdateSettings();
 
@@ -776,7 +783,8 @@ LRESULT CMainFrame::OnPreviewSetup()
         }
 
         // Initiate the print preview.
-        UINT maxPage = m_richView.CollatePages();
+        CDC printerDC = printDlg.GetPrinterDC();
+        int maxPage = m_richView.CollatePages(printerDC);
         m_preview.DoPrintPreview(*this, maxPage);
     }
 
@@ -859,7 +867,7 @@ BOOL CMainFrame::ReadFile(LPCTSTR fileName)
         str += e.GetFilePath();
         str += "\n";
         str += e.GetText();
-        ::MessageBox(0, str, AtoT(e.what()), MB_ICONWARNING);
+        ::MessageBox(NULL, str, AtoT(e.what()), MB_ICONWARNING);
         return FALSE;
     }
 
@@ -871,12 +879,12 @@ void CMainFrame::SaveModifiedText()
 {
     // Check for unsaved text
     if (m_richView.GetModify())
-        if (::MessageBox(0, _T("Save changes to this document"), _T("Notepad"), MB_YESNO | MB_ICONWARNING) == IDYES)
+        if (::MessageBox(NULL, _T("Save changes to this document"), _T("Notepad"), MB_YESNO | MB_ICONWARNING) == IDYES)
             OnFileSave();
 }
 
 // Set the encoding type.
-void CMainFrame::SetEncoding(UINT encoding)
+void CMainFrame::SetEncoding(int encoding)
 {
     m_encoding = encoding;
 
@@ -951,8 +959,8 @@ void CMainFrame::SetStatusParts()
 
     // Insert the width for the first status bar part into the vector.
     CRect clientRect = GetClientRect();
-    const int minWidth = 300;
-    int width = MAX(minWidth, clientRect.right);
+    const LONG minWidth = 300;
+    int width = std::max(minWidth, clientRect.right);
     std::vector<int>::iterator begin = partWidths.begin();
     partWidths.insert(begin, width - sumWidths);
 
@@ -969,7 +977,7 @@ void CMainFrame::SetupMenuIcons()
 {
     std::vector<UINT> data = GetToolBarData();
     if ((GetMenuIconHeight() >= 24) && (GetWindowDpi(*this) != 192))
-        SetMenuIcons(data, RGB(192, 192, 192), IDW_MAIN, IDB_TOOLBAR_DIS);
+        SetMenuIcons(data, RGB(192, 192, 192), IDW_MAIN);
     else
         SetMenuIcons(data, RGB(192, 192, 192), IDW_MENUICONS);
 }
@@ -978,21 +986,19 @@ void CMainFrame::SetupMenuIcons()
 void CMainFrame::SetupToolBar()
 {
     // Define the resource IDs for the toolbar
-    AddToolBarButton( IDM_FILE_NEW_PLAIN );
-    AddToolBarButton( IDM_FILE_NEW_RICH );
-    AddToolBarButton( IDM_FILE_OPEN  );
-    AddToolBarButton( IDM_FILE_SAVE  );
-    AddToolBarButton( 0 );              // Separator
-    AddToolBarButton( IDM_EDIT_CUT   );
-    AddToolBarButton( IDM_EDIT_COPY  );
-    AddToolBarButton( IDM_EDIT_PASTE );
-    AddToolBarButton( 0 );              // Separator
-    AddToolBarButton( IDM_FILE_PRINT );
-    AddToolBarButton( 0 );              // Separator
-    AddToolBarButton( IDM_HELP_ABOUT );
-
-    // Use separate imagelists for normal, hot and disabled buttons.
-    SetToolBarImages(RGB(192, 192, 192), IDW_MAIN, IDB_TOOLBAR_HOT, IDB_TOOLBAR_DIS);
+    AddToolBarButton(IDM_FILE_NEW_PLAIN);
+    AddToolBarButton(IDM_FILE_NEW_RICH);
+    AddToolBarButton(IDM_FILE_OPEN);
+    AddToolBarButton(IDM_FILE_SAVE);
+    AddToolBarButton(IDM_FILE_SAVEAS);
+    AddToolBarButton(0);                // Separator
+    AddToolBarButton(IDM_EDIT_CUT);
+    AddToolBarButton(IDM_EDIT_COPY);
+    AddToolBarButton(IDM_EDIT_PASTE);
+    AddToolBarButton(0);                // Separator
+    AddToolBarButton(IDM_FILE_PRINT);
+    AddToolBarButton(0);                // Separator
+    AddToolBarButton(IDM_HELP_ABOUT);
 }
 
 // Sets the frame's title.
@@ -1017,10 +1023,10 @@ void CMainFrame::UpdateToolbar()
     BOOL canPaste = m_richView.CanPaste(CF_TEXT);
     BOOL isDirty = m_richView.GetModify();
 
+    GetToolBar().EnableButton(IDM_FILE_SAVE, isDirty);
     GetToolBar().EnableButton(IDM_EDIT_COPY, isSelected);
     GetToolBar().EnableButton(IDM_EDIT_CUT, isSelected);
     GetToolBar().EnableButton(IDM_EDIT_PASTE, canPaste);
-    GetToolBar().EnableButton(IDM_FILE_SAVE, isDirty);
 }
 
 // Process the frame's window messages.
@@ -1038,14 +1044,26 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 
 // Streams from the rich edit control to the specified file.
@@ -1100,7 +1118,7 @@ BOOL CMainFrame::WriteFile(LPCTSTR szFileName)
     {
         CString str = _T("Failed to write:  ");
         str += szFileName;
-        ::MessageBox(0, str, _T("Warning"), MB_ICONWARNING);
+        ::MessageBox(NULL, str, _T("Warning"), MB_ICONWARNING);
         return FALSE;
     }
 

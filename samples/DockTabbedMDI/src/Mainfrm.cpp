@@ -13,6 +13,7 @@
 #include "Text.h"
 #include "resource.h"
 
+using namespace std;
 
 //////////////////////////////////
 // CMainFrame function definitions
@@ -22,6 +23,8 @@
 CMainFrame::CMainFrame() : m_isContainerTabsAtTop(FALSE), m_isHideSingleTab(TRUE),
                             m_isMDITabsAtTop(TRUE), m_pActiveDocker(NULL)
 {
+    // Set m_MyTabbedMDI as the view window of the frame.
+    SetView(m_myTabbedMDI);
 }
 
 // Destructor for CMainFrame.
@@ -32,11 +35,8 @@ CMainFrame::~CMainFrame()
 // Create the frame window.
 HWND CMainFrame::Create(HWND parent)
 {
-    //Set m_MyTabbedMDI as the view window of the frame
-    SetView(m_myTabbedMDI);
-
-    // Set the registry key name, and load the initial window position
-    // Use a registry key name like "CompanyName\\Application"
+    // Set the registry key name, and load the initial window position.
+    // Use a registry key name like "CompanyName\\Application".
     LoadRegistrySettings(_T("Win32++\\TabbedMDI Docking"));
 
     return CDockFrame::Create(parent);
@@ -48,8 +48,8 @@ void CMainFrame::HideSingleContainerTab(bool hideSingle)
     m_isHideSingleTab = hideSingle;
     std::vector<DockPtr>::const_iterator iter;
 
-    // Set the Tab position for each container
-    for (iter = GetAllDockChildren().begin(); iter < GetAllDockChildren().end(); ++iter)
+    // Set the Tab position for each container.
+    for (iter = GetAllDockChildren().begin(); iter != GetAllDockChildren().end(); ++iter)
     {
         CDockContainer* pContainer = (*iter)->GetContainer();
         if (pContainer && pContainer->IsWindow())
@@ -57,82 +57,83 @@ void CMainFrame::HideSingleContainerTab(bool hideSingle)
             pContainer->SetHideSingleTab(hideSingle);
         }
     }
-
 }
 
 // Loads the default arrangement of dockers.
 void CMainFrame::LoadDefaultDockers()
 {
-    // Note: The  DockIDs are used for saving/restoring the dockers state in the registry
+    // Note: The  DockIDs are used for saving/restoring the dockers state in the registry.
 
     DWORD style = DS_CLIENTEDGE; // The style added to each docker
 
     // Add the parent dockers
-    CDocker* pDockRight  = AddDockedChild(new CDockClasses, DS_DOCKED_RIGHT | style, DpiScaleInt(250), ID_DOCK_CLASSES1);
-    CDocker* pDockBottom = AddDockedChild(new CDockText, DS_DOCKED_BOTTOM | style, DpiScaleInt(100), ID_DOCK_TEXT1);
+    CDocker* pDockRight  = AddDockedChild(make_unique<CDockClasses>(), DS_DOCKED_RIGHT | style, DpiScaleInt(250), ID_DOCK_CLASSES1);
+    CDocker* pDockBottom = AddDockedChild(make_unique<CDockText>(), DS_DOCKED_BOTTOM | style, DpiScaleInt(100), ID_DOCK_TEXT1);
 
     // Add the remaining dockers
-    pDockRight->AddDockedChild(new CDockFiles, DS_DOCKED_CONTAINER | style, DpiScaleInt(250), ID_DOCK_FILES1);
-    pDockRight->AddDockedChild(new CDockDialog, DS_DOCKED_CONTAINER | style, DpiScaleInt(250), ID_DOCK_DIALOG);
+    pDockRight->AddDockedChild(make_unique<CDockFiles>(), DS_DOCKED_CONTAINER | style, DpiScaleInt(250), ID_DOCK_FILES1);
+    pDockRight->AddDockedChild(make_unique<CDockDialog>(), DS_DOCKED_CONTAINER | style, DpiScaleInt(250), ID_DOCK_DIALOG);
 
-    pDockBottom->AddDockedChild(new CDockOutput, DS_DOCKED_CONTAINER | style, DpiScaleInt(100), ID_DOCK_OUTPUT1);
-    pDockBottom->AddDockedChild(new CDockText, DS_DOCKED_CONTAINER | style, DpiScaleInt(100), ID_DOCK_TEXT2);
-    pDockBottom->AddDockedChild(new CDockOutput, DS_DOCKED_CONTAINER | style, DpiScaleInt(100), ID_DOCK_OUTPUT2);
+    pDockBottom->AddDockedChild(make_unique<CDockOutput>(), DS_DOCKED_CONTAINER | style, DpiScaleInt(100), ID_DOCK_OUTPUT1);
+    pDockBottom->AddDockedChild(make_unique<CDockText>(), DS_DOCKED_CONTAINER | style, DpiScaleInt(100), ID_DOCK_TEXT2);
+    pDockBottom->AddDockedChild(make_unique<CDockOutput>(), DS_DOCKED_CONTAINER | style, DpiScaleInt(100), ID_DOCK_OUTPUT2);
+
+    SetDockStyle(style);
 }
 
 // Loads the default arrangement of MDIs.
 void CMainFrame::LoadDefaultMDIs()
 {
     // Add some MDI tabs
-    m_myTabbedMDI.AddMDIChild(new CViewWeb, _T("Browser"), ID_MDI_WEB);
-    m_myTabbedMDI.AddMDIChild(new CViewRect, _T("Rectangles"), ID_MDI_RECT);
-    m_myTabbedMDI.AddMDIChild(new CViewText, _T("TextView"), ID_MDI_TEXT);
-    m_myTabbedMDI.AddMDIChild(new CViewClasses, _T("Classes"), ID_MDI_CLASSES);
-    m_myTabbedMDI.AddMDIChild(new CViewFiles, _T("Files"), ID_MDI_FILES);
+    m_myTabbedMDI.AddMDIChild(make_unique<CViewWeb>(), _T("Browser"), ID_MDI_WEB);
+    m_myTabbedMDI.AddMDIChild(make_unique<CViewRect>(), _T("Rectangles"), ID_MDI_RECT);
+    m_myTabbedMDI.AddMDIChild(make_unique<CViewText>(), _T("TextView"), ID_MDI_TEXT);
+    m_myTabbedMDI.AddMDIChild(make_unique<CViewClasses>(), _T("Classes"), ID_MDI_CLASSES);
+    m_myTabbedMDI.AddMDIChild(make_unique<CViewFiles>(), _T("Files"), ID_MDI_FILES);
 
     if (m_myTabbedMDI.IsWindow())
         m_myTabbedMDI.SetActiveMDITab(0);
 }
 
 // Adds a new docker. The dockID parameter specifies the docker type.
-CDocker* CMainFrame::NewDockerFromID(int dockID)
+DockPtr CMainFrame::NewDockerFromID(int dockID)
 {
-    CDocker* pDocker = NULL;
+    DockPtr docker;
     switch (dockID)
     {
     case ID_DOCK_CLASSES1:
-        pDocker = new CDockClasses;
+        docker = make_unique<CDockClasses>();
         break;
     case ID_DOCK_CLASSES2:
-        pDocker = new CDockClasses;
+        docker = make_unique<CDockClasses>();
         break;
     case ID_DOCK_FILES1:
-        pDocker = new CDockFiles;
+        docker = make_unique<CDockFiles>();
         break;
     case ID_DOCK_FILES2:
-        pDocker = new CDockFiles;
+        docker = make_unique<CDockFiles>();
         break;
     case ID_DOCK_OUTPUT1:
-        pDocker = new CDockOutput;
+        docker = make_unique<CDockOutput>();
         break;
     case ID_DOCK_OUTPUT2:
-        pDocker = new CDockOutput;
+        docker = make_unique<CDockOutput>();
         break;
     case ID_DOCK_TEXT1:
-        pDocker = new CDockText;
+        docker = make_unique<CDockText>();
         break;
     case ID_DOCK_TEXT2:
-        pDocker = new CDockText;
+        docker = make_unique<CDockText>();
         break;
     case ID_DOCK_DIALOG:
-        pDocker = new CDockDialog;
+        docker = make_unique<CDockDialog>();
         break;
     default:
         TRACE("Unknown Dock ID\n");
         break;
     }
 
-    return pDocker;
+    return docker;
 }
 
 // Close all the dockers.
@@ -294,35 +295,35 @@ BOOL CMainFrame::OnFileNew()
 // Adds a MDI with a list-view.
 BOOL CMainFrame::OnFileNewList()
 {
-    m_myTabbedMDI.AddMDIChild(new CViewFiles, _T("ListView"), ID_MDI_FILES);
+    m_myTabbedMDI.AddMDIChild(make_unique<CViewFiles>(), _T("Files"), ID_MDI_FILES);
     return TRUE;
 }
 
 // Adds a MDI with a Rectangles view.
 BOOL CMainFrame::OnFileNewRect()
 {
-    m_myTabbedMDI.AddMDIChild(new CViewRect, _T("Rectangles"), ID_MDI_RECT);
+    m_myTabbedMDI.AddMDIChild(make_unique<CViewRect>(), _T("Rectangles"), ID_MDI_RECT);
     return TRUE;
 }
 
 // Adds a MDI with a Browser view.
 BOOL CMainFrame::OnFileNewBrowser()
 {
-    m_myTabbedMDI.AddMDIChild(new CViewWeb, _T("Browser"), ID_MDI_WEB);
+    m_myTabbedMDI.AddMDIChild(make_unique<CViewWeb>(), _T("Browser"), ID_MDI_WEB);
     return TRUE;
 }
 
 // Adds a MDI with a Text view.
 BOOL CMainFrame::OnFileNewText()
 {
-    m_myTabbedMDI.AddMDIChild(new CViewText, _T("TextView"), ID_MDI_TEXT);
+    m_myTabbedMDI.AddMDIChild(make_unique<CViewText>(), _T("TextView"), ID_MDI_TEXT);
     return TRUE;
 }
 
 // Adds a MDI with a tree-view.
 BOOL CMainFrame::OnFileNewTree()
 {
-    m_myTabbedMDI.AddMDIChild(new CViewClasses, _T("TreeView"), ID_MDI_CLASSES);
+    m_myTabbedMDI.AddMDIChild(make_unique<CViewClasses>(), _T("Classes"), ID_MDI_CLASSES);
     return TRUE;
 }
 
@@ -346,8 +347,6 @@ BOOL CMainFrame::OnHideSingleTab()
 // Called after the frame window is created.
 void CMainFrame::OnInitialUpdate()
 {
-    SetDockStyle(DS_CLIENTEDGE);
-
     // Load dock settings
     if (!LoadDockRegistrySettings(GetRegistryKeyName()))
         LoadDefaultDockers();
@@ -438,6 +437,28 @@ void CMainFrame::PreCreate(CREATESTRUCT& cs)
     cs.style &= ~WS_VISIBLE;
 }
 
+// This function overrides CDocker::RecalcDockLayout to elimate jitter
+// when the dockers are resized. The technique used here is is most
+// appropriate for a complex arrangement of dockers.  It might not suite
+// other docking applications. To support this technique the
+// WS_EX_COMPOSITED extended style has been added to some view windows.
+void CMainFrame::RecalcDockLayout()
+{
+    if (GetWinVersion() >= 3000)  // Windows 10 or later.
+    {
+        if (GetDockAncestor()->IsWindow())
+        {
+            GetTopmostDocker()->LockWindowUpdate();
+            CRect rc = GetTopmostDocker()->GetViewRect();
+            GetTopmostDocker()->RecalcDockChildLayout(rc);
+            GetTopmostDocker()->UnlockWindowUpdate();
+            GetTopmostDocker()->UpdateWindow();
+        }
+    }
+    else
+        CDocker::RecalcDockLayout();
+}
+
 // Saves the docking arrangement and other settings in the registry.
 BOOL CMainFrame::SaveRegistrySettings()
 {
@@ -459,7 +480,7 @@ void CMainFrame::SetContainerTabsAtTop(bool atTop)
     std::vector<DockPtr>::const_iterator iter;
 
     // Set the Tab position for each container
-    for (iter = GetAllDockChildren().begin(); iter < GetAllDockChildren().end(); ++iter)
+    for (iter = GetAllDockChildren().begin(); iter != GetAllDockChildren().end(); ++iter)
     {
         CDockContainer* pContainer = (*iter)->GetContainer();
         if (pContainer && pContainer->IsWindow())
@@ -527,13 +548,25 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
-        // Display the exception.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 

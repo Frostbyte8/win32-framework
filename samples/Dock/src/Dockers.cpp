@@ -22,6 +22,58 @@ CDockSimple::CDockSimple()
     SetCaption (_T("Simple View - Docking"));
 }
 
+// This function overrides CDocker::RecalcDockLayout to elimate jitter
+// when the dockers are resized. The technique used here is is most
+// appropriate for a complex arrangement of dockers. It might not suite
+// other docking applications. To support this technique the
+// WS_EX_COMPOSITED extended style has been added to each docker.
+void CDockSimple::RecalcDockLayout()
+{
+    if (GetWinVersion() >= 3000)  // Windows 10 or later.
+    {
+        if (GetDockAncestor()->IsWindow())
+        {
+            GetTopmostDocker()->LockWindowUpdate();
+            CRect rc = GetTopmostDocker()->GetViewRect();
+            GetTopmostDocker()->RecalcDockChildLayout(rc);
+            GetTopmostDocker()->UnlockWindowUpdate();
+            GetTopmostDocker()->UpdateWindow();
+        }
+    }
+    else
+        CDocker::RecalcDockLayout();
+}
+
+// Handle the window's messages.
+LRESULT CDockSimple::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    try
+    {
+        // Pass unhandled messages on for default processing.
+        return WndProcDefault(msg, wparam, lparam);
+    }
+
+    // Catch all unhandled CException types.
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
+    }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
+}
 
 /////////////////////////////////
 // CDockText function definitions
@@ -39,6 +91,58 @@ CDockText::CDockText()
     SetCaption(_T("Text View - Docking"));
 }
 
+// This function overrides CDocker::RecalcDockLayout to elimate jitter
+// when the dockers are resized. The technique used here is is most
+// appropriate for a complex arrangement of dockers. It might not suite
+// other docking applications. To support this technique the
+// WS_EX_COMPOSITED extended style has been added to each docker.
+void CDockText::RecalcDockLayout()
+{
+    if (GetWinVersion() >= 3000)  // Windows 10 or later.
+    {
+        if (GetDockAncestor()->IsWindow())
+        {
+            GetTopmostDocker()->LockWindowUpdate();
+            CRect rc = GetTopmostDocker()->GetViewRect();
+            GetTopmostDocker()->RecalcDockChildLayout(rc);
+            GetTopmostDocker()->UnlockWindowUpdate();
+            GetTopmostDocker()->UpdateWindow();
+        }
+    }
+    else
+        CDocker::RecalcDockLayout();
+}
+
+// Handle the window's messages.
+LRESULT CDockText::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    try
+    {
+        // Pass unhandled messages on for default processing.
+        return WndProcDefault(msg, wparam, lparam);
+    }
+
+    // Catch all unhandled CException types.
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
+    }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
+}
 
 ////////////////////////////////////
 // CDockClasses function definitions
@@ -54,6 +158,59 @@ CDockClasses::CDockClasses()
     SetBarWidth(8);
 
     SetCaption(_T("Class View - Docking"));
+}
+
+// This function overrides CDocker::RecalcDockLayout to elimate jitter
+// when the dockers are resized. The technique used here is is most
+// appropriate for a complex arrangement of dockers. It might not suite
+// other docking applications. To support this technique the
+// WS_EX_COMPOSITED extended style has been added to each docker.
+void CDockClasses::RecalcDockLayout()
+{
+    if (GetWinVersion() >= 3000)  // Windows 10 or later.
+    {
+        if (GetDockAncestor()->IsWindow())
+        {
+            GetTopmostDocker()->LockWindowUpdate();
+            CRect rc = GetTopmostDocker()->GetViewRect();
+            GetTopmostDocker()->RecalcDockChildLayout(rc);
+            GetTopmostDocker()->UnlockWindowUpdate();
+            GetTopmostDocker()->UpdateWindow();
+        }
+    }
+    else
+        CDocker::RecalcDockLayout();
+}
+
+// Handle the window's messages.
+LRESULT CDockClasses::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    try
+    {
+        // Pass unhandled messages on for default processing.
+        return WndProcDefault(msg, wparam, lparam);
+    }
+
+    // Catch all unhandled CException types.
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
+    }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 
 
@@ -73,3 +230,55 @@ CDockFiles::CDockFiles()
     SetCaption(_T("Files View - Docking"));
 }
 
+// This function overrides CDocker::RecalcDockLayout to elimate jitter
+// when the dockers are resized. The technique used here is is most
+// appropriate for a complex arrangement of dockers. It might not suite
+// other docking applications. To support this technique the
+// WS_EX_COMPOSITED extended style has been added to each docker.
+void CDockFiles::RecalcDockLayout()
+{
+    if (GetWinVersion() >= 3000)  // Windows 10 or later.
+    {
+        if (GetDockAncestor()->IsWindow())
+        {
+            GetTopmostDocker()->LockWindowUpdate();
+            CRect rc = GetTopmostDocker()->GetViewRect();
+            GetTopmostDocker()->RecalcDockChildLayout(rc);
+            GetTopmostDocker()->UnlockWindowUpdate();
+            GetTopmostDocker()->UpdateWindow();
+        }
+    }
+    else
+        CDocker::RecalcDockLayout();
+}
+
+// Handle the window's messages.
+LRESULT CDockFiles::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    try
+    {
+        // Pass unhandled messages on for default processing.
+        return WndProcDefault(msg, wparam, lparam);
+    }
+
+    // Catch all unhandled CException types.
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
+    }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
+}

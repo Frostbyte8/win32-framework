@@ -15,24 +15,26 @@ class CMainMDIFrame : public CMDIDockFrame
 public:
     CMainMDIFrame();
     virtual ~CMainMDIFrame();
-    virtual HWND Create(HWND parent = 0);
+    virtual HWND Create(HWND parent = NULL);
 
 protected:
     // Virtual functions that override base class functions
     virtual BOOL OnCommand(WPARAM wparam, LPARAM lparam);
     virtual int  OnCreate(CREATESTRUCT& cs);
     virtual void OnInitialUpdate();
+    virtual LRESULT OnNotify(WPARAM wparam, LPARAM lparam);
     virtual void SetupMenuIcons();
     virtual void SetupToolBar();
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-    CMainMDIFrame(const CMainMDIFrame&);               // Disable copy construction
-    CMainMDIFrame& operator=(const CMainMDIFrame&);    // Disable assignment operator
+    CMainMDIFrame(const CMainMDIFrame&);                // Disable copy construction
+    CMainMDIFrame& operator = (const CMainMDIFrame&);   // Disable assignment operator
 
     // Command handlers
     BOOL OnFileMDIClose();
     BOOL OnFileExit();
+    BOOL OnFileNew();
     BOOL OnFileNewDocker();
     BOOL OnFileNewMDI();
     BOOL OnFileOpen();
@@ -42,9 +44,6 @@ private:
     BOOL OnMDICloseAll();
     BOOL OnMDIIconArrange();
     BOOL OnMDITile();
-
-    // Message handlers
-    LRESULT OnGetMinMaxInfo(UINT msg, WPARAM wparam, LPARAM lparam);
 };
 
 #endif  //MAINMDIFRM_H

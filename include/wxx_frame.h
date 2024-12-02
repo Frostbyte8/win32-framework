@@ -1,9 +1,10 @@
-// Win32++   Version 9.5
-// Release Date: TBA
+// Win32++   Version 9.6.1
+// Release Date: 29th July 2024
 //
 //      David Nash
 //      email: dnash@bigpond.net.au
 //      url: https://sourceforge.net/projects/win32-framework
+//           https://github.com/DavidNash2024/Win32xx
 //
 //
 // Copyright (c) 2005-2024  David Nash
@@ -80,7 +81,6 @@
 
 #include "wxx_dialog.h"
 #include "wxx_docking.h"
-#include "wxx_gdi.h"
 #include "wxx_menubar.h"
 #include "wxx_menumetrics.h"
 #include "wxx_rebar.h"
@@ -169,7 +169,7 @@ namespace Win32xx
         const CMenuMetrics& GetMenuMetrics() const        { return m_menuMetrics; }
         const std::vector<CString>& GetMRUEntries() const { return m_mruEntries; }
         CString GetMRUEntry(UINT index);
-        UINT GetMRULimit() const                          { return m_maxMRU; }
+        size_t GetMRULimit() const                          { return m_maxMRU; }
         CString GetRegistryKeyName() const                { return m_keyName; }
         const ReBarTheme& GetReBarTheme() const           { return m_rbTheme; }
         CFont GetStatusBarFont() const                    { return m_statusBarFont; }
@@ -181,6 +181,7 @@ namespace Win32xx
         CWnd& GetView() const;
         CString GetXPThemeName() const;
         BOOL IsMDIFrame() const                           { return static_cast<BOOL>(T::SendMessage(UWM_GETCMDIFRAMET)); }
+        void RemoveKbdHook();
         void ResetMenuMetrics()                           { m_menuMetrics.SetMetrics(*this); }
         void SetAccelerators(UINT accelID);
         void SetFrameMenu(UINT menuID);
@@ -200,12 +201,12 @@ namespace Win32xx
         // Override these functions as required.
         virtual void AddDisabledMenuImage(HICON icon, COLORREF mask);
         virtual BOOL AddMenuIcon(UINT menuItemID, UINT iconID, UINT disabledIconID = 0);
-        virtual BOOL AddMenuIcon(UINT menuItemID, HICON icon, HICON disabledIcon = 0);
+        virtual BOOL AddMenuIcon(UINT menuItemID, HICON icon, HICON disabledIcon = NULL);
         virtual UINT AddMenuIcons(const std::vector<UINT>& menuData, COLORREF mask, UINT bitmapID, UINT disabledID = 0);
         virtual void AddMenuBarBand();
         virtual void AddMRUEntry(LPCTSTR MRUEntry);
         virtual void AddToolBarBand(CToolBar& tb, DWORD bandStyle, UINT id);
-        virtual void AddToolBarButton(UINT id, BOOL isEnabled = TRUE, LPCTSTR text = 0, int image = -1);
+        virtual void AddToolBarButton(UINT id, BOOL isEnabled = TRUE, LPCTSTR text = NULL, int image = -1);
         virtual void AdjustFrameRect(const RECT& viewRect);
         virtual void ClearMenuIcons();
         virtual void CreateToolBar();
@@ -246,7 +247,6 @@ namespace Win32xx
         virtual LRESULT OnRBNHeightChange(LPNMHDR pNMHDR);
         virtual LRESULT OnRBNLayoutChanged(LPNMHDR pNMHDR);
         virtual LRESULT OnRBNMinMax(LPNMHDR pNMHDR);
-        virtual LRESULT OnSetFocus(UINT msg, WPARAM wparam, LPARAM lparam);
         virtual LRESULT OnSettingChange(UINT, WPARAM, LPARAM);
         virtual LRESULT OnSize(UINT msg, WPARAM wparam, LPARAM lparam);
         virtual LRESULT OnSysColorChange(UINT msg, WPARAM wparam, LPARAM lparam);
@@ -268,9 +268,9 @@ namespace Win32xx
         virtual UINT SetMenuIcons(const std::vector<UINT>& menuData, COLORREF mask, UINT toolBarID, UINT toolBarDisabledID = 0);
         virtual void SetStatusIndicators();
         virtual void SetStatusParts();
-        virtual void SetTBImageList(CToolBar& toolBar, CImageList& imageList, UINT id, COLORREF mask);
-        virtual void SetTBImageListDis(CToolBar& toolBar, CImageList& imageList, UINT id, COLORREF mask);
-        virtual void SetTBImageListHot(CToolBar& toolBar, CImageList& imageList, UINT id, COLORREF mask);
+        virtual void SetTBImageList(CToolBar& toolBar, UINT id, COLORREF mask);
+        virtual void SetTBImageListDis(CToolBar& toolBar, UINT id, COLORREF mask);
+        virtual void SetTBImageListHot(CToolBar& toolBar, UINT id, COLORREF mask);
         virtual void SetTheme();
         virtual void SetToolBarImages(COLORREF mask, UINT toolBarID, UINT toolBarHotID = 0, UINT toolBarDisabledID = 0);
         virtual void SetToolBarImages(CToolBar& toolbar, COLORREF mask, UINT toolBarID, UINT toolBarHotID = 0, UINT toolBarDisabledID = 0);
@@ -332,9 +332,6 @@ namespace Win32xx
         CMenu m_menu;                       // The menu used by the menubar or the frame's window
         CFont m_menuFont;                   // Menu and menubar font
         CFont m_statusBarFont;              // StatusBar font
-        std::vector<CImageList> m_toolBarImageLists;          // Normal imagelists for the frame's toolbars
-        std::vector<CImageList> m_toolBarDisabledImageLists;  // Disabled imagelists for the frame's toolbars
-        std::vector<CImageList> m_toolBarHotImageLists;       // Hot imagelists for the frame's toolbars
         CString m_keyName;                  // CString for Registry key name
         CString m_statusText;               // CString for status text
         CString m_tooltip;                  // CString for tool tips
@@ -344,7 +341,7 @@ namespace Win32xx
         ToolBarTheme m_tbTheme;             // struct of theme info for the ToolBar
         HACCEL m_accel;                     // handle to the frame's accelerator table (used by MDI without MDI child)
         CWnd* m_pView;                      // pointer to the View CWnd object
-        UINT m_maxMRU;                      // maximum number of MRU entries
+        size_t m_maxMRU;                      // maximum number of MRU entries
         HWND m_oldFocus;                    // The window that had focus prior to the app's deactivation
         HHOOK m_kbdHook;                    // Keyboard hook.
 
@@ -392,8 +389,8 @@ namespace Win32xx
     // Definitions for the CFrame class
     //
     template <class T>
-    inline CFrameT<T>::CFrameT() : m_aboutDialog(IDW_ABOUT), m_accel(0), m_pView(NULL), m_maxMRU(0), m_oldFocus(0),
-                              m_kbdHook(0), m_useOwnerDrawnMenu(TRUE), m_useDarkMenu(FALSE), m_useIndicatorStatus(TRUE),
+    inline CFrameT<T>::CFrameT() : m_aboutDialog(IDW_ABOUT), m_accel(NULL), m_pView(NULL), m_maxMRU(0), m_oldFocus(NULL),
+                              m_kbdHook(NULL), m_useOwnerDrawnMenu(TRUE), m_useDarkMenu(FALSE), m_useIndicatorStatus(TRUE),
                               m_useMenuStatus(TRUE), m_useStatusBar(TRUE), m_useThemes(TRUE), m_useToolBar(TRUE),
                               m_altKeyPressed(FALSE)
     {
@@ -416,7 +413,8 @@ namespace Win32xx
     template <class T>
     inline CFrameT<T>::~CFrameT()
     {
-        if (m_kbdHook != 0) UnhookWindowsHookEx(m_kbdHook);
+        if (m_kbdHook != NULL)
+            ::UnhookWindowsHookEx(m_kbdHook);
     }
 
     // Adds the grayscale image of the specified icon the disabled menu image-list.
@@ -427,8 +425,8 @@ namespace Win32xx
         CClientDC desktopDC(*this);
         CMemDC memDC(desktopDC);
 
-        // m_menuImages should already have this image
-        assert(m_menuImages.GetHandle() != 0);
+        // m_menuImages should already have this image.
+        assert(m_menuImages.GetHandle() != NULL);
 
         int cxImage = m_menuImages.GetIconSize().cx;
         int cyImage = cxImage;
@@ -437,7 +435,7 @@ namespace Win32xx
         CRect rc;
         rc.SetRect(0, 0, cxImage, cyImage);
 
-        // Set the mask color to gray for the new ImageList
+        // Set the mask color to gray for the new ImageList.
         if (GetDeviceCaps(desktopDC, BITSPIXEL) < 24)
         {
             HPALETTE hPal = desktopDC.GetCurrentPalette();
@@ -447,14 +445,14 @@ namespace Win32xx
 
         memDC.SolidFill(mask, rc);
 
-        // Draw the icon on the memory DC
+        // Draw the icon on the memory DC.
         memDC.DrawIconEx(0, 0, icon, cxImage, cyImage, 0, 0, DI_NORMAL);
 
         // Detach the bitmap so we can use it.
         CBitmap bitmap = memDC.DetachBitmap();
         bitmap.ConvertToDisabled(mask);
 
-        if (m_menuDisabledImages.GetHandle() == 0)
+        if (m_menuDisabledImages.GetHandle() == NULL)
             m_menuDisabledImages.Create(cxImage, cyImage, ILC_COLOR24 | ILC_MASK, 1, 0);
 
         m_menuDisabledImages.Add(bitmap, mask);
@@ -473,13 +471,13 @@ namespace Win32xx
     template <class T>
     inline BOOL CFrameT<T>::AddMenuIcon(UINT menuItemID, HICON icon, HICON disabledIcon)
     {
-        assert(icon != 0);
+        assert(icon != NULL);
 
         int cxImage;
         int cyImage;
 
         // Create a new ImageList if required.
-        if (m_menuImages.GetHandle() == 0)
+        if (m_menuImages.GetHandle() == NULL)
         {
             cyImage = GetMenuIconHeight();
             cxImage = cyImage;
@@ -496,7 +494,7 @@ namespace Win32xx
         {
             m_menuItemIDs.push_back(menuItemID);
 
-            // Set the mask color to gray for the new ImageList
+            // Set the mask color to gray for the new ImageList.
             COLORREF mask = RGB(192, 192, 192);
             CClientDC desktopDC(*this);
             if (GetDeviceCaps(desktopDC, BITSPIXEL) < 24)
@@ -506,10 +504,10 @@ namespace Win32xx
                 if (index != CLR_INVALID) mask = PALETTEINDEX(index);
             }
 
-            if (m_menuDisabledImages.GetHandle() == 0)
+            if (m_menuDisabledImages.GetHandle() == NULL)
                 m_menuDisabledImages.Create(cxImage, cyImage, ILC_COLOR32 | ILC_MASK, 1, 0);
 
-            if (disabledIcon == 0)
+            if (disabledIcon == NULL)
                 AddDisabledMenuImage(icon, mask);
             else
                 m_menuDisabledImages.Add(disabledIcon);
@@ -539,9 +537,9 @@ namespace Win32xx
         CBitmap bitmap(bitmapID);
 
         // Assert if we failed to load the bitmap.
-        assert(bitmap.GetHandle() != 0);
+        assert(bitmap.GetHandle() != NULL);
 
-        if ((images == 0) || (bitmap.GetHandle() == 0))
+        if ((images == 0) || (bitmap.GetHandle() == NULL))
             return static_cast<UINT>(m_menuItemIDs.size());  // No valid images, so nothing to do!
 
         // Resize the bitmap
@@ -551,9 +549,10 @@ namespace Win32xx
         if (scale > 0)
         {
             bitmap = ScaleUpBitmap(bitmap, scale);
-            int newSize = MAX(bitmap.GetSize().cy, 16);
+            int bitmapSizeY = bitmap.GetSize().cy;
+            int newSize = std::max(bitmapSizeY, 16);
 
-            // Create the ImageList
+            // Create the ImageList.
             m_menuImages.Create(newSize, newSize, ILC_COLOR32 | ILC_MASK, images, 0);
 
             // Add the resource IDs to the m_menuIcons vector.
@@ -576,7 +575,8 @@ namespace Win32xx
                 if (scale > 0)
                 {
                     disabled = ScaleUpBitmap(disabled, scale);
-                    newSize = MAX(disabled.GetSize().cy, 16);
+                    int disabledSizeY = disabled.GetSize().cy;
+                    newSize = std::max(disabledSizeY, 16);
                     m_menuDisabledImages.Create(newSize, newSize, ILC_COLOR32 | ILC_MASK, images, 0);
                     m_menuDisabledImages.Add(disabled, mask);
                 }
@@ -654,7 +654,7 @@ namespace Win32xx
     // Adds Resource IDs to toolbar buttons.
     // A resource ID of 0 is a separator.
     template <class T>
-    inline void CFrameT<T>::AddToolBarButton(UINT id, BOOL isEnabled /* = TRUE*/, LPCTSTR text /* = 0 */, int image /* = -1 */)
+    inline void CFrameT<T>::AddToolBarButton(UINT id, BOOL isEnabled /* = TRUE*/, LPCTSTR text /* = NULL */, int image /* = -1 */)
     {
         m_toolBarData.push_back(id);
 
@@ -687,6 +687,8 @@ namespace Win32xx
     inline void CFrameT<T>::ClearMenuIcons()
     {
         m_menuItemIDs.clear();
+        m_menuImages.DeleteImageList();
+        m_menuDisabledImages.DeleteImageList();
     }
 
     // Creates the frame's toolbar. Additional toolbars can be added with AddToolBarBand
@@ -695,12 +697,9 @@ namespace Win32xx
     inline void CFrameT<T>::CreateToolBar()
     {
         m_toolBarData.clear();
-        m_toolBarImageLists.clear();
-        m_toolBarDisabledImageLists.clear();
-        m_toolBarHotImageLists.clear();
 
         if (GetReBar().IsWindow())
-            AddToolBarBand(GetToolBar(), RBBS_BREAK|RBBS_GRIPPERALWAYS, IDW_TOOLBAR);   // Create the toolbar inside rebar
+            AddToolBarBand(GetToolBar(), RBBS_BREAK|RBBS_GRIPPERALWAYS, IDW_TOOLBAR);   // Create the toolbar inside rebar.
         else
             GetToolBar().Create(*this); // Create the toolbar without a rebar.
 
@@ -717,7 +716,7 @@ namespace Win32xx
         }
         else
         {
-            TRACE("Warning ... No resource IDs assigned to the toolbar\n");
+            TRACE("\n*** WARNING: No resource IDs assigned to the toolbar. ***\n\n");
             ShowToolBar(FALSE);
         }
 
@@ -809,10 +808,10 @@ namespace Win32xx
 
                     drawDC.DrawText(str, str.GetLength(), rc, format);
 
-                    return CDRF_SKIPDEFAULT;  // No further drawing
+                    return CDRF_SKIPDEFAULT;  // No further drawing.
                 }
             }
-            return CDRF_DODEFAULT;   // Do default drawing
+            return CDRF_DODEFAULT;   // Do default drawing.
 
         }
 
@@ -888,19 +887,18 @@ namespace Win32xx
                         if (isDisabled)
                         {
                             toolBarImages = pTB->GetDisabledImageList();
-                            if (toolBarImages.GetHandle() == 0)
+                            if (toolBarImages.GetHandle() == NULL)
                             {
                                 CImageList toolBarDisabledImages;
                                 toolBarDisabledImages.CreateDisabledImageList(pTB->GetImageList());
                                 pTB->SetDisableImageList(toolBarDisabledImages);
-                                m_toolBarDisabledImageLists.push_back(toolBarDisabledImages);
                                 toolBarImages = pTB->GetDisabledImageList();
                             }
                         }
                         else if (isHot)
                         {
                             toolBarImages = pTB->GetHotImageList();
-                            if (toolBarImages.GetHandle() == 0)
+                            if (toolBarImages.GetHandle() == NULL)
                                 // Use normal images as hot images.
                                 toolBarImages = pTB->GetImageList();
                         }
@@ -910,7 +908,7 @@ namespace Win32xx
                         }
 
                         // Assert if the toolbar images aren't set.
-                        assert(toolBarImages.GetHandle() != 0);
+                        assert(toolBarImages.GetHandle() != NULL);
 
                         DWORD style = pTB->GetButtonStyle(item);
                         DWORD exStyle = pTB->GetExtendedStyle();
@@ -1008,7 +1006,9 @@ namespace Win32xx
                         {
                             // Calculate the text position
                             int width = rc.right - rc.left - (isDropDown ? dropDownWidth : 0);
-                            CRect textRect(0, 0, MIN(textSize.cx, width), textSize.cy);
+                            int textSizeX = textSize.cx;
+                            int textSizeY = textSize.cy;
+                            CRect textRect(0, 0, std::min(textSizeX, width), textSizeY);
 
                             int xOffset = rc.left + (rc.Width() - textRect.Width()) / 2;
                             if (isDropDown)
@@ -1200,7 +1200,7 @@ namespace Win32xx
         CDC drawDC(pDrawItem->hDC);
 
         // Draw the checkmark's background rectangle first.
-        if (IsUsingThemes())
+        if (IsUsingThemes() && !IsUsingVistaMenu())
         {
             drawDC.CreatePen(PS_SOLID, 1, mbt.clrOutline);
             if (IsUsingThemes())
@@ -1266,18 +1266,18 @@ namespace Win32xx
         if (m_menuImages.GetHandle() == 0)
             return;
 
-        // Get icon size
+        // Get icon size.
         CSize iconSize = m_menuImages.GetIconSize();
         int xIcon = iconSize.cx;
         int yIcon = iconSize.cy;
 
-        // get the drawing rectangle
+        // get the drawing rectangle.
         CRect itemRect = pDrawItem->rcItem;
         CRect gutter = GetMenuMetrics().GetGutterRect(pDrawItem->rcItem);
         int left = (gutter.Width() - xIcon) / 2;
         int top = itemRect.top + (itemRect.Height() - yIcon) / 2;
 
-        // get the icon's location in the imagelist
+        // get the icon's location in the imagelist.
         int image = -1;
         for (size_t i = 0 ; i < m_menuItemIDs.size(); ++i)
         {
@@ -1285,7 +1285,7 @@ namespace Win32xx
                image = static_cast<int>(i);
         }
 
-        // draw the image
+        // Daw the image.
         if (image >= 0 )
         {
             bool isDisabled = (pDrawItem->itemState & (ODS_GRAYED | ODS_DISABLED)) != 0;
@@ -1313,7 +1313,7 @@ namespace Win32xx
         // Calculate the text rect size.
         CRect textRect = GetMenuMetrics().GetTextRect(pDrawItem->rcItem);
 
-        // find the position of tab character.
+        // Find the position of tab character.
         int tab = itemText.Find(_T('\t'));
 
         // Draw the item text.
@@ -1370,8 +1370,6 @@ namespace Win32xx
 
             // Draw to ReBar background to the memory DC.
             memDC.SolidFill(rt.clrBkgnd2, rebarRect);
-            CRect rcBkGnd = rebarRect;
-            rcBkGnd.right = 600;
             memDC.GradientFill(rt.clrBkgnd1, rt.clrBkgnd2, rebarRect, FALSE);
 
             if (rt.clrBand1 || rt.clrBand2)
@@ -1452,7 +1450,7 @@ namespace Win32xx
                                 maskDC.BitBlt(left, top, cx, cy, maskDC, left, top, PATINVERT);
                             }
 
-                            // Copy Source DC to Memory DC using the RoundRect mask
+                            // Copy Source DC to Memory DC using the RoundRect mask.
                             memDC.BitBlt(left, top, cx, cy, sourceDC, left, top, SRCINVERT);
                             memDC.BitBlt(left, top, cx, cy, maskDC,   left, top, SRCAND);
                             memDC.BitBlt(left, top, cx, cy, sourceDC, left, top, SRCINVERT);
@@ -1469,12 +1467,14 @@ namespace Win32xx
                     CRect bandRect = GetReBar().GetBandRect(j);
                     if (isVertical)
                     {
-                        bandRect.top = MAX(0, rebarRect.top - 4);
+                        int rebarTop = rebarRect.top;
+                        bandRect.top = std::max(0, rebarTop - 4);
                         bandRect.right +=2;
                     }
                     else
                     {
-                        bandRect.left = MAX(0, rebarRect.left - 4);
+                        int rebarLeft = rebarRect.left;
+                        bandRect.left = std::max(0, rebarLeft - 4);
                         bandRect.bottom +=2;
                     }
                     memDC.DrawEdge(bandRect, EDGE_ETCHED, BF_BOTTOM | BF_ADJUST);
@@ -1679,7 +1679,7 @@ namespace Win32xx
         assert(pBitmap->GetHandle());
         BITMAP data = pBitmap->GetBitmapData();
         int cy = data.bmHeight;
-        int cx = MAX(data.bmHeight, 16);
+        int cx = std::max(cy, 16);
 
         return CSize(cx, cy);
     }
@@ -1690,12 +1690,12 @@ namespace Win32xx
     {
         HMODULE theme = ::GetModuleHandle(_T("uxtheme.dll"));
         WCHAR themeName[31] = L"";
-        if (theme != 0)
+        if (theme != NULL)
         {
             typedef HRESULT WINAPI GETCURRENTTHEMENAME(LPWSTR, int, LPWSTR, int, LPWSTR, int);
             GETCURRENTTHEMENAME* pfn = reinterpret_cast<GETCURRENTTHEMENAME*>(
                 reinterpret_cast<void*>(::GetProcAddress(theme, "GetCurrentThemeName")));
-            pfn(0, 0, themeName, 30, 0, 0);
+            pfn(NULL, 0, themeName, 30, NULL, 0);
         }
 
         return CString(themeName);
@@ -1770,7 +1770,7 @@ namespace Win32xx
                     else
                     {
                         pathName.ReleaseBuffer();
-                        TRACE(_T("LoadRegistryMRUSettings: QueryStringValue failed\n"));
+                        TRACE(_T("\n*** WARNING: LoadRegistryMRUSettings: QueryStringValue failed. ***\n"));
                     }
                 }
             }
@@ -1826,7 +1826,7 @@ namespace Win32xx
 #ifdef MONITOR_DEFAULTTONULL
 
                 HMONITOR monitor = ::MonitorFromPoint(midpoint, MONITOR_DEFAULTTONULL);
-                if (monitor == 0)
+                if (monitor == NULL)
                     throw CUserException();
 
                 MONITORINFO mi;
@@ -1837,7 +1837,7 @@ namespace Win32xx
 
 #else
                 CRect workArea;
-                SystemParametersInfo(SPI_GETWORKAREA, 0, &workArea, 0);
+                SystemParametersInfo(SPI_GETWORKAREA, 0, &workArea, NULL);
 #endif
 
                 // Check if window is mostly within work area.
@@ -1861,7 +1861,7 @@ namespace Win32xx
 
             catch (const CUserException&)
             {
-                TRACE("*** Failed to load values from registry, using defaults. ***\n");
+                TRACE("*** ERROR: Failed to load values from registry, using defaults. ***\n");
 
                 // Delete the bad key from the registry.
                 const CString appKeyName = _T("Software\\") + m_keyName;
@@ -1896,11 +1896,12 @@ namespace Win32xx
         dc.CreateFontIndirect(lf);
         CSize size = GetMenuMetrics().GetItemSize(pMID, dc);
 
-        if (~pMID->mii.fType & MFT_SEPARATOR)  // if the type is not a separator
+        if (~pMID->mii.fType & MFT_SEPARATOR)  // if the type is not a separator.
         {
             // Account for icon height.
-            int iconGap = T::DpiScaleInt(6);
-            size.cy = MAX(size.cy, GetMenuIconHeight() + iconGap);
+            int iconGap = T::DpiScaleInt(4);
+            int sizeY = size.cy;
+            size.cy = std::max(sizeY, GetMenuIconHeight() + iconGap);
         }
 
         // Fill the MEASUREITEMSTRUCT struct with the new size.
@@ -1917,6 +1918,9 @@ namespace Win32xx
 
         if (LOWORD(wparam) == WA_INACTIVE)
         {
+            // Remove the keyboard hook used by the keyboard indicators.
+            RemoveKbdHook();
+
             // Save the hwnd of the window that currently has focus.
             // This must be CFrame window itself or a child window.
             if (!T::IsIconic()) m_oldFocus = ::GetFocus();
@@ -1927,8 +1931,12 @@ namespace Win32xx
         }
         else
         {
+            // Set the keyboard hook by the keyboard indicators if
+            // m_useIndicatorStatus is TRUE.
+            SetKbdHook();
+
             // Now set the focus to the appropriate child window.
-            if (m_oldFocus != 0) ::SetFocus(m_oldFocus);
+            if (m_oldFocus != NULL) ::SetFocus(m_oldFocus);
         }
 
         // Update DockClient captions.
@@ -1955,10 +1963,6 @@ namespace Win32xx
     template <class T>
     inline int CFrameT<T>::OnCreate(CREATESTRUCT&)
     {
-        // Start the keyboard hook to capture the CapsLock, NumLock,
-        // ScrollLock and Insert keys.
-        SetKbdHook();
-
         // Set the icon.
         T::SetIconLarge(IDW_MAIN);
         T::SetIconSmall(IDW_MAIN);
@@ -1986,7 +1990,7 @@ namespace Win32xx
             GetMenuBar().SetWindowTheme(L" ", L" ");
         }
 
-        // Setup the menu if IDW_MAIN menu resource is defined
+        // Setup the menu if IDW_MAIN menu resource is defined.
         CMenu menu(IDW_MAIN);
         if (::IsMenu(menu))
         {
@@ -1995,7 +1999,7 @@ namespace Win32xx
                 UpdateMRUMenu();
         }
         else
-            ShowMenu(FALSE);  // No menu if IDW_MAIN menu resource isn't defined
+            ShowMenu(FALSE);  // No menu if IDW_MAIN menu resource isn't defined.
 
         // Configure the menu metrics and fonts.
         ResetMenuMetrics();
@@ -2230,7 +2234,7 @@ namespace Win32xx
             for (int i = 0; i < menu.GetMenuItemCount(); ++i)
             {
                 // The MenuItemData pointer is deleted in OnUnInitMenuPopup.
-                MenuItemDataPtr itemDataPtr(new MenuItemData);
+                MenuItemDataPtr itemDataPtr(std::make_unique<MenuItemData>());
                 MENUITEMINFO mii;
                 ZeroMemory(&mii, sizeof(mii));
                 mii.cbSize = GetSizeofMenuItemInfo();
@@ -2248,6 +2252,10 @@ namespace Win32xx
                 UINT position = static_cast<UINT>(i);
                 if (menu.GetMenuItemInfo(position, mii, TRUE))
                 {
+                    itemDataPtr->itemText.ReleaseBuffer();
+                    if (itemDataPtr->itemText.Find(_T("\t")) >= 0)
+                        hasTabs = true;
+
                     if (mii.dwItemData == 0)
                     {
                         itemDataPtr->menu = menu;
@@ -2256,12 +2264,9 @@ namespace Win32xx
                         mii.dwItemData = reinterpret_cast<ULONG_PTR>(itemDataPtr.get());
                         mii.fType |= MFT_OWNERDRAW;
                         menu.SetMenuItemInfo(position, mii, TRUE); // Store pItem in mii
-                        menuData.push_back(itemDataPtr);
+                        menuData.push_back(std::move(itemDataPtr));
                     }
                 }
-                itemDataPtr->itemText.ReleaseBuffer();
-                if (itemDataPtr->itemText.Find(_T("\t")) >= 0)
-                    hasTabs = true;
             }
 
             // If one item has a tab, all should have a tab.
@@ -2279,7 +2284,7 @@ namespace Win32xx
             // m_menuItemIDs can store the menu item data for multiple popup menus.
             // There will be multiple popup menus if submenus are opened.
             if (menuData.size() != 0)
-                m_menusData.push_back(menuData);
+                m_menusData.push_back(std::move(menuData));
         }
 
         return 0;
@@ -2486,14 +2491,6 @@ namespace Win32xx
         return 0;
     }
 
-    // Called when the frame window (not a child window) receives focus.
-    template <class T>
-    inline LRESULT CFrameT<T>::OnSetFocus(UINT, WPARAM, LPARAM)
-    {
-        SetStatusIndicators();
-        return 0;
-    }
-
     // Called when the SystemParametersInfo function changes a system-wide
     // setting or when policy settings have changed.
     template <class T>
@@ -2545,13 +2542,16 @@ namespace Win32xx
     template <class T>
     inline LRESULT CFrameT<T>::OnSysCommand(UINT msg, WPARAM wparam, LPARAM lparam)
     {
-        if ((SC_KEYMENU == wparam) && (VK_SPACE != lparam) && GetMenuBar().IsWindow())
+        // The "wparam & 0xFFF0" below is a requirement mentioned in the
+        // description of WM_SYSCOMMAND in the Windows API documentation.
+
+        if ((SC_KEYMENU == (wparam & 0xFFF0)) && (VK_SPACE != lparam) && GetMenuBar().IsWindow())
         {
             GetMenuBar().SysCommand(msg, wparam, lparam);
             return 0;
         }
 
-        if (SC_MINIMIZE == wparam)
+        if (SC_MINIMIZE == (wparam & 0xFFF0))
             m_oldFocus = ::GetFocus();
 
         // Pass remaining system commands on for default processing.
@@ -2576,7 +2576,7 @@ namespace Win32xx
     template <class T>
     inline LRESULT CFrameT<T>::OnUndocked()
     {
-        m_oldFocus = 0;
+        m_oldFocus = NULL;
         return 0;
     }
 
@@ -2672,10 +2672,9 @@ namespace Win32xx
             VERIFY(GetStatusBar().SetWindowPos(HWND_TOP, 0, 0, 0, 0, SWP_SHOWWINDOW));
 
             SetStatusParts();
-            SetStatusIndicators();
         }
 
-        // Resize the rebar or toolbar
+        // Resize the rebar or toolbar.
         if (GetReBar().IsWindow())
         {
             GetReBar().SendMessage(WM_SIZE, 0, 0);
@@ -2750,7 +2749,7 @@ namespace Win32xx
 
                 CString subKeyName;
                 CString pathName;
-                for (UINT i = 0; i < m_maxMRU; ++i)
+                for (size_t i = 0; i < m_maxMRU; ++i)
                 {
                     subKeyName.Format(_T("File %d"), i + 1);
 
@@ -2767,7 +2766,7 @@ namespace Win32xx
 
         catch (const CUserException&)
         {
-            TRACE("*** Failed to save registry MRU settings. ***\n");
+            TRACE("*** ERROR: Failed to save registry MRU settings. ***\n");
 
             const CString appKeyName = _T("Software\\") + m_keyName;
             CRegKey appKey;
@@ -2839,7 +2838,7 @@ namespace Win32xx
 
             catch (const CUserException&)
             {
-                TRACE("*** Failed to save registry settings. ***\n");
+                TRACE("*** ERROR: Failed to save registry settings. ***\n");
 
                 const CString appKeyName = _T("Software\\") + m_keyName;
                 CRegKey appKey;
@@ -2857,6 +2856,18 @@ namespace Win32xx
         }
 
         return TRUE;
+    }
+
+    // Removes the keyboard hook installed by SetKbdHook. The hook is used to
+    // display the keyboard indicator status for the CAPs lock, NUM lock,
+    // Scroll lock and Insert keys.
+    template<class T>
+    inline void CFrameT<T>::RemoveKbdHook()
+    {
+        if (m_kbdHook != NULL)
+            ::UnhookWindowsHookEx(m_kbdHook);
+
+        m_kbdHook = NULL;
     }
 
     // Sets the accelerator table for the application for this window.
@@ -2912,9 +2923,23 @@ namespace Win32xx
         m_initValues = values;
     }
 
+    // Installs a keyboard hook if m_useIndicatorStatus is true. The
+    // hook is used to display the keyboard indicator status for the
+    // CAPs lock, NUM lock, Scroll lock and Insert keys.
+    template <class T>
+    inline void CFrameT<T>::SetKbdHook()
+    {
+        if (m_useIndicatorStatus)
+        {
+            GetApp()->SetMainWnd(*this);
+            m_kbdHook = ::SetWindowsHookEx(WH_KEYBOARD, StaticKeyboardProc, 0, ::GetCurrentThreadId());
+            SetStatusIndicators();
+        }
+    }
+
     // Sets the menu icons. Any previous menu icons are removed.
     template <class T>
-    inline UINT CFrameT<T>::SetMenuIcons(const std::vector<UINT>& menuData, COLORREF mask, UINT toolBarID, UINT toolBarDisabledID)
+    inline UINT CFrameT<T>::SetMenuIcons(const std::vector<UINT>& menuData, COLORREF mask, UINT toolBarID, UINT)
     {
         // Remove any existing menu icons.
         ClearMenuIcons();
@@ -2923,15 +2948,7 @@ namespace Win32xx
         if (toolBarID == 0) return 0;
 
         // Add the menu icons from the bitmap IDs.
-        return AddMenuIcons(menuData, mask, toolBarID, toolBarDisabledID);
-    }
-
-    // Implements a keyboard hook. The hook is used to detect the CAPs lock,
-    // NUM lock, Scroll lock and Insert keys.
-    template <class T>
-    inline void CFrameT<T>::SetKbdHook()
-    {
-        m_kbdHook = ::SetWindowsHookEx(WH_KEYBOARD, StaticKeyboardProc, 0, ::GetCurrentThreadId());
+        return AddMenuIcons(menuData, mask, toolBarID, 0);
     }
 
     // Sets the minimum width of the MenuBar band to the width of the rebar.
@@ -2979,7 +2996,7 @@ namespace Win32xx
     template <class T>
     inline void CFrameT<T>::SetMRULimit(UINT mruLimit)
     {
-        // Remove any excess MRU entries
+        // Remove any excess MRU entries.
         if (mruLimit < m_mruEntries.size())
         {
             m_mruEntries.erase(m_mruEntries.begin() + static_cast<int>(mruLimit), m_mruEntries.end());
@@ -3012,16 +3029,25 @@ namespace Win32xx
             CString cap = LoadString(IDW_INDICATOR_CAPS);
             CString num = LoadString(IDW_INDICATOR_NUM);
             CString scrl = LoadString(IDW_INDICATOR_SCRL);
+            CString empty;
 
-            m_indicators[0] = (::GetKeyState(VK_CAPITAL) & 0x0001) ? cap : CString("");
-            m_indicators[1] = (::GetKeyState(VK_NUMLOCK) & 0x0001) ? num : CString("");
-            m_indicators[2] = (::GetKeyState(VK_SCROLL) & 0x0001) ? scrl : CString("");
+            CString old0 = m_indicators[0];
+            CString old1 = m_indicators[1];
+            CString old2 = m_indicators[2];
+
+            m_indicators[0] = (::GetKeyState(VK_CAPITAL) & 0x0001) ? cap : empty;
+            m_indicators[1] = (::GetKeyState(VK_NUMLOCK) & 0x0001) ? num : empty;
+            m_indicators[2] = (::GetKeyState(VK_SCROLL) & 0x0001) ? scrl : empty;
 
             // Update the indicators text.
             // We need member variables for owner drawn text to keep the text in scope.
-            GetStatusBar().SetPartText(1, m_indicators[0], SBT_OWNERDRAW);
-            GetStatusBar().SetPartText(2, m_indicators[1], SBT_OWNERDRAW);
-            GetStatusBar().SetPartText(3, m_indicators[2], SBT_OWNERDRAW);
+            // Only set the indicator if it changed.
+            if (old0 != m_indicators[0])
+                GetStatusBar().SetPartText(1, m_indicators[0], SBT_OWNERDRAW);
+            if (old1 != m_indicators[1])
+                GetStatusBar().SetPartText(2, m_indicators[1], SBT_OWNERDRAW);
+            if (old2 != m_indicators[2])
+                GetStatusBar().SetPartText(3, m_indicators[2], SBT_OWNERDRAW);
         }
     }
 
@@ -3054,9 +3080,10 @@ namespace Win32xx
 
             // Get the coordinates of the window's client area.
             CRect clientRect = T::GetClientRect();
-            int width = MAX(300, clientRect.right);
+            int clientRight = clientRect.right;
+            int width = std::max(300, clientRight);
 
-            // Create 4 panes
+            // Create 4 panes.
             GetStatusBar().SetPartWidth(0, width - (capSize.cx + numSize.cx + scrlSize.cx + cxGripper));
             GetStatusBar().SetPartWidth(1, capSize.cx);
             GetStatusBar().SetPartWidth(2, numSize.cx);
@@ -3082,7 +3109,7 @@ namespace Win32xx
     template <class T>
     inline void CFrameT<T>::SetTheme()
     {
-        // Avoid themes if using less than 16 bit colors
+        // Avoid themes if using less than 16 bit colors.
         CClientDC DesktopDC(*this);
         if (DesktopDC.GetDeviceCaps(BITSPIXEL) < 16)
             UseThemes(FALSE);
@@ -3223,19 +3250,20 @@ namespace Win32xx
 
     // Sets the Image List for additional toolbars.
     template <class T>
-    inline void CFrameT<T>::SetTBImageList(CToolBar& toolBar, CImageList& imageList, UINT id, COLORREF mask)
+    inline void CFrameT<T>::SetTBImageList(CToolBar& toolBar, UINT id, COLORREF mask)
     {
         // Get the image size.
         CBitmap bm(id);
 
         // Assert if we failed to load the bitmap.
-        assert(bm.GetHandle() != 0);
+        assert(bm.GetHandle() != NULL);
 
         // Scale the bitmap to the window's DPI.
         CBitmap dpiImage = T::DpiScaleUpBitmap(bm);
         CSize sz = GetTBImageSize(&dpiImage);
 
         // Set the toolbar's image list.
+        CImageList imageList;
         imageList.Create(sz.cx, sz.cy, ILC_COLOR32 | ILC_MASK, 0, 0);
         imageList.Add(dpiImage, mask);
         toolBar.SetImageList(imageList);
@@ -3252,19 +3280,20 @@ namespace Win32xx
 
     // Sets the Disabled Image List for additional toolbars.
     template <class T>
-    inline void CFrameT<T>::SetTBImageListDis(CToolBar& toolBar, CImageList& imageList, UINT id, COLORREF mask)
+    inline void CFrameT<T>::SetTBImageListDis(CToolBar& toolBar, UINT id, COLORREF mask)
     {
         // Get the image size.
         CBitmap bm(id);
 
         // Assert if we failed to load the bitmap.
-        assert(bm.GetHandle() != 0);
+        assert(bm.GetHandle() != NULL);
 
         // Scale the bitmap to the window's DPI.
         CBitmap dpiImage = T::DpiScaleUpBitmap(bm);
         CSize sz = GetTBImageSize(&dpiImage);
 
         // Set the toolbar's disabled image list.
+        CImageList imageList;
         imageList.Create(sz.cx, sz.cy, ILC_COLOR32 | ILC_MASK, 0, 0);
         imageList.Add(dpiImage, mask);
         toolBar.SetDisableImageList(imageList);
@@ -3281,19 +3310,20 @@ namespace Win32xx
 
     // Sets the Hot Image List for additional toolbars.
     template <class T>
-    inline void CFrameT<T>::SetTBImageListHot(CToolBar& toolBar, CImageList& imageList, UINT id, COLORREF mask)
+    inline void CFrameT<T>::SetTBImageListHot(CToolBar& toolBar, UINT id, COLORREF mask)
     {
         // Get the image size.
         CBitmap bm(id);
 
         // Assert if we failed to load the bitmap.
-        assert(bm.GetHandle() != 0);
+        assert(bm.GetHandle() != NULL);
 
         // Scale the bitmap to the window's DPI.
         CBitmap dpiImage = T::DpiScaleUpBitmap(bm);
         CSize sz = GetTBImageSize(&dpiImage);
 
         // Set the toolbar's hot image list
+        CImageList imageList;
         imageList.Create(sz.cx, sz.cy, ILC_COLOR32 | ILC_MASK, 0, 0);
         imageList.Add(dpiImage, mask);
         toolBar.SetHotImageList(imageList);
@@ -3314,7 +3344,7 @@ namespace Win32xx
     // The color mask is ignored for 32bit bitmaps, but is required for 24bit bitmaps
     // The color mask is often gray RGB(192,192,192) or magenta (255,0,255)
     // The Hot and disabled bitmap resources can be 0.
-    // A Disabled image list is created from ToolBarID if one isn't provided.
+    // A Disabled image list is created from toolBarID if one isn't provided.
     template <class T>
     inline void CFrameT<T>::SetToolBarImages(CToolBar& toolbar, COLORREF mask, UINT toolBarID, UINT toolBarHotID, UINT toolBarDisabledID)
     {
@@ -3327,27 +3357,33 @@ namespace Win32xx
         }
 
         // Set the normal imagelist.
-        CImageList toolBarImages;
-        SetTBImageList(toolbar, toolBarImages, toolBarID, mask);
-        m_toolBarImageLists.push_back(toolBarImages);
+        SetTBImageList(toolbar, toolBarID, mask);
 
         // Set the hot imagelist.
         if (toolBarHotID != 0)
         {
-            CImageList toolBarHotImages;
-            SetTBImageListHot(toolbar, toolBarHotImages, toolBarHotID, mask);
-            m_toolBarHotImageLists.push_back(toolBarHotImages);
+            SetTBImageListHot(toolbar, toolBarHotID, mask);
         }
 
-        // Set the disabled imagelist.
         if (toolBarDisabledID != 0)
         {
+            SetTBImageListDis(toolbar, toolBarDisabledID, mask);
+        }
+        else
+        {
             CImageList toolBarDisabledImages;
-            SetTBImageListDis(toolbar, toolBarDisabledImages, toolBarDisabledID, mask);
-            m_toolBarDisabledImageLists.push_back(toolBarDisabledImages);
+            toolBarDisabledImages.CreateDisabledImageList(toolbar.GetImageList());
+            toolbar.SetDisableImageList(toolBarDisabledImages);
         }
     }
 
+    // Either sets the imagelist or adds/replaces bitmap depending on ComCtl32.dll version
+    // The ToolBarIDs are bitmap resources containing a set of toolbar button images.
+    // Each toolbar button image must have a minimum height of 16. Its height must equal its width.
+    // The color mask is ignored for 32bit bitmaps, but is required for 24bit bitmaps
+    // The color mask is often gray RGB(192,192,192) or magenta (255,0,255)
+    // The Hot and disabled bitmap resources can be 0.
+    // A Disabled image list is created from toolBarID if one isn't provided.
     template <class T>
     inline void CFrameT<T>::SetToolBarImages(COLORREF mask, UINT toolBarID, UINT toolBarHotID, UINT toolBarDisabledID)
     {
@@ -3448,7 +3484,7 @@ namespace Win32xx
             if (GetReBar().IsWindow())
                 GetReBar().ShowBand(GetReBar().GetBand(GetMenuBar()), FALSE);
             else
-                T::SetMenu(0);
+                T::SetMenu(NULL);
         }
 
         if (GetReBar().IsWindow())
@@ -3517,16 +3553,20 @@ namespace Win32xx
     template <class T>
     inline LRESULT CALLBACK CFrameT<T>::StaticKeyboardProc(int code, WPARAM wparam, LPARAM lparam)
     {
-        HWND hFrame = GetApp()->GetMainWnd();
-        CFrameT<T>* pFrame = static_cast< CFrameT<T>* >(CWnd::GetCWndPtr(hFrame));
-        assert(pFrame);
+        HWND frame = GetApp()->GetMainWnd();
+        CFrameT<T>* pFrame = static_cast< CFrameT<T>* >(CWnd::GetCWndPtr(frame));
+        assert(dynamic_cast<CFrameT<T>*>(pFrame) != NULL);
 
-        if (pFrame)
+        if (pFrame != NULL)
+        {
             pFrame->OnKeyboardHook(code, wparam, lparam);
 
-        // The HHOOK parameter in CallNextHookEx should be supplied for Win95, Win98 and WinME.
-        // The HHOOK parameter is ignored for Windows NT and above.
-        return pFrame? ::CallNextHookEx(pFrame->m_kbdHook, code, wparam, lparam) : 0;
+            // The HHOOK parameter is used in CallNextHookEx for Win95, Win98 and WinME.
+            // The HHOOK parameter is ignored for Windows NT and above.
+            return ::CallNextHookEx(pFrame->m_kbdHook, code, wparam, lparam);
+        }
+
+        return ::CallNextHookEx(0, code, wparam, lparam);
     }
 
     // Update the MenuBar band size.
@@ -3617,19 +3657,12 @@ namespace Win32xx
                 mii.wID = IDW_FILE_MRU_FILE1 + pos;
                 mii.dwTypeData = const_cast<LPTSTR>(mruStrings[index].c_str());
 
-                BOOL result;
                 if (item == maxMRUIndex)
                     // Replace the last MRU entry first.
-                    result = fileMenu.SetMenuItemInfo(IDW_FILE_MRU_FILE1, mii, FALSE);
+                    VERIFY(fileMenu.SetMenuItemInfo(IDW_FILE_MRU_FILE1, mii, FALSE));
                 else
                     // Insert the other MRU entries next.
-                    result = fileMenu.InsertMenuItem(IDW_FILE_MRU_FILE1 + pos + 1, mii, FALSE);
-
-                if (!result)
-                {
-                    TRACE("Failed to set MRU menu item\n");
-                    break;
-                }
+                    VERIFY(fileMenu.InsertMenuItem(IDW_FILE_MRU_FILE1 + pos + 1, mii, FALSE));
             }
         }
 
@@ -3689,7 +3722,6 @@ namespace Win32xx
         case WM_MENUCHAR:       return OnMenuChar(msg, wparam, lparam);
         case WM_MEASUREITEM:    return OnMeasureItem(msg, wparam, lparam);
         case WM_MENUSELECT:     return OnMenuSelect(msg, wparam, lparam);
-        case WM_SETFOCUS:       return OnSetFocus(msg, wparam, lparam);
         case WM_SETTINGCHANGE:  return OnSettingChange(msg, wparam, lparam);
         case WM_SIZE:           return OnSize(msg, wparam, lparam);
         case WM_SYSCOLORCHANGE: return OnSysColorChange(msg, wparam, lparam);

@@ -20,6 +20,15 @@ The Simple view window will present a dialog box asking if it is OK to
 close the window, before it is destroyed.
 
 
+Caveat
+======
+Multiple-document interface (MDI) applications are officially discouraged
+by Microsoft. They do not render properly with Per-Monitor (V2) DPI Awareness.
+
+Win32++ provides the CTabbedMDI class which can be used as an alternative to
+MDI applications.
+
+
 Features demonstrated in this example
 =====================================
 * Use of CMDIFrame and CMDIChild classes to implement a MDI frame
@@ -38,7 +47,8 @@ Features demonstrated in this example
    - Each MDI child type has a different menu and icon
    - Each MDI child type has a different view window
 * Handling a MDI child's OnClose to provide an opportunity to save data before
-   the MDI child's window is closed.   
+   the MDI child's window is closed.
+* Using a drop down menu with a toolbar button.
 
 
 

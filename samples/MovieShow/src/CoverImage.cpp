@@ -4,11 +4,19 @@
 
 #include "stdafx.h"
 
-#ifdef _MSC_VER
-#pragma warning (disable : 4458) // disable declaration hides class member warning
+#if defined (_MSC_VER) && (_MSC_VER == 1900) // == VS2015
+#pragma warning (disable : 4458) // disable warning: declaration hides class member
 #endif
+
+// Declare min and max for older versions of Visual Studio
+#if defined (_MSC_VER) && (_MSC_VER < 1920) // < VS2019
+using std::min;
+using std::max;
+#endif
+
 #include <gdiplus.h>
-#ifdef _MSC_VER
+
+#if defined(_MSC_VER) && (_MSC_VER == 1900)
 #pragma warning (default : 4458) // return warning to default
 #endif
 
@@ -37,7 +45,7 @@ CCoverImage::CCoverImage()
     HINSTANCE instance = GetApp()->GetInstanceHandle();
     if (!::GetClassInfo(instance, className, &wc))
     {
-        wc.hCursor = ::LoadCursor(0, IDC_ARROW);
+        wc.hCursor = ::LoadCursor(nullptr, IDC_ARROW);
         wc.lpszClassName = className;
         wc.lpfnWndProc = ::DefWindowProc;
         wc.hInstance = instance;
@@ -50,6 +58,7 @@ CCoverImage::CCoverImage()
 // Destructor.
 CCoverImage::~CCoverImage()
 {
+    GdiplusShutdown(m_gdiplusToken);
 }
 
 // Draws the cover image to the specified device context.
@@ -92,26 +101,11 @@ void CCoverImage::DrawImage(CDC& dc)
     }
 }
 
-// Called when the CCoverImage window needs to be redrawn.
-void CCoverImage::OnDraw(CDC& dc)
-{
-    DrawImage(dc);
-}
-
 // Calls OnDraw to preform painting for this custom control.
 LRESULT CCoverImage::OnPaint(UINT, WPARAM, LPARAM)
 {
-    if (::GetUpdateRect(*this, nullptr, FALSE))
-    {
-        CPaintDC dc(*this);
-        OnDraw(dc);
-    }
-    else
-    // RedrawWindow can require repainting without an update rect.
-    {
-        CClientDC dc(*this);
-        OnDraw(dc);
-    }
+    CPaintDC dc(*this);
+    DrawImage(dc);
 
     // No more drawing required
     return 0;
@@ -135,12 +129,24 @@ LRESULT CCoverImage::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(nullptr, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(nullptr, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }

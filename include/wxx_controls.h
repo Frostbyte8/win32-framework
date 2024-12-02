@@ -1,9 +1,10 @@
-// Win32++   Version 9.5
-// Release Date: TBA
+// Win32++   Version 9.6.1
+// Release Date: 29th July 2024
 //
 //      David Nash
 //      email: dnash@bigpond.net.au
 //      url: https://sourceforge.net/projects/win32-framework
+//           https://github.com/DavidNash2024/Win32xx
 //
 //
 // Copyright (c) 2005-2024  David Nash
@@ -48,9 +49,6 @@
 
 
 #include "wxx_wincore0.h"
-#include "wxx_stdcontrols.h"
-#include "wxx_imagelist.h"
-#include "wxx_ddx.h"
 
 
 namespace Win32xx
@@ -170,7 +168,7 @@ namespace Win32xx
         BOOL    GetItem(COMBOBOXEXITEM& item) const;
         BOOL    HasEditChanged () const;
         int     InsertItem(const COMBOBOXEXITEM& item) const;
-        HIMAGELIST SetImageList(HIMAGELIST images) const;
+        CImageList SetImageList(HIMAGELIST images);
         BOOL    SetItem(const COMBOBOXEXITEM& item) const;
         DWORD   GetExtendedStyle() const;
         DWORD   SetExtendedStyle(DWORD exMask, DWORD exStyles) const;
@@ -182,6 +180,8 @@ namespace Win32xx
     private:
         CComboBoxEx(const CComboBoxEx&);               // Disable copy construction
         CComboBoxEx& operator=(const CComboBoxEx&);    // Disable assignment operator
+
+        CImageList m_images;
     };
 
 
@@ -203,7 +203,7 @@ namespace Win32xx
         CRect   GetItemRect(int index) const;
         BOOL    GetOrderArray(LPINT pArray, int count) const;
         int     OrderToIndex(int order) const;
-        HIMAGELIST SetImageList(HIMAGELIST images) const;
+        CImageList SetImageList(HIMAGELIST images);
         BOOL    SetItem(int pos, const HDITEM& item) const;
         BOOL    SetOrderArray(int count, LPINT pArray) const;
         int     GetBitmapMargin() const;
@@ -232,6 +232,8 @@ namespace Win32xx
     private:
         CHeader(const CHeader&);               // Disable copy construction
         CHeader& operator=(const CHeader&);    // Disable assignment operator
+
+        CImageList m_images;
     };
 
 
@@ -534,7 +536,8 @@ namespace Win32xx
         void     SetTipBkColor(COLORREF color) const;
         void     SetTipTextColor(COLORREF color) const;
         void     SetToolInfo(const TOOLINFO& toolInfo) const;
-#if (_WIN32_IE >=0x0500)
+
+#ifdef TTM_GETBUBBLESIZE
         CSize    GetBubbleSize(HWND control, UINT id = -1) const;
 #endif
 
@@ -553,11 +556,11 @@ namespace Win32xx
         void UpdateTipText(LPCTSTR text, HWND control, UINT id = -1) const;
         void UpdateTipText(UINT textID, HWND control, UINT id = -1) const;
 
-#if (_WIN32_IE >=0x0500)
+#ifdef TTM_ADJUSTRECT
         BOOL AdjustRect(RECT& rc, BOOL isLarger = TRUE) const;
-  #ifdef TTM_SETTITLE
+#endif
+#ifdef TTM_SETTITLE
         BOOL SetTitle(UINT icon, LPCTSTR title) const;
-  #endif
 #endif
 #if (WINVER >= 0x0501) && defined(TTM_SETWINDOWTHEME)
         void SetTTWindowTheme(LPCWSTR theme) const;
@@ -572,9 +575,7 @@ namespace Win32xx
     private:
         CToolTip(const CToolTip&);              // Disable copy construction
         CToolTip& operator=(const CToolTip&);   // Disable assignment operator
-
     };
-
 
 } // namespace Win32xx
 
@@ -1151,11 +1152,12 @@ namespace Win32xx
 
     // Sets an image list for the ComboBoxEx control.
     // Refer to CBEM_SETIMAGELIST in the Windows API documentation for more information.
-    inline HIMAGELIST CComboBoxEx::SetImageList(HIMAGELIST images) const
+    inline CImageList CComboBoxEx::SetImageList(HIMAGELIST images)
     {
         assert(IsWindow());
         LPARAM lparam = reinterpret_cast<LPARAM>(images);
         HIMAGELIST oldImages = reinterpret_cast<HIMAGELIST>(SendMessage(CBEM_SETIMAGELIST, 0, lparam));
+        m_images = images;
         return oldImages;
     }
 
@@ -1265,6 +1267,7 @@ namespace Win32xx
     {
         assert(IsWindow());
         SYSTEMTIME ranges[2];
+        ZeroMemory(&ranges, sizeof(ranges));
         ranges[0] = minRange;
         ranges[1] = maxRange;
         DWORD flags = GDTR_MIN | GDTR_MAX;
@@ -1405,10 +1408,11 @@ namespace Win32xx
 
     // Assigns an image list to the header control.
     // Refer to Header_SetImageList in the Windows API documentation for more information.
-    inline HIMAGELIST CHeader::SetImageList(HIMAGELIST images) const
+    inline CImageList CHeader::SetImageList(HIMAGELIST images)
     {
         assert(IsWindow());
         HIMAGELIST oldImages = Header_SetImageList(*this, images);
+        m_images = images;
         return oldImages;
     }
 
@@ -1497,10 +1501,10 @@ namespace Win32xx
     // Refer to GetKeyNameText in the Windows API documentation for more information.
     inline CString CHotKey::GetKeyName(UINT keyCode, BOOL isExtended) const
     {
-        // Translate the virtual-key code to a scan code
+        // Translate the virtual-key code to a scan code.
         UINT scan = MapVirtualKey(keyCode, 0);
 
-        // Construct an LPARAM with the scan code in Bits 16-23, and an extended flag in bit 24
+        // Construct an LPARAM with the scan code in Bits 16-23, and an extended flag in bit 24.
         LPARAM lparam = LPARAM(scan) << 16;
         if (isExtended)
             lparam |= 0x01000000L;
@@ -1509,7 +1513,7 @@ namespace Win32xx
         int incompleteLength = 64;
         int length = incompleteLength;
 
-        // Loop until we have retrieved the entire string
+        // Loop until we have retrieved the entire string.
         while (length == incompleteLength)
         {
             incompleteLength *= 4;
@@ -1549,8 +1553,9 @@ namespace Win32xx
     {
         if (GetComCtlVersion() > 470)
         {
-            // Call InitCommonControlsEx
+            // Call InitCommonControlsEx.
             INITCOMMONCONTROLSEX initStruct;
+            ZeroMemory(&initStruct, sizeof(initStruct));
             initStruct.dwSize = sizeof(initStruct);
             initStruct.dwICC = ICC_INTERNET_CLASSES;
             InitCommonControlsEx(&initStruct);
@@ -1857,6 +1862,7 @@ namespace Win32xx
     inline BOOL CMonthCalendar::SetRange(const SYSTEMTIME& minRange, const SYSTEMTIME& maxRange) const
     {
         SYSTEMTIME minMax[2];
+        ZeroMemory(&minMax, sizeof(minMax));
         DWORD limit = GDTR_MIN | GDTR_MAX;
 
         minMax[0] = minRange;
@@ -1870,6 +1876,7 @@ namespace Win32xx
     inline BOOL CMonthCalendar::SetSelRange(const SYSTEMTIME& minRange, const SYSTEMTIME& maxRange) const
     {
         SYSTEMTIME minMax[2];
+        ZeroMemory(&minMax, sizeof(minMax));
         minMax[0] = minRange;
         minMax[1] = maxRange;
 
@@ -2529,7 +2536,7 @@ namespace Win32xx
         CString str;
         TOOLINFO info = GetToolInfo(control, id);
 
-        LPTSTR text = str.GetBuffer(80); // Maximum allowed ToolTip is 80 characters for Windows XP and below
+        LPTSTR text = str.GetBuffer(80); // Maximum allowed ToolTip is 80 characters for Windows XP and below.
         info.lpszText = text;
         LPARAM lparam = reinterpret_cast<LPARAM>(&info);
         SendMessage(TTM_GETTEXT, 0, lparam);
@@ -2780,7 +2787,7 @@ namespace Win32xx
         SendMessage(TTM_UPDATETIPTEXT, 0, lparam);
     }
 
-#if (_WIN32_IE >=0x0500)
+#ifdef TTM_ADJUSTRECT
 
     // Calculates a ToolTip control's text display rectangle from its window rectangle, or the
     // ToolTip window rectangle needed to display a specified text display rectangle.
@@ -2792,6 +2799,9 @@ namespace Win32xx
         LPARAM lparam = reinterpret_cast<LPARAM>(&rc);
         return static_cast<BOOL>(SendMessage(TTM_ADJUSTRECT, wparam, lparam));
     }
+
+#endif
+#ifdef TTM_GETBUBBLESIZE
 
     // Returns the width and height of a ToolTip control.
     // Refer to TTM_GETBUBBLESIZE in the Windows API documentation for more information.
@@ -2805,6 +2815,7 @@ namespace Win32xx
         return sz;
     }
 
+#endif
 #ifdef TTM_SETTITLE
 
     // Adds a standard icon and title string to a ToolTip.
@@ -2818,8 +2829,6 @@ namespace Win32xx
     }
 
 #endif
-#endif
-
 #if (WINVER >= 0x0501) && defined(TTM_SETWINDOWTHEME)
 
     // Sets the visual style of a ToolTip control.
@@ -2832,8 +2841,6 @@ namespace Win32xx
     }
 
 #endif
-
-
 
 } // namespace Win32xx
 

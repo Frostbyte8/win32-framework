@@ -57,7 +57,7 @@ void CView::PreRegisterClass(WNDCLASS& wc)
     wc.hbrBackground = (HBRUSH)::GetStockObject(WHITE_BRUSH);
 
     // Set the default cursor.
-    wc.hCursor = ::LoadCursor(0, IDC_ARROW);
+    wc.hCursor = ::LoadCursor(NULL, IDC_ARROW);
 
     // Set the class style (not to be confused with the window styles set in PreCreate).
     wc.style = CS_DBLCLKS;  // Generate left button double click messages.
@@ -66,16 +66,37 @@ void CView::PreRegisterClass(WNDCLASS& wc)
 LRESULT CView::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
 // All window messages for this window pass through WndProc.
 {
-    switch (msg)
+    try
     {
-    case WM_SIZE:
-        Invalidate();
-        break;  // Also do default processing.
+        switch (msg)
+        {
+        case WM_SIZE:
+            Invalidate();
+            break;  // Also do default processing.
+        }
+
+        // Pass unhandled messages on for default processing.
+        return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Pass unhandled messages on for default processing.
-    return WndProcDefault(msg, wparam, lparam);
+    // Catch all unhandled CException types.
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
+    }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
-
-
-

@@ -11,7 +11,7 @@
 
 // Note: Modern C++ compilers can use this typedef instead.
 // typedef std::shared_ptr<CMyWinThread> MyThreadPtr;
-typedef Shared_Ptr<CMyWinThread> MyThreadPtr;
+typedef std::unique_ptr<CMyWinThread> MyThreadPtr;
 
 
 /////////////////////////////////////////////////////
@@ -21,7 +21,7 @@ class CMainWindow : public CWnd
 public:
     CMainWindow();
     virtual ~CMainWindow() {}
-    HWND Create(HWND parent = 0);
+    HWND Create(HWND parent = NULL);
 
 protected:
     // Virtual functions that override base class functions

@@ -17,7 +17,6 @@ Win32++ supports the following compilers and development environments:
 * Microsoft Visual Studio Community 2013
 * Microsoft Visual Studio Community 2015
 * Microsoft Visual Studio Community 2019
-* Microsoft Visual Studio 6.0
 * Microsoft Visual Studio.net 2003
 * Microsoft Visual Studio 2005
 * Microsoft Visual Studio 2008
@@ -55,19 +54,19 @@ Win32++ supports the following operating systems
 Features
 --------
 Win32++ code has the following features
- * Object Orientated
- * Subclassing support
- * Notification reflection and message reflection
- * Unicode compliant, with multilingual support
- * Multi-threaded support.
- * Tracing
- * 64 bit support
- * Windows 7 ribbon support
- * Themes support
- * Network support (including IP version 6)
- * Docking windows
- * Tabbed MDIs
- * Print preview support.
+* Open Source.
+* Supports Microsoft, Clang, Borland and GNU C++ compilers.
+* Supports applications based on simple windows, dialogs, forms, property sheets, SDI frames and MDI frames.
+* Supports docking, with tabbed containers and TabbedMDIs.
+* Provides a CString for convenient character string handling.
+* Multi-Thread support.
+* 64 bit support.
+* Print preview support.
+* Support for Task Dialogs available on the Windows Vista and later operating systems.
+* Support for the Ribbon Framework available on Windows 7.
+* Network support. IPv4 and IPv6.
+* Supports applications with per monitor DPI awareness, version 2.
+* Supports dark mode applications.
 
 Frames produced by Win32++ typically have the following:
  * Rebar
@@ -98,6 +97,7 @@ The sample applications include:
  * Console - A console application with CString support.
  * ContextHelp - Shows how to incorporate context help into an application.
  * CustomControl - Shows how to put a web browser in a custom control for use in a dialog.
+ * CustomPrintDlg - Shows how to create a customized print dialog.
  * DarkModeFrame - Demonstrate a frame application with dark mode support.
  * DateTime - A demo of a Date/time dialog for displaying and changing the time
  * DDXDemo - Demonstrates Dialog Data Exchange and validation.
@@ -125,8 +125,8 @@ The sample applications include:
  * GDIPlus - Demonstrates how to use GDI+ with Win32++.
  * INIFrame - A simple frame application that stores settings in an INI file.
  * ListView - Demonstrates a listview control with text editing and sorting.
- * MDIDockFrame - Combines docking with a MDI frame.
  * MDIFrame - A simple MDI frame application.
+ * MDIDockFrame - A MDI frame that supports docking.
  * MDIFrameDemo - Demonstrates some additional features of MDI frames.
  * MDIFrameSplitter - Demonstrates how to implement splitter windows in MDI Child windows.
  * MetaFile  - Demonstrates how to create and display an enhanced metafile.
@@ -139,8 +139,6 @@ The sample applications include:
  * Notepad - A simple text editor with printing.
  * Performance - Measures Win32++'s message handling speed.
  * Picture - A simple picture rendering application.
- * PrintPreview - Extends the Notepad sample by adding a print preview.
- * PrintDialogEx - A text editor with printing that uses CPrintDialogEx.
  * PropertySheets - A demonstration of property sheets.
  * RebarDemo - Demonstrates the how to add a second ReBar to a frame application.
  * RibbonDockFrame - Demonstrates how to use a ribbon with a Docking Frame.
@@ -148,6 +146,7 @@ The sample applications include:
  * RibbonMDIFrame - Demonstrates how to use the Windows 7 ribbon with a MDI frame.
  * RibbonSimple - Demonstrates how to use the Windows 7 ribbon with a simple window.
  * RoundWindow - Demonstrates how to use Win32++ to create a round window.
+ * ScintillaDemo - Demonstrates how to use a Scintilla control with Win32++.
  * Scribble - A simple drawing application.
  * ScrollTextFile - displays a text file in a scrollable window.
  * Simple - Creates a simple window.

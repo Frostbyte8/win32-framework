@@ -11,8 +11,11 @@
 //
 
 // Constructor for CMainFrame.
-CMainFrame::CMainFrame() : m_isDPIChanging(false), m_isToolbarShown(true)
+CMainFrame::CMainFrame() : m_preview(m_view), m_isDPIChanging(false),
+                           m_isToolbarShown(true)
 {
+    // Set m_MyView as the view window of the frame.
+    SetView(m_view);
 }
 
 // Destructor for CMainFrame.
@@ -23,14 +26,11 @@ CMainFrame::~CMainFrame()
 // Create the frame window.
 HWND CMainFrame::Create(HWND parent)
 {
-    //Set m_MyView as the view window of the frame
-    SetView(m_view);
-
-    // Set the registry key name, and load the initial window position
-    // Use a registry key name like "CompanyName\\Application"
+    // Set the registry key name, and load the initial window position.
+    // Use a registry key name like "CompanyName\\Application".
     LoadRegistrySettings(_T("Win32++\\Fast GDI Demo"));
 
-    // Load the settings from the registry with 4 MRU entries
+    // Load the settings from the registry with 4 MRU entries.
     LoadRegistryMRUSettings(4);
 
     return CFrame::Create(parent);
@@ -77,14 +77,14 @@ void CMainFrame::ModifyBitmap(int cRed, int cGreen, int cBlue, BOOL isGray)
 // Called when the frame window is closed.
 void CMainFrame::OnClose()
 {
-    // Close the preview
+    // Close the preview.
     if (GetView() == m_preview)
         OnPreviewClose();
 
     CFrame::OnClose();
 }
 
-// OnCommand responds to menu and and toolbar input
+// OnCommand responds to menu and and toolbar input.
 BOOL CMainFrame::OnCommand(WPARAM wparam, LPARAM lparam)
 {
     UINT id = LOWORD(wparam);
@@ -148,9 +148,9 @@ LRESULT CMainFrame::OnDpiChanged(UINT, WPARAM, LPARAM)
     ResetMenuMetrics();
     UpdateSettings();
     DpiScaleToolBar();
+    ClearMenuIcons();
     SetupMenuIcons();
     RecalcLayout();
-
     return 0;
 }
 
@@ -280,9 +280,6 @@ BOOL CMainFrame::OnFilePreview()
         if (!m_preview.IsWindow())
             m_preview.Create(*this);
 
-        // Specify the source of the PrintPage function
-        m_preview.SetSource(m_view);
-
         // Set the preview's owner (for notification messages)
         m_preview.DoPrintPreview(*this);
 
@@ -303,7 +300,7 @@ BOOL CMainFrame::OnFilePreview()
         // An exception occurred. Display the relevant information.
         MessageBox(e.GetText(), _T("Print Preview Failed"), MB_ICONWARNING);
         SetView(m_view);
-        ShowMenu(GetFrameMenu() != 0);
+        ShowMenu(GetFrameMenu() != NULL);
         ShowToolBar(m_isToolbarShown);
     }
 
@@ -392,7 +389,7 @@ LRESULT CMainFrame::OnPreviewClose()
     SetView(m_view);
 
     // Show the menu and toolbar
-    ShowMenu(GetFrameMenu() != 0);
+    ShowMenu(GetFrameMenu() != NULL);
     ShowToolBar(m_isToolbarShown);
     UpdateSettings();
 
@@ -451,7 +448,7 @@ LRESULT CMainFrame::OnWindowPosChanged(UINT msg, WPARAM wparam, LPARAM lparam)
     // The DPI can change when the window is moved to a different monitor.
     if (m_isDPIChanging)
     {
-        if (m_view.GetImage().GetHandle() != 0)
+        if (m_view.GetImage().GetHandle() != NULL)
         {
             // Adjust the frame size to fit the view.
             AdjustFrameRect(m_viewRect);
@@ -544,13 +541,25 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 

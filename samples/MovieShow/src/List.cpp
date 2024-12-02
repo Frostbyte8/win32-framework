@@ -69,7 +69,7 @@ int CALLBACK CViewList::CompareFunction(LPARAM lp1, LPARAM lp2, LPARAM pSortView
     assert(lp2);
     assert(pSortViewItems);
 
-    if (lp1 == 0 || lp2 == 0 || pSortViewItems == 0)
+    if (lp1 == NULL || lp2 == NULL || pSortViewItems == NULL)
         return 0;
 
     SortViewItems* pSort = reinterpret_cast<SortViewItems*>(pSortViewItems);
@@ -166,6 +166,12 @@ void CViewList::OnAttach()
                       | LVS_EX_HEADERDRAGDROP | LVS_EX_DOUBLEBUFFER );
 
     SetColumn();
+
+    // Disable double click on the list-view's header.
+    m_header.Attach(GetHeader());
+    LONG_PTR style = static_cast<LONG_PTR>(m_header.GetClassLongPtr(GCL_STYLE));
+    style = style & ~CS_DBLCLKS;
+    m_header.SetClassLongPtr(GCL_STYLE, style);
 }
 
 // Call to perform custom drawing.
@@ -200,12 +206,6 @@ LRESULT CViewList::OnCustomDraw(LPNMCUSTOMDRAW pCustomDraw)
     }
 
     return CDRF_DODEFAULT;
-}
-
-// Called when the listview window is destroyed.
-void CViewList::OnDestroy()
-{
-    SetImageList(0, LVSIL_SMALL);
 }
 
 // Called in response to a WM_DPICHANGED_BEFOREPARENT message that is sent to child
@@ -344,8 +344,9 @@ LRESULT CViewList::OnWindowPosChanged(UINT msg, WPARAM wparam, LPARAM lparam)
 // Sets the CREATESTRUCT parameters prior to the window's creation.
 void CViewList::PreCreate(CREATESTRUCT& cs)
 {
-    cs.dwExStyle = WS_EX_CLIENTEDGE;
-    cs.style = LVS_SHOWSELALWAYS | WS_CHILD | LVS_ALIGNLEFT;
+    CListView::PreCreate(cs);
+    cs.dwExStyle |= WS_EX_CLIENTEDGE;
+    cs.style |= LVS_SHOWSELALWAYS | LVS_ALIGNLEFT;
 }
 
 // Configures the columns in the list view's header.
@@ -383,19 +384,20 @@ void CViewList::SetDPIImages()
 {
     // Set the image lists
     int size = DpiScaleInt(16);
-    m_small.Create(size, size, ILC_COLOR32, 1, 0);
-    m_small.AddIcon(IDI_MOVIES);
-    m_small.AddIcon(IDI_VIOLIN);
-    m_small.AddIcon(IDI_BOXSET);
-    m_small.AddIcon(IDI_FAVOURITES);
-    m_small.AddIcon(IDI_EYE);
-    SetImageList(m_small, LVSIL_SMALL);
+    CImageList smallImages;
+    smallImages.Create(size, size, ILC_COLOR32, 1, 0);
+    smallImages.AddIcon(IDI_MOVIES);
+    smallImages.AddIcon(IDI_VIOLIN);
+    smallImages.AddIcon(IDI_BOXSET);
+    smallImages.AddIcon(IDI_FAVOURITES);
+    smallImages.AddIcon(IDI_EYE);
+    SetImageList(smallImages, LVSIL_SMALL);
 }
 
 // Sets the up and down sort arrows in the listview's header.
 BOOL CViewList::SetHeaderSortImage(int  columnIndex, int showArrow)
 {
-    HWND    hHeader = 0;
+    HWND    hHeader = nullptr;
     HDITEM  hdrItem;
     ZeroMemory(&hdrItem, sizeof(hdrItem));
 
@@ -438,7 +440,7 @@ void CViewList::SetLastColumnWidth()
             remainingWidth -= GetColumnWidth(i);
         }
 
-        SetColumnWidth(lastCol, MAX(remainingWidth, 100));
+        SetColumnWidth(lastCol, std::max(remainingWidth, 100));
     }
 }
 
@@ -446,7 +448,7 @@ void CViewList::SetLastColumnWidth()
 void CViewList::SortColumn(int column, bool isSortDown)
 {
     // Perform the sort.
-    SortViewItems sort(column, isSortDown);
+    SortViewItems sort{column, isSortDown};
     SortItems(CompareFunction, (LPARAM)&sort);
 
     // Ensure the selected item is visible after sorting.
@@ -495,12 +497,36 @@ void CViewList::UpdateItemImage(int item)
 
 LRESULT CViewList::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
 {
-    switch (msg)
+    try
     {
-    case WM_WINDOWPOSCHANGED:        return OnWindowPosChanged(msg, wparam, lparam);
-    case WM_DPICHANGED_BEFOREPARENT: return OnDpiChangedBeforeParent(msg, wparam, lparam);
+        switch (msg)
+        {
+        case WM_WINDOWPOSCHANGED:        return OnWindowPosChanged(msg, wparam, lparam);
+        case WM_DPICHANGED_BEFOREPARENT: return OnDpiChangedBeforeParent(msg, wparam, lparam);
+        }
+
+        return WndProcDefault(msg, wparam, lparam);
     }
 
-    return WndProcDefault(msg, wparam, lparam);
+    // Catch all unhandled CException types.
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(nullptr, str1, str2, MB_ICONERROR);
+    }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(nullptr, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 

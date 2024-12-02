@@ -1,9 +1,10 @@
-// Win32++   Version 9.5
-// Release Date: TBA
+// Win32++   Version 9.6.1
+// Release Date: 29th July 2024
 //
 //      David Nash
 //      email: dnash@bigpond.net.au
 //      url: https://sourceforge.net/projects/win32-framework
+//           https://github.com/DavidNash2024/Win32xx
 //
 //
 // Copyright (c) 2005-2024  David Nash
@@ -163,14 +164,14 @@ namespace Win32xx
     //  Refer to FindFirstFile in the Windows API documentation for more information.
     inline BOOL CFileFind::FindFirstFile(LPCTSTR fileSearch /* = NULL */)
     {
-        // Reset the this to default
+        // Reset the this to default.
         Close();
 
-        // Default the name to all files in the current directory
+        // Default the name to all files in the current directory.
         if (fileSearch == NULL)
             fileSearch = _T("*.*");
 
-        // Search for the first file matching the name
+        // Search for the first file matching the name.
         m_fileFind = ::FindFirstFile(fileSearch, &m_findData);
 
         if (m_fileFind == INVALID_HANDLE_VALUE)
@@ -179,7 +180,7 @@ namespace Win32xx
             return FALSE;
         }
 
-        // extract the directory part of the name (if any)
+        // Extract the directory part of the name (if any)
         CString str = fileSearch;
         int delimiter = str.ReverseFind(_T('\\'));
         if (delimiter >= 0)
@@ -244,7 +245,7 @@ namespace Win32xx
         int buffSize = static_cast<int>(::GetFullPathName(searchName, 0, 0, 0));
         if (buffSize > 0)
         {
-            ::GetFullPathName(searchName, static_cast<DWORD>(buffSize), filePath.GetBuffer(buffSize), 0);
+            ::GetFullPathName(searchName, static_cast<DWORD>(buffSize), filePath.GetBuffer(buffSize), NULL);
             filePath.ReleaseBuffer();
         }
 
@@ -266,7 +267,7 @@ namespace Win32xx
         return name;
     }
 
-    //  Return the URL form of the path name, viz., file://path
+    //  Return the URL form of the path name, viz., file://path.
     inline CString CFileFind::GetFileURL() const
     {
         assert(m_fileFind != INVALID_HANDLE_VALUE);
@@ -276,14 +277,14 @@ namespace Win32xx
         return str;
     }
 
-    //  Return the last access time of the found file
+    //  Return the last access time of the found file.
     inline FILETIME CFileFind::GetLastAccessTime() const
     {
         assert(m_fileFind != INVALID_HANDLE_VALUE);
         return m_findData.ftLastAccessTime;
     }
 
-    //  Return the last write time of the found file
+    //  Return the last write time of the found file.
     inline FILETIME CFileFind::GetLastWriteTime() const
     {
         assert(m_fileFind != INVALID_HANDLE_VALUE);

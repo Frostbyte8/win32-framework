@@ -6,6 +6,7 @@
 #include "Mainfrm.h"
 #include "resource.h"
 
+using namespace std;
 
 //////////////////////////////////
 // CMainFrame function definitions
@@ -14,12 +15,10 @@
 // Constructor.
 CMainFrame::CMainFrame()
 {
-    m_use3DBorder = true;
-    m_disableUndocking = false;
-    m_disableResize = false;
-    m_disableDockLR = false;
-    m_disableDockClose = false;
-    m_disableDockCaption = false;
+    SetDockStylesToDefault();
+
+    // Set m_view as the view window of the frame.
+    SetView(m_view);
 }
 
 // Destructor.
@@ -30,11 +29,8 @@ CMainFrame::~CMainFrame()
 // Create the frame window.
 HWND CMainFrame::Create(HWND parent)
 {
-    //Set m_view as the view window of the frame
-    SetView(m_view);
-
-    // Set the registry key name, and load the initial window position
-    // Use a registry key name like "CompanyName\\Application"
+    // Set the registry key name, and load the initial window position.
+    // Use a registry key name like "CompanyName\\Application".
     LoadRegistrySettings(_T("Win32++\\Dock"));
 
     return CDockFrame::Create(parent);
@@ -45,56 +41,56 @@ void CMainFrame::LoadDefaultDockers()
 {
     // Note: The  DockIDs are used for saving/restoring the dockers state in the registry
 
-    CDocker* pDockLeft = AddDockedChild(new CDockClasses, DS_DOCKED_LEFT, DpiScaleInt(200), ID_DOCK_CLASSES1);
-    CDocker* pDockRight = AddDockedChild(new CDockClasses, DS_DOCKED_RIGHT, DpiScaleInt(200), ID_DOCK_CLASSES2);
-    CDocker* pDockTop = AddDockedChild(new CDockText, DS_DOCKED_TOP, DpiScaleInt(100), ID_DOCK_TEXT1);
-    CDocker* pDockBottom = AddDockedChild(new CDockText, DS_DOCKED_BOTTOM, DpiScaleInt(100), ID_DOCK_TEXT2);
+    CDocker* pDockLeft = AddDockedChild(make_unique<CDockClasses>(), DS_DOCKED_LEFT, DpiScaleInt(200), ID_DOCK_CLASSES1);
+    CDocker* pDockRight = AddDockedChild(make_unique<CDockClasses>(), DS_DOCKED_RIGHT, DpiScaleInt(200), ID_DOCK_CLASSES2);
+    CDocker* pDockTop = AddDockedChild(make_unique<CDockText>(), DS_DOCKED_TOP, DpiScaleInt(100), ID_DOCK_TEXT1);
+    CDocker* pDockBottom = AddDockedChild(make_unique<CDockText>(), DS_DOCKED_BOTTOM, DpiScaleInt(100), ID_DOCK_TEXT2);
 
-    pDockLeft->AddDockedChild(new CDockFiles, DS_DOCKED_BOTTOM, DpiScaleInt(150), ID_DOCK_FILES1);
-    pDockRight->AddDockedChild(new CDockFiles, DS_DOCKED_BOTTOM, DpiScaleInt(150), ID_DOCK_FILES2);
-    pDockTop->AddDockedChild(new CDockSimple, DS_DOCKED_RIGHT, DpiScaleInt(100), ID_DOCK_SIMPLE1);
-    pDockBottom->AddDockedChild(new CDockSimple, DS_DOCKED_RIGHT, DpiScaleInt(100), ID_DOCK_SIMPLE2);
+    pDockLeft->AddDockedChild(make_unique<CDockFiles>(), DS_DOCKED_BOTTOM, DpiScaleInt(150), ID_DOCK_FILES1);
+    pDockRight->AddDockedChild(make_unique<CDockFiles>(), DS_DOCKED_BOTTOM, DpiScaleInt(150), ID_DOCK_FILES2);
+    pDockTop->AddDockedChild(make_unique<CDockSimple>(), DS_DOCKED_RIGHT, DpiScaleInt(100), ID_DOCK_SIMPLE1);
+    pDockBottom->AddDockedChild(make_unique<CDockSimple>(), DS_DOCKED_RIGHT, DpiScaleInt(100), ID_DOCK_SIMPLE2);
 
     // Adjust dockstyles as per menu selections
     SetDockStyles();
 }
 
 // Adds a new docker. The id specifies the dock type.
-CDocker* CMainFrame::NewDockerFromID(int id)
+DockPtr CMainFrame::NewDockerFromID(int id)
 {
-    CDocker* pDock = NULL;
+    DockPtr docker;
     switch (id)
     {
     case ID_DOCK_CLASSES1:
-        pDock = new CDockClasses;
+        docker = make_unique<CDockClasses>();
         break;
     case ID_DOCK_CLASSES2:
-        pDock = new CDockClasses;
+        docker = make_unique<CDockClasses>();
         break;
     case ID_DOCK_FILES1:
-        pDock = new CDockFiles;
+        docker = make_unique<CDockFiles>();
         break;
     case ID_DOCK_FILES2:
-        pDock = new CDockFiles;
+        docker = make_unique<CDockFiles>();
         break;
     case ID_DOCK_SIMPLE1:
-        pDock = new CDockSimple;
+        docker = make_unique<CDockSimple>();
         break;
     case ID_DOCK_SIMPLE2:
-        pDock = new CDockSimple;
+        docker = make_unique<CDockSimple>();
         break;
     case ID_DOCK_TEXT1:
-        pDock = new CDockText;
+        docker = make_unique<CDockText>();
         break;
     case ID_DOCK_TEXT2:
-        pDock = new CDockText;
+        docker = make_unique<CDockText>();
         break;
     default:
         TRACE("Unknown Dock ID\n");
         break;
     }
 
-    return pDock;
+    return docker;
 }
 
 // Toggle the display of a 3D border.
@@ -113,6 +109,7 @@ BOOL CMainFrame::OnCommand(WPARAM wparam, LPARAM)
     {
     case IDM_FILE_EXIT:         return OnFileExit();
     case IDM_DOCK_DEFAULT:      return OnDockDefault();
+    case IDM_STYLES_DEFAULT:    return OnStylesDefault();
     case IDM_DOCK_CLOSEALL:     return OnDockCloseAll();
     case IDM_3DBORDER:          return On3DBorder();
     case IDM_NO_UNDOCK:         return OnNoUndocking();
@@ -190,12 +187,24 @@ LRESULT CMainFrame::OnGetMinMaxInfo(UINT msg, WPARAM wparam, LPARAM lparam)
 // Called after the window is created.
 void CMainFrame::OnInitialUpdate()
 {
-    // Load dock settings.
+    // Attempt to load  dock settings from the registry.
     if (!LoadDockRegistrySettings(GetRegistryKeyName()))
+    {
+        // Load the default dock arrangement if loading from the registry fails.
         LoadDefaultDockers();
+    }
+    else
+    {
+        // Set menu options from the frame's current dock style.
+        DWORD style = GetDockStyle();
 
-    // Adjust dockstyles as per menu selections.
-    SetDockStyles();
+        m_use3DBorder         = (style & DS_CLIENTEDGE) != 0;
+        m_disableUndocking    = (style & DS_NO_UNDOCK) != 0;
+        m_disableResize       = (style & DS_NO_RESIZE) != 0;
+        m_disableDockLR       = (style & DS_NO_DOCKCHILD_LEFT) != 0;
+        m_disableDockClose    = (style & DS_NO_CLOSE) != 0;
+        m_disableDockCaption  = (style & DS_NO_CAPTION) != 0;
+    }
 
     // PreCreate initially set the window as invisible, so show it now.
     ShowWindow(GetInitValues().showCmd);
@@ -271,6 +280,13 @@ BOOL CMainFrame::OnNoUndocking()
     return TRUE;
 }
 
+BOOL CMainFrame::OnStylesDefault()
+{
+    SetDockStylesToDefault();
+    RecalcDockLayout();
+    return TRUE;
+}
+
 // Specify the CREATESTRUCT parameters before the window is created.
 void CMainFrame::PreCreate(CREATESTRUCT& cs)
 {
@@ -279,6 +295,28 @@ void CMainFrame::PreCreate(CREATESTRUCT& cs)
 
     // Hide the window initially by removing the WS_VISIBLE style
     cs.style &= ~WS_VISIBLE;
+}
+
+// This function overrides CDocker::RecalcDockLayout to elimate jitter
+// when the dockers are resized. The technique used here is is most
+// appropriate for a complex arrangement of dockers. It might not suite
+// other docking applications. To support this technique the
+// WS_EX_COMPOSITED extended style has been added to each docker.
+void CMainFrame::RecalcDockLayout()
+{
+    if (GetWinVersion() >= 3000)  // Windows 10 or later.
+    {
+        if (GetDockAncestor()->IsWindow())
+        {
+            GetTopmostDocker()->LockWindowUpdate();
+            CRect rc = GetTopmostDocker()->GetViewRect();
+            GetTopmostDocker()->RecalcDockChildLayout(rc);
+            GetTopmostDocker()->UnlockWindowUpdate();
+            GetTopmostDocker()->UpdateWindow();
+        }
+    }
+    else
+        CDocker::RecalcDockLayout();
 }
 
 // Save the docking configuration in the registry.
@@ -312,6 +350,18 @@ void CMainFrame::SetDockStyles()
 
         (*iter)->SetDockStyle(style);
     }
+}
+
+void CMainFrame::SetDockStylesToDefault()
+{
+    m_use3DBorder = true;
+    m_disableUndocking = false;
+    m_disableResize = false;
+    m_disableDockLR = false;
+    m_disableDockClose = false;
+    m_disableDockCaption = false;
+
+    SetDockStyles();
 }
 
 // Specify the icons used in popup menus.
@@ -356,10 +406,13 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
+        CString str;
+        str << e.GetText() << _T("\n") << e.GetErrorString();
+        ::MessageBox(NULL, str, _T("An exception occurred"), MB_ICONERROR);
         return 0;
     }
 }

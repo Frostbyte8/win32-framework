@@ -8,6 +8,49 @@
 #include "Output.h"
 #include "resource.h"
 
+using namespace std;
+
+///////////////////////////////////
+// CDockSimple function definitions
+//
+
+CDockSimple::CDockSimple()
+{
+    SetView(m_view);
+}
+
+// Handle the window's messages.
+LRESULT CDockSimple::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    try
+    {
+        // Pass unhandled messages on for default processing.
+        return WndProcDefault(msg, wparam, lparam);
+    }
+
+    // Catch all unhandled CException types.
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
+    }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
+}
+
+
 ///////////////////////////////////
 // CSimpleView function definitions
 //
@@ -64,14 +107,26 @@ LRESULT CSimpleView::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 
 /////////////////////////////////////////
@@ -85,7 +140,7 @@ CSplitterMDIChild::CSplitterMDIChild()
     SetView(m_view);
 
     // Set the menu for this MDI child.
-    SetHandles(LoadMenu(GetApp()->GetResourceHandle(), _T("MdiMenuView")), 0);
+    SetHandles(LoadMenu(GetApp()->GetResourceHandle(), _T("MdiMenuView")), NULL);
 }
 
 // Destructor.
@@ -114,10 +169,12 @@ void CSplitterMDIChild::OnInitialUpdate()
     DWORD style = DS_CLIENTEDGE;// | DS_NO_UNDOCK;
     m_view.SetDockStyle(style);
     int width = DpiScaleInt(200);
-    CDocker* pDockLeft  = m_view.AddDockedChild(new CDockOutput, DS_DOCKED_LEFT  | style, width, 0);
-    CDocker* pDockRight = m_view.AddDockedChild(new CDockOutput, DS_DOCKED_RIGHT | style, width, 0);
-    pDockLeft->AddDockedChild(new CDockFiles, DS_DOCKED_CONTAINER | style, 0, 0);
-    pDockRight->AddDockedChild(new CDockFiles, DS_DOCKED_CONTAINER | style, 0, 0);
+    CDocker* pDockLeft  = m_view.AddDockedChild(make_unique<CDockOutput>(),
+        DS_DOCKED_LEFT  | style, width, 0);
+    CDocker* pDockRight = m_view.AddDockedChild(make_unique<CDockOutput>(),
+        DS_DOCKED_RIGHT | style, width, 0);
+    pDockLeft->AddDockedChild(make_unique<CDockFiles>(), DS_DOCKED_CONTAINER | style, 0, 0);
+    pDockRight->AddDockedChild(make_unique<CDockFiles>(), DS_DOCKED_CONTAINER | style, 0, 0);
 }
 
 // Respond to menu and toolbar input.
@@ -170,12 +227,24 @@ LRESULT CSplitterMDIChild::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }

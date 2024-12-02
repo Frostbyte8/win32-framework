@@ -45,7 +45,7 @@ class CMainFrame : public CFrame
 public:
     CMainFrame();
     virtual ~CMainFrame();
-    virtual HWND Create(HWND parent = 0);
+    virtual HWND Create(HWND parent = nullptr);
 
     // Accessors
     CDoc& GetDoc()      { return m_view.GetDoc(); }
@@ -53,7 +53,7 @@ public:
     TitlebarButton GetHoveredButton() const;
     CRect GetShadowRect() const;
     CRect GetTitlebarRect() const;
-    bool  IsActive() const { return (GetForegroundWindow() == *this); }
+    bool  IsActive() const { return (::GetForegroundWindow() == *this); }
     bool  IsMaximized() const;
 
 protected:

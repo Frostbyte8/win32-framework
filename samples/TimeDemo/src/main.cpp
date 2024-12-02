@@ -1,4 +1,4 @@
-/* (02-Aug-2014) [Tab/Indent: 8/8][Line/Box: 80/74]                 (main.cpp) *
+/* (06-May-2024) [Tab/Indent: 8/8][Line/Box: 80/74]                 (main.cpp) *
 ********************************************************************************
 |                                                                              |
 |               Authors: Robert C. Tausworthe, David Nash, 2020                |
@@ -17,9 +17,9 @@
 #include "stdafx.h"
 #include "App.h"
 
-#if defined (_MSC_VER) && (_MSC_VER >= 1920)      // VS2019 or higher          // dn ...
+#if defined (_MSC_VER) && (_MSC_VER >= 1920)      // VS2019 or higher
 #pragma warning ( disable : 28251 ) // allow WinMain without annotations
-#endif                                                                         // dn ...
+#endif
 
 /*******************************************************************************
 

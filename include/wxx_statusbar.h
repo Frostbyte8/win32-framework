@@ -1,9 +1,10 @@
-// Win32++   Version 9.5
-// Release Date: TBA
+// Win32++   Version 9.6.1
+// Release Date: 29th July 2024
 //
 //      David Nash
 //      email: dnash@bigpond.net.au
 //      url: https://sourceforge.net/projects/win32-framework
+//           https://github.com/DavidNash2024/Win32xx
 //
 //
 // Copyright (c) 2005-2024  David Nash
@@ -53,9 +54,9 @@ namespace Win32xx
         virtual ~CStatusBar() {}
 
         // Overridables
-        virtual HWND Create(HWND hParent);
         virtual BOOL OnEraseBkgnd(CDC& dc);
         virtual void PreCreate(CREATESTRUCT& cs);
+        virtual void PreRegisterClass(WNDCLASS& wc);
 
         // Accessors and mutators
         int GetParts() const;
@@ -85,34 +86,11 @@ namespace Win32xx
 namespace Win32xx
 {
 
-    //////////////////////////////////////
-    // Definitions for the CStatusBar class
+    ////////////////////////////////////////
+    // Definitions for the CStatusBar class.
     //
     inline CStatusBar::CStatusBar()
     {
-    }
-
-    // Creates the window. This is the default method of window creation.
-    inline HWND CStatusBar::Create(HWND parent)
-    {
-        // Acquire the CREATESTRUCT parameters.
-        CREATESTRUCT cs;
-        ZeroMemory(&cs, sizeof(cs));
-
-        // Add the gripper style if the parent window is resizable.
-        DWORD dwParentStyle = static_cast<DWORD>(::GetWindowLongPtr(parent, GWL_STYLE));
-        if (dwParentStyle & WS_THICKFRAME)
-        {
-            cs.style |= SBARS_SIZEGRIP;
-        }
-
-        PreCreate(cs);
-
-        // Create the status bar window.
-        HWND wnd = CreateEx(cs.dwExStyle, STATUSCLASSNAME, 0, static_cast<DWORD>(cs.style),
-            cs.x, cs.y, cs.cx, cs.cy, parent, 0, cs.lpCreateParams);
-
-        return wnd;
     }
 
     // Sets the number of parts in a status window and the coordinate of the right edge of each part.
@@ -185,7 +163,7 @@ namespace Win32xx
         return static_cast<BOOL>(SendMessage(SB_ISSIMPLE, 0, 0));
     }
 
-    // Called when the background needs erasing
+    // Called when the background needs erasing.
     inline BOOL CStatusBar::OnEraseBkgnd(CDC& dc)
     {
         // Permit the parent window to handle the drawing of the StatusBar's background.
@@ -194,11 +172,24 @@ namespace Win32xx
             reinterpret_cast<WPARAM>(&dc), reinterpret_cast<LPARAM>(this)));
     }
 
-    // Called by CStatusBar::Create to set some window parameters
+    // Called by Create to set the window creation parameters.
     inline void CStatusBar::PreCreate(CREATESTRUCT& cs)
     {
-        // cs.style is preset to SBARS_SIZEGRIP if the parent has the WS_THICKFRAME style.
         cs.style |= WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | CCS_BOTTOM;
+
+        // Add the gripper style if the parent window is resizable.
+        HWND parent = cs.hwndParent;
+        DWORD dwParentStyle = static_cast<DWORD>(::GetWindowLongPtr(parent, GWL_STYLE));
+        if (dwParentStyle & WS_THICKFRAME)
+        {
+            cs.style |= SBARS_SIZEGRIP;
+        }
+    }
+
+    // Called by Create to set the window class parameters.
+    inline void CStatusBar::PreRegisterClass(WNDCLASS& wc)
+    {
+        wc.lpszClassName = STATUSCLASSNAME;
     }
 
     // Set the text in a status bar part.
@@ -242,7 +233,7 @@ namespace Win32xx
         assert(IsWindow());
         assert(part >= 0 && part <= 255);
 
-        // Fill the PartWidths vector with the current width of the StatusBar parts
+        // Fill the PartWidths vector with the current width of the StatusBar parts.
         int partsCount = static_cast<int>(SendMessage(SB_GETPARTS, 0, 0));
         size_t parts = static_cast<size_t>(partsCount);
         std::vector<int> partWidths(parts, 0);
@@ -250,8 +241,8 @@ namespace Win32xx
         SendMessage(SB_GETPARTS, static_cast<WPARAM>(partsCount),
             reinterpret_cast<LPARAM>(pPartWidthArray));
 
-        // Fill the NewPartWidths vector with the new width of the StatusBar parts
-        int newPartsCount = MAX(part+1, partsCount);
+        // Fill the NewPartWidths vector with the new width of the StatusBar parts.
+        int newPartsCount = std::max(part+1, partsCount);
         size_t newParts = static_cast<size_t>(newPartsCount);
         std::vector<int> newPartWidths(newParts, 0);
         newPartWidths = partWidths;
@@ -267,7 +258,7 @@ namespace Win32xx
                 pNewPartWidthArray[part] = -1;
         }
 
-        // Set the StatusBar parts with our new parts count and part widths
+        // Set the StatusBar parts with our new parts count and part widths.
         BOOL result = static_cast<BOOL>(SendMessage(SB_SETPARTS, static_cast<WPARAM>(newPartsCount),
             reinterpret_cast<LPARAM>(pNewPartWidthArray)));
 

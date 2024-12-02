@@ -6,11 +6,14 @@
 #include "Mainfrm.h"
 #include "resource.h"
 
+using namespace std;
+
 ///////////////////////////////////
 // CMainFrame function definitions.
 //
-CMainFrame::CMainFrame() : m_pDockText(0), m_pDockTree(0), m_pDockList(0)
+CMainFrame::CMainFrame() : m_pDockText(NULL), m_pDockTree(NULL), m_pDockList(NULL)
 {
+    SetView(m_mainView);
 }
 
 CMainFrame::~CMainFrame()
@@ -20,8 +23,6 @@ CMainFrame::~CMainFrame()
 // Create the frame window.
 HWND CMainFrame::Create(HWND parent)
 {
-    SetView(m_mainView);
-
     // Set the registry key name, and load the initial window position.
     // Use a registry key name like "CompanyName\\Application".
     LoadRegistrySettings(_T("Win32++\\Splitter Sample"));
@@ -51,26 +52,26 @@ void CMainFrame::LoadDefaultWindowPanes()
 // Adds a new docker. The id specifies the dock type.
 // The id is used by LoadDockRegistrySettings to restore the
 // previous window pane arrangement.
-CDocker* CMainFrame::NewDockerFromID(int id)
+DockPtr CMainFrame::NewDockerFromID(int id)
 {
-    CDocker* pDock = NULL;
+    DockPtr docker;
     switch (id)
     {
     case ID_DOCK_LIST:
-        pDock = new CDockList;
+        docker = make_unique<CDockList>();
         break;
     case ID_DOCK_TREE:
-        pDock = new CDockTree;
+        docker = make_unique<CDockTree>();
         break;
     case ID_DOCK_TEXT:
-        pDock = new CDockText;
+        docker = make_unique<CDockText>();
         break;
     default:
         TRACE("Unknown Dock ID\n");
         break;
     }
 
-    return pDock;
+    return docker;
 }
 
 // Responds to menu and toolbar input.
@@ -119,7 +120,7 @@ void CMainFrame::OnInitialUpdate()
         m_pDockTree = dynamic_cast<CDockTree*>(GetDockFromID(ID_DOCK_TREE));
         m_pDockList = dynamic_cast<CDockList*>(GetDockFromID(ID_DOCK_LIST));
 
-        if ((m_pDockText == 0) || (m_pDockTree == 0) || (m_pDockList == 0))
+        if ((m_pDockText == NULL) || (m_pDockTree == NULL) || (m_pDockList == NULL))
         {
             CloseAllDockers();
             LoadDefaultWindowPanes();
@@ -233,13 +234,24 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 

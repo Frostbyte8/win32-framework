@@ -1,4 +1,4 @@
-/* (02-Aug-2014) [Tab/Indent: 8/8][Line/Box: 80/74]                (MainFrm.h) *
+/* (06-May-2024) [Tab/Indent: 8/8][Line/Box: 80/74]                (MainFrm.h) *
 ********************************************************************************
 |                                                                              |
 |               Authors: Robert C. Tausworthe, David Nash, 2020                |
@@ -36,7 +36,6 @@ CMainFrame : public CFrame                      /*
     public:
                     CMainFrame();
         virtual     ~CMainFrame(){}
-        virtual     HWND Create(HWND parent = 0);
         void        SetAppName(const CString& appName)
                                     { m_appName = appName; }
         void        SetArcFileName(const CString& arcName)
@@ -68,6 +67,7 @@ CMainFrame : public CFrame                      /*
         virtual void    Serialize(CArchive &ar);
         virtual void    SetupMenuIcons();
         virtual void    SetupToolBar();
+        virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
     private:
         CMainFrame(const CMainFrame&);               // Disable copy construction

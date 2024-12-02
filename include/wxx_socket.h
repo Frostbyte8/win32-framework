@@ -1,9 +1,10 @@
-// Win32++   Version 9.5
-// Release Date: TBA
+// Win32++   Version 9.6.1
+// Release Date: 29th July 2024
 //
 //      David Nash
 //      email: dnash@bigpond.net.au
 //      url: https://sourceforge.net/projects/win32-framework
+//           https://github.com/DavidNash2024/Win32xx
 //
 //
 // Copyright (c) 2005-2024  David Nash
@@ -116,8 +117,7 @@
 //    "experimental" support, which can be enabled by entering "ipv6 install"
 //    at a command prompt.
 // * IPv6 is not supported by all compilers and development environments. In
-//    particular, it is not supported by Dev-C++ or Borland 5.5. A modern
-//    Platform SDK needs to be added to Visual Studio 6 for it to support IPv6.
+//    particular, it is not by Borland 5.5.
 // * IsIPV6Supported returns false if either the operating system or the
 //    development environment fails to support IPv6.
 //
@@ -131,7 +131,7 @@
 #include "wxx_thread.h"
 #include "wxx_mutex.h"
 
-// Work around a bugs in older versions of Visual Studio
+// Work around a bugs in older versions of Visual Studio.
 #if defined (_MSC_VER) && (_MSC_VER < 1500)  // < VS2008
   // Skip loading wspiapi.h
   #define _WSPIAPI_H_
@@ -206,17 +206,17 @@ namespace Win32xx
         operator SOCKET() const {return m_socket;}
 
     private:
-        CSocket(const CSocket&);               // Disable copy construction
-        CSocket& operator=(const CSocket&);    // Disable assignment operator
+        CSocket(const CSocket&);               // Disable copy construction.
+        CSocket& operator=(const CSocket&);    // Disable assignment operator.
         static UINT WINAPI EventThread(LPVOID pThis);
 
         SOCKET m_socket;
         HMODULE m_ws2_32;
-        WorkThreadPtr m_threadPtr;          // Smart pointer to the worker thread for the events
-        CEvent m_stopRequest;               // A manual reset event to signal the event thread should stop
+        WorkThreadPtr m_threadPtr;          // Smart pointer to the worker thread for the events.
+        CEvent m_stopRequest;               // A manual reset event to signal the event thread should stop.
 
-        GETADDRINFO* m_pfnGetAddrInfo;      // pointer for the getaddrinfo function
-        FREEADDRINFO* m_pfnFreeAddrInfo;    // pointer for the freeaddrinfo function
+        GETADDRINFO* m_pfnGetAddrInfo;      // Pointer for the getaddrinfo function.
+        FREEADDRINFO* m_pfnFreeAddrInfo;    // Pointer for the freeaddrinfo function.
     };
 }
 
@@ -227,14 +227,14 @@ namespace Win32xx
 
     inline CSocket::CSocket() : m_socket(INVALID_SOCKET), m_stopRequest(FALSE, TRUE)
     {
-        // Initialize the Windows Socket services
+        // Initialize the Windows Socket services.
         WSADATA wsaData;
 
         if (::WSAStartup(MAKEWORD(2,2), &wsaData) != 0)
             throw CNotSupportedException(GetApp()->MsgSocWSAStartup());
 
         m_ws2_32 = ::GetModuleHandle(_T("ws2_32.dll"));
-        if (m_ws2_32 == 0)
+        if (m_ws2_32 == NULL)
             throw CNotSupportedException(GetApp()->MsgSocWS2Dll());
 
         m_pfnGetAddrInfo = reinterpret_cast<GETADDRINFO*>(
@@ -242,14 +242,13 @@ namespace Win32xx
         m_pfnFreeAddrInfo = reinterpret_cast<FREEADDRINFO*>(
             reinterpret_cast<void*>(::GetProcAddress(m_ws2_32, "freeaddrinfo")));
 
-        WorkThreadPtr threadPtr(new CWorkThread(EventThread, this));
-        m_threadPtr = threadPtr;
+        m_threadPtr = std::make_unique<CWorkThread>(EventThread, this);
     }
 
     inline CSocket::~CSocket()
     {
         ::shutdown(m_socket, SD_BOTH);
-        // Ask the event thread to stop
+        // Ask the event thread to stop.
         m_stopRequest.SetEvent();
 
         // Wait for the event thread to stop.
@@ -270,7 +269,7 @@ namespace Win32xx
         if (m_stopRequest.GetHandle())
             ::CloseHandle(m_stopRequest);
 
-        // Terminate the  Windows Socket services
+        // Terminate the  Windows Socket services.
         ::WSACleanup();
     }
 
@@ -308,7 +307,7 @@ namespace Win32xx
                 return result;
             }
 
-            // Bind the IP address to the listening socket
+            // Bind the IP address to the listening socket.
             result =  ::bind( m_socket, AddrInfo->ai_addr, static_cast<int>(AddrInfo->ai_addrlen) );
             if (result == SOCKET_ERROR )
             {
@@ -316,7 +315,7 @@ namespace Win32xx
                 return result;
             }
 
-            // Free the address information allocated by GetAddrInfo
+            // Free the address information allocated by GetAddrInfo.
             FreeAddrInfo(AddrInfo);
 
 #endif
@@ -325,6 +324,7 @@ namespace Win32xx
         else
         {
             sockaddr_in clientService;
+            ZeroMemory(&clientService, sizeof(clientService));
             clientService.sin_family = AF_INET;
 
 #ifdef _MSC_VER
@@ -367,7 +367,7 @@ namespace Win32xx
         if (IsIPV6Supported())
         {
 
-#ifdef GetAddrInfo  // Skip the following code block for older development environments
+#ifdef GetAddrInfo  // Skip the following code block for older development environments.
 
             ADDRINFO hints;
             ZeroMemory(&hints, sizeof(hints));
@@ -383,7 +383,7 @@ namespace Win32xx
                 return SOCKET_ERROR;
             }
 
-            // Bind the IP address to the listening socket
+            // Bind the IP address to the listening socket.
             result = Connect( AddrInfo->ai_addr, static_cast<int>(AddrInfo->ai_addrlen) );
             if (result == SOCKET_ERROR )
             {
@@ -391,7 +391,7 @@ namespace Win32xx
                 return result;
             }
 
-            // Free the address information allocated by GetAddrInfo
+            // Free the address information allocated by GetAddrInfo.
             FreeAddrInfo(AddrInfo);
 
 #endif
@@ -400,6 +400,7 @@ namespace Win32xx
         else
         {
             sockaddr_in clientService;
+            ZeroMemory(&clientService, sizeof(clientService));
             clientService.sin_family = AF_INET;
 
 #ifdef _MSC_VER
@@ -482,6 +483,7 @@ namespace Win32xx
         SOCKET& clientSocket = pSocket->m_socket;
 
         WSAEVENT allEvents[2];
+        ZeroMemory(&allEvents, sizeof(allEvents));
         allEvents[0] = ::WSACreateEvent();
         allEvents[1] = reinterpret_cast<WSAEVENT>(stopRequestEvent.GetHandle());  // cast supports Borland v5.5
         long events = FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT | FD_CONNECT | FD_CLOSE;
@@ -496,7 +498,7 @@ namespace Win32xx
             return 0;
         }
 
-        // loop until the stop event is set
+        // Loop until the stop event is set.
         for (;;) // infinite loop
         {
             // Wait for a network event, or a request to stop
@@ -726,7 +728,7 @@ namespace Win32xx
         if (IsIPV6Supported())
         {
 
-#ifdef GetAddrInfo  // Skip the following code block for older development environments
+#ifdef GetAddrInfo  // Skip the following code block for older development environments.
 
             ADDRINFO hints;
             ZeroMemory(&hints, sizeof(hints));
@@ -752,7 +754,7 @@ namespace Win32xx
                 }
             }
 
-            // Free the address information allocated by GetAddrInfo
+            // Free the address information allocated by GetAddrInfo.
             FreeAddrInfo(addrInfo);
 
 #endif
@@ -761,6 +763,7 @@ namespace Win32xx
         else
         {
             sockaddr_in clientService;
+            ZeroMemory(&clientService, sizeof(clientService));
             clientService.sin_family = AF_INET;
 
 #ifdef _MSC_VER
@@ -837,12 +840,12 @@ namespace Win32xx
     // This function starts the thread that monitors the socket for events.
     inline void CSocket::StartEvents()
     {
-        StopEvents();   // Ensure the thread isn't already running
+        StopEvents();   // Ensure the thread isn't already running.
 
         m_threadPtr->CreateThread();
     }
 
-    // Terminates the event thread gracefully (if possible)
+    // Terminates the event thread gracefully (if possible).
     inline void CSocket::StopEvents()
     {
         // Ask the event thread to stop

@@ -9,13 +9,6 @@
 #include "resource.h"
 
 
-// Encoding IDs
-
-const int ANSI = 0;            // Default for plain text
-const int UTF8 = 1;            // Default for rich text
-const int UTF16LE = 2;
-
-
 ///////////////////////////////////////////////////////////
 // CMainFrame manages the application's main window.
 // The main window is a frame that has a menubar, toolbar,
@@ -25,7 +18,7 @@ class CMainFrame : public CFrame
 public:
     CMainFrame();
     virtual ~CMainFrame();
-    virtual HWND Create(HWND parent = 0);
+    virtual HWND Create(HWND parent = NULL);
     void UpdateToolbar();
 
 protected:
@@ -90,21 +83,21 @@ private:
     void RestoreFocus() { ::SetFocus(m_oldFocus); }
     void SaveFocus() { m_oldFocus = ::GetFocus(); }
     void SaveModifiedText();
-    void SetEncoding(UINT encoding);
+    void SetEncoding(int encoding);
     void SetPathName(LPCTSTR fullFileName);
 
     void SetWindowTitle();
     BOOL WriteFile(LPCTSTR fileName);
 
     // Member variables
-    CPrintPreview<CRichView>  m_preview;   // CRichView is the source of for CPrintPreview
     CRichView m_richView;
+    CPrintPreview<CRichView>  m_preview;   // CRichView is the source of for CPrintPreview
     CString m_pathName;
     CString m_mode;
     CString m_cap;
     CString m_num;
     CString m_ovr;
-    UINT m_encoding;
+    int  m_encoding;
     bool m_isToolbarShown;
     bool m_isWrapped;
     bool m_isRTF;

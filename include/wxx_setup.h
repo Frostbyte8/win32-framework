@@ -1,9 +1,10 @@
-// Win32++   Version 9.5
-// Release Date: TBA
+// Win32++   Version 9.6.1
+// Release Date: 29th July 2024
 //
 //      David Nash
 //      email: dnash@bigpond.net.au
 //      url: https://sourceforge.net/projects/win32-framework
+//           https://github.com/DavidNash2024/Win32xx
 //
 //
 // Copyright (c) 2005-2024  David Nash
@@ -72,7 +73,7 @@
   #endif
 #endif
 
-#ifdef __BORLANDC__
+#if defined (__BORLANDC__) && (__BORLANDC__ < 0x600)
   #pragma option -w-8026            // functions with exception specifications are not expanded inline
   #pragma option -w-8027            // function not expanded inline
   #pragma option -w-8030            // Temporary used for 'rhs'
@@ -81,9 +82,10 @@
 #endif
 
 
+#ifndef NOMINMAX
+#define NOMINMAX        // Allow std::min and std::max. Must be defined before windows.h
+#endif
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
-
-#include "wxx_shared_ptr.h"
 
 #include <WinSock2.h>   // must include before windows.h
 #include <Windows.h>
@@ -93,6 +95,7 @@
 #include <cassert>
 #include <vector>
 #include <algorithm>
+#include <memory>
 #include <string>
 #include <map>
 #include <sstream>
@@ -100,33 +103,6 @@
 #include <stdarg.h>
 #include <tchar.h>
 #include <process.h>
-
-// Required by compilers lacking Win64 support.
-#ifndef  GetWindowLongPtr
-  #define GetWindowLongPtr   GetWindowLong
-  #define SetWindowLongPtr   SetWindowLong
-  #define GWLP_WNDPROC       GWL_WNDPROC
-  #define GWLP_HINSTANCE     GWL_HINSTANCE
-  #define GWLP_ID            GWL_ID
-  #define GWLP_USERDATA      GWL_USERDATA
-  #define DWLP_DLGPROC       DWL_DLGPROC
-  #define DWLP_MSGRESULT     DWL_MSGRESULT
-  #define DWLP_USER          DWL_USER
-  #define DWORD_PTR          DWORD
-  #define LONG_PTR           LONG
-  #define ULONG_PTR          LONG
-#endif
-#ifndef GetClassLongPtr
-  #define GetClassLongPtr    GetClassLong
-  #define SetClassLongPtr    SetClassLong
-  #define GCLP_HBRBACKGROUND GCL_HBRBACKGROUND
-  #define GCLP_HCURSOR       GCL_HCURSOR
-  #define GCLP_HICON         GCL_HICON
-  #define GCLP_HICONSM       GCL_HICONSM
-  #define GCLP_HMODULE       GCL_HMODULE
-  #define GCLP_MENUNAME      GCL_MENUNAME
-  #define GCLP_WNDPROC       GCL_WNDPROC
-#endif
 
 
 // Automatically include the Win32xx namespace.
@@ -157,7 +133,7 @@ using namespace Win32xx;
 #define MIN(a,b)        (((a) < (b)) ? (a) : (b))
 
 // Version macro
-#define _WIN32XX_VER 0x0950     // Win32++ version 9.5.0
+#define _WIN32XX_VER 0x0961     // Win32++ version 9.6.1
 
 // Define the TRACE Macro.
 // In debug mode, TRACE send text to the debug/output pane, or an external debugger
@@ -179,6 +155,17 @@ using namespace Win32xx;
   #else
     #define VERIFY(f) assert(f)
   #endif
+#endif
+
+// A macro to support noexcept for new compilers and throw for old compilers.
+// VS2015 and higher, (GNU >= 11), or Clang.
+#if ((defined (_MSC_VER) && (_MSC_VER >= 1900)) || \
+        (defined(__GNUC__) && (__GNUC__ >= 11)) || \
+        (defined(__clang_major__)))
+
+#define WXX_NOEXCEPT noexcept
+#else
+#define WXX_NOEXCEPT throw()
 #endif
 
 // tString is a TCHAR std::string
@@ -242,7 +229,7 @@ namespace Win32xx
     {
         // Retrieve the Common Controls DLL handle.
         HMODULE comCtl = ::GetModuleHandle(_T("comctl32.dll"));
-        if (comCtl == 0)
+        if (comCtl == NULL)
             return 0;
 
         DWORD comCtlVer = 400;
@@ -295,16 +282,12 @@ namespace Win32xx
     inline int GetWinVersion()
     {
 
-// if (MSC < VS2008) or (Borland < version 6)
-#if ((defined (_MSC_VER) && (_MSC_VER < 1500)) || defined(__BORLANDC__) && (__BORLANDC__ < 0x600))
-
-        // Use the legacy GetVersionEx function.
-        OSVERSIONINFO osvi;
-        ZeroMemory(&osvi, sizeof(osvi));
-        osvi.dwOSVersionInfoSize = sizeof(osvi);
-        GetVersionEx(&osvi);
-
-#else
+        // if (MSC >= VS2008) or (Borland >= version 6) or (GNU >= 11) or Clang.
+        // TDM_GCC 10.3 32bit doesn't support RtlGetVersion.
+#if ((defined (_MSC_VER) && (_MSC_VER >= 1500)) || \
+        (defined(__BORLANDC__) && (__BORLANDC__ >= 0x600)) || \
+        (defined(__GNUC__) && (__GNUC__ >= 11)) || \
+        (defined(__clang_major__)))
 
         // Use the modern RtlGetVersion function.
         typedef NTSTATUS WINAPI RTLGETVERSION(PRTL_OSVERSIONINFOW);
@@ -323,6 +306,14 @@ namespace Win32xx
                 pfn(&osvi);
             }
         }
+
+#else
+
+        // Use the legacy GetVersionEx function.
+        OSVERSIONINFO osvi;
+        ZeroMemory(&osvi, sizeof(osvi));
+        osvi.dwOSVersionInfoSize = sizeof(osvi);
+        GetVersionEx(&osvi);
 
 #endif
 
@@ -376,7 +367,7 @@ namespace Win32xx
     {
         // Retrieve the Common Controls DLL handle.
         HMODULE comCtl = ::GetModuleHandle(_T("comctl32.dll"));
-        if (comCtl == 0)
+        if (comCtl == NULL)
             comCtl = ::GetModuleHandle(_T("commctrl.dll"));
 
         if (comCtl)
@@ -390,18 +381,19 @@ namespace Win32xx
             if (pfnInitEx)
             {
                 // Load the full set of common controls.
-                INITCOMMONCONTROLSEX InitStruct;
-                InitStruct.dwSize = sizeof(InitStruct);
-                InitStruct.dwICC = ICC_WIN95_CLASSES | ICC_BAR_CLASSES | ICC_COOL_CLASSES | ICC_DATE_CLASSES;
+                INITCOMMONCONTROLSEX initStruct;
+                ZeroMemory(&initStruct, sizeof(initStruct));
+                initStruct.dwSize = sizeof(initStruct);
+                initStruct.dwICC = ICC_WIN95_CLASSES | ICC_BAR_CLASSES | ICC_COOL_CLASSES | ICC_DATE_CLASSES;
 
 
 #if (_WIN32_IE >= 0x0401)
                 if (GetComCtlVersion() > 470)
-                    InitStruct.dwICC |= ICC_INTERNET_CLASSES | ICC_NATIVEFNTCTL_CLASS | ICC_PAGESCROLLER_CLASS | ICC_USEREX_CLASSES;
+                    initStruct.dwICC |= ICC_INTERNET_CLASSES | ICC_NATIVEFNTCTL_CLASS | ICC_PAGESCROLLER_CLASS | ICC_USEREX_CLASSES;
 #endif
 
                 // Call InitCommonControlsEx.
-                if (!(pfnInitEx(&InitStruct)))
+                if (!(pfnInitEx(&initStruct)))
                     InitCommonControls();
             }
             else
@@ -456,13 +448,13 @@ namespace Win32xx
             for (index = 0; index < dst_size - 1; ++index)
             {
                 dst[index] = src[index];
-                if (src[index] == '\0')
+                if (src[index] == L'\0')
                     break;
             }
 
             // Add null termination if required.
-            if (dst[index] != '\0')
-                dst[dst_size - 1] = '\0';
+            if (dst[index] != L'\0')
+                dst[dst_size - 1] = L'\0';
         }
     }
 

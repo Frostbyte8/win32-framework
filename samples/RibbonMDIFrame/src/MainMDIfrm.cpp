@@ -15,7 +15,7 @@
 //
 
 // Constructor for CMainMDIFrame.
-CMainMDIFrame::CMainMDIFrame() : m_pIUIRibbon(0)
+CMainMDIFrame::CMainMDIFrame() : m_pIUIRibbon(NULL)
 {
 }
 
@@ -175,7 +175,7 @@ void CMainMDIFrame::OnFileExit()
 
 void CMainMDIFrame::OnFileNew()
 {
-    AddMDIChild(new CSimpleMDIChild);
+    AddMDIChild(std::make_unique<CSimpleMDIChild>());
 }
 
 void CMainMDIFrame::OnMDIClose()
@@ -232,7 +232,7 @@ void CMainMDIFrame::OnPenColor(const PROPVARIANT* ppropvarValue, IUISimpleProper
             // Retrieve color.
             PROPVARIANT var;
             PropVariantInit(&var);
-            if (0 <= pCmdExProp->GetValue(UI_PKEY_Color, &var))
+            if (pCmdExProp->GetValue(UI_PKEY_Color, &var) >= 0)
             {
                 if (GetActiveMDIChild())
                 {
@@ -366,13 +366,24 @@ LRESULT CMainMDIFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
-}
 
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
+}

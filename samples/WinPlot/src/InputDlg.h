@@ -16,12 +16,14 @@ class CInputDlg : public CDialog
 public:
     CInputDlg(UINT resID) : CDialog(resID), m_xMin(-10), m_xMax(10) {}
     virtual ~CInputDlg() {}
-    double& GetMax() { return m_xMax; }
-    double& GetMin() { return m_xMin; }
-    CString& GetFunction() { return m_function; }
+    double GetMax() const { return m_xMax; }
+    double GetMin() const { return m_xMin; }
+    const CString& GetFunction() const { return m_function; }
+    void SetFunction(const CString& function) { m_function = function; }
 
 protected:
     // Virtual functions that override base class functions
+    virtual INT_PTR DialogProc(UINT msg, WPARAM wparam, LPARAM lparam);
     virtual void DoDataExchange(CDataExchange& DX);
     virtual BOOL OnInitDialog();
     virtual void OnOK();

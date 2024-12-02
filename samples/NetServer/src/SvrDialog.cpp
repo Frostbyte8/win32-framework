@@ -13,7 +13,7 @@
 //
 
 // Constructor.
-CTCPClientDlg::CTCPClientDlg(UINT resID) : CDialog(resID), m_pSocket(0)
+CTCPClientDlg::CTCPClientDlg(UINT resID) : CDialog(resID), m_pSocket(NULL)
 {
 }
 
@@ -32,6 +32,37 @@ void CTCPClientDlg::AppendText(int id, LPCTSTR text)
 
     edit.AppendText(text);
     TRACE(text); TRACE("\n");
+}
+
+// Respond to the user defined message posted to the dialog.
+INT_PTR CTCPClientDlg::DialogProc(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    try
+    {
+        // Pass unhandled messages on to parent DialogProc.
+        return DialogProcDefault(msg, wparam, lparam);
+    }
+
+    // Catch all unhandled CException types.
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
+    }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 
 // Called when the dialog is closed.
@@ -150,26 +181,38 @@ INT_PTR CSvrDialog::DialogProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return DialogProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 
 // Adds support for the IP address control in the dialog.
 void CSvrDialog::LoadCommonControlsEx()
 {
-    HMODULE module = 0;
+    HMODULE module = NULL;
 
     try
     {
         // Load the Common Controls DLL
         module = ::LoadLibrary(_T("COMCTL32.DLL"));
-        if (module == 0)
+        if (module == NULL)
             throw CWinException(_T("Failed to load COMCTL32.DLL"));
 
         if (GetComCtlVersion() > 470)
@@ -187,7 +230,7 @@ void CSvrDialog::LoadCommonControlsEx()
         }
         else
         {
-            ::MessageBox(0, _T("IP Address Control not supported!"), _T("Error"), MB_OK);
+            ::MessageBox(NULL, _T("IP Address Control not supported!"), _T("Error"), MB_OK);
         }
 
         ::FreeLibrary(module);
@@ -363,7 +406,7 @@ BOOL CSvrDialog::OnSend()
 // Accept the connection from the client.
 BOOL CSvrDialog::OnSocketAccept()
 {
-    ServerSocketPtr pClient(new CWorkerSocket);
+    ServerSocketPtr pClient = std::make_shared<CWorkerSocket>();
     m_mainSocket.Accept(*pClient, NULL, NULL);
     if (INVALID_SOCKET == m_mainSocket.GetSocket())
     {
@@ -375,7 +418,7 @@ BOOL CSvrDialog::OnSocketAccept()
     pClient->StartEvents();
 
     // Create the new chat dialog.
-    TCPClientDlgPtr pDialog(new CTCPClientDlg(IDD_CHAT));
+    TCPClientDlgPtr pDialog = std::make_shared<CTCPClientDlg>(IDD_CHAT);
     pDialog->ServerSocket() = pClient;
     pDialog->DoModeless(*this);
 
@@ -453,7 +496,9 @@ BOOL CSvrDialog::OnSocketReceive(WPARAM wparam)
                 return FALSE;
             }
             else
+            {
                 TRACE("[Received:] "); TRACE(bufArray); TRACE("\n");
+            }
 
             m_buttonSend.EnableWindow(TRUE);
             m_editSend.EnableWindow(TRUE);

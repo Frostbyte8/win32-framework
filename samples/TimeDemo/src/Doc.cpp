@@ -1,7 +1,7 @@
-/* (02-Aug-2014) [Tab/Indent: 8/8][Line/Box: 80/74]                  (Doc.cpp) *
+/* (06-May-2024) [Tab/Indent: 8/8][Line/Box: 80/74]                  (Doc.cpp) *
 ********************************************************************************
 |                                                                              |
-|               Authors: Robert C. Tausworthe, David Nash, 2020                |
+|               Authors: Robert C. Tausworthe, David Nash, 2024                |
 |                                                                              |
 ===============================================================================*
 
@@ -24,7 +24,7 @@
 #include "App.h"
 
   // local formats for displaying CTime values as strings
-static const CString longDateFmt = TEXT("%d-%b-%Y [%j] (%a) %H:%M:%S %z");
+static const CString longDateFmt = TEXT("%d-%b-%Y [%j] (%a) %H:%M:%S %Z");
 static const CString shortDateFmt = TEXT("%d-%b-%Y");
 static const CString simpleHMSFmt = TEXT("%I:%M:%S %p");
 
@@ -78,7 +78,7 @@ GetDocOpenFileName(const CString &title) const                              /*
     // Bring up the dialog, and  open the file
     CString str;
     DWORD dwFlags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
-    CFileDialog FileDlg(TRUE, 0, 0, dwFlags, m_fileDlgFilter);
+    CFileDialog FileDlg(TRUE, NULL, NULL, dwFlags, m_fileDlgFilter);
     FileDlg.SetTitle(title);
     if (FileDlg.DoModal() == IDOK)
         str = FileDlg.GetPathName();
@@ -106,7 +106,7 @@ GetDocRecord(int rcd, int left /* = 0 */, int length /* = -1 */) const      /*
       // compute length of text to extract
     if (length < 0)
         length = s.GetLength();
-    length = MAX(0, length - left);
+    length = std::max(0, length - left);
       // extract length chars after left position using base class
     return s.Mid(left, length);
 }
@@ -214,7 +214,7 @@ MakeAppDataPath(const CString & subpath)                                    /*
     {
         int nextbk = subpath.Find(_T("\\"), from);
         int nextfwd = subpath.Find(_T("/"), from);
-        next = MAX(nextbk, nextfwd);
+        next = std::max(nextbk, nextfwd);
         if (next < 0)
             next = to;
 
@@ -263,140 +263,121 @@ NewDocument()                                                               /*
     PushContent(_T("   4. CTime t3(time_t(0)); (simple HMS format)   ")
         + t3.FormatGmt(simpleHMSFmt));
 
-    t3 = CTime::GetCurrentTime();
-    PushContent(_T("   5. CTime t3 = GetCurrentTime()                ")
+    t3 = t3.GetCurrentTime();
+    PushContent(_T("   5. CTime t3 = t3.GetCurrentTime()             ")
         + t3.Format(longDateFmt));
 
-    CTime t4(2014, 3, 8, 2, 37, 40);
-    PushContent(_T("   6. CTime t4(2014, 3, 8, 2, 37, 40);           ")
+    CTime t4(2024, 3, 9, 3, 37, 40);
+    PushContent(_T("   6. CTime t4(2024, 3, 9, 3, 37, 40);           ")
         + t4.Format(longDateFmt));
 
-    CTime t5(2014, 2, 9, 2, 37, 40);
-    PushContent(_T("   7. CTime t5(2014, 2, 9, 2, 37, 40);           ")
+    CTime t5(2024, 3, 9, 3, 37, 40);
+    PushContent(_T("   7. CTime t5(2024, 3, 9, 3, 37, 40);           ")
         + t5.Format(longDateFmt));
 
-    CTime t6(2014, 3, 9, 3, 37, 40);
-    PushContent(_T("   8. CTime t6(2014, 3, 9, 3, 37, 40);           ")
+    CTime t6(2024, 3, 9, 3, 37, 40);
+    PushContent(_T("   8. CTime t6(2024, 3, 9, 3, 37, 40);           ")
         + t6.Format(longDateFmt));
 
-    CTime t7(2014, 67, 3, 37, 40);
-    PushContent(_T("   9. CTime t7(2014, 67, 3, 37, 40);             ")
-        + t7.Format(longDateFmt));
-
-    CTime t8(2014, 68, 3, 37, 40);
-    PushContent(_T("  10. CTime t8(2014, 68, 3, 37, 40);             ")
-        + t8.Format(longDateFmt));
-
-    CString s9(_T("09-Mar-2014 3:37:40"));
+    CString s9(_T("09-Mar-2024 3:37:40"));
     CTime t9(GetTimeFromStr(s9));  // a CString conversion
-    PushContent(_T("  11. CTime t9(\"09-Mar-2014 3:37:40\")   CString  ")
+    PushContent(_T("   9. CTime t9(\"09-Mar-2024 3:37:40\")   CString  ")
         + t9.Format(longDateFmt));
 
-    CTime t10(GetTimeFromStr(_T("09-Mar-2014 3:37:40")));  // a LPCTSTR conversion
-    PushContent(_T("  12. CTime t10(\"09-Mar-2014 2:37:40\")  LPCTSTR  ")
+    CTime t10(GetTimeFromStr(_T("09-Mar-2024 3:37:40")));  // a LPCTSTR conversion
+    PushContent(_T("  10. CTime t10(\"09-Mar-2024 3:37:40\")  LPCTSTR  ")
         + t10.Format(longDateFmt));
 
-    CTime t11(2014, 3, 6, 2, 3, 37, 40);
-    PushContent(_T("  13. CTime t11(2014, 3, 6, 2, 3, 37, 40);       ")
+    SYSTEMTIME st;
+    t10.GetAsSystemTime(st);
+    CTime t11(st);
+    PushContent(_T("  11. GetAsSystemTime(t10);                      ")
         + t11.Format(longDateFmt));
 
-    CTime t12(2014, 3, 6, 3, 3, 37, 40);
-    PushContent(_T("  14. CTime t12(2014, 3, 6, 3, 3, 37, 40);       ")
-        + t12.Format(longDateFmt));
-
-    SYSTEMTIME st;
-    t12.GetAsSystemTime(st);
-    CTime t13(st);
-    PushContent(_T("  15. GetAsSystemTime(t12);                      ")
-        + t13.Format(longDateFmt));
-
     FILETIME ft;
-    t12.GetAsFileTime(ft);
-    CTime t14(ft);
-    PushContent(_T("  16. GetAsFileTime(t12);                        ")
-        + t14.Format(longDateFmt));
+    t10.GetAsFileTime(ft);
+    CTime t12(ft, 0);
+    PushContent(_T("  12. GetAsFileTime(t10);                        ")
+        + t12.Format(longDateFmt));
 
     WORD fatdate, fattime;
     ::FileTimeToDosDateTime(&ft, &fatdate, &fattime);
-    CTime t15(fatdate, fattime);
-    PushContent(_T("  17. t15(fatdate, fattime)                      ")
-        + t15.Format(longDateFmt));
+    CTime t13(fatdate, fattime, 0);
+    PushContent(_T("  13. CTime t13(fatdate, fattime)                ")
+        + t13.Format(longDateFmt));
 
-    int yr = t15.GetYear();
-    int mo = t15.GetMonth();
-    int da = t15.GetDay();
-    int hr = t15.GetHour();
-    int mn = t15.GetMinute();
-    int sc = t15.GetSecond();
-    int dw = t15.GetDayOfWeek();
-    int dy = t15.GetDayOfYear();
+    int yr = t13.GetYear();
+    int mo = t13.GetMonth();
+    int da = t13.GetDay();
+    int hr = t13.GetHour();
+    int mn = t13.GetMinute();
+    int sc = t13.GetSecond();
+    int dw = t13.GetDayOfWeek();
+    int dy = t13.GetDayOfYear();
     CString fmt = _T("%04d-%02d-%02d %02d:%02d:%02d [%03d] (%d) ");
     s.Format(fmt + _T("local"), yr, mo, da, hr, mn, sc, dy, dw);
-    PushContent(_T("  18. t15, yr-mo-day hr:min:sec [doy] (wk)       ")
+    PushContent(_T("  14. t13, yr-mo-day hr:min:sec [doy] (wk)       ")
         + s);
 
-    yr = t15.GetYear(false);
-    mo = t15.GetMonth(false);
-    da = t15.GetDay(false);
-    hr = t15.GetHour(false);
-    mn = t15.GetMinute(false);
-    sc = t15.GetSecond(false);
-    dw = t15.GetDayOfWeek(false);
-    dy = t15.GetDayOfYear(false);
+    yr = t13.GetYear(false);
+    mo = t13.GetMonth(false);
+    da = t13.GetDay(false);
+    hr = t13.GetHour(false);
+    mn = t13.GetMinute(false);
+    sc = t13.GetSecond(false);
+    dw = t13.GetDayOfWeek(false);
+    dy = t13.GetDayOfYear(false);
     s.Format(fmt + _T("UTC"), yr, mo, da, hr, mn, sc, dy, dw);
-    PushContent("  19. t15, yr-mo-day hr:min:sec [doy] (wk)       "
+    PushContent("  15. t13, yr-mo-day hr:min:sec [doy] (wk)       "
         + s);
 
-    CTimeSpan ts = t12 - t1;
+    CTimeSpan ts = t10 - t1;
     s = ts.Format(_T("%D days, %H:%M:%S"));
-    PushContent(_T("  20. t12 - t1 =                                 ")
+    PushContent(_T("  16. t10 - t1 =                                 ")
         + s);
 
     s.Format(_T("%ld total hrs, %ld min, %ld sec"),
         ts.GetTotalHours(), ts.GetTotalMinutes(), ts.GetTotalSeconds());
-    PushContent(_T("  21. t12 - t1 =                                 ")
+    PushContent(_T("  17. t10 - t1 =                                 ")
         + s);
 
-    ts = t1 - t12;
+    ts = t1 - t10;
     s = ts.Format(_T("%D days, %H:%M:%S"));
-    PushContent(_T("  22. t1 - t12 =                                 ")
+    PushContent(_T("  18. t1 - t10 =                                 ")
         + s);
 
-    CTime t16 = t12 + ts;
-    PushContent(_T("  23. t16 = t12 + (t1 - t12) =  t1               ")
+    CTime t16 = t10 + (t1 - t10);
+    PushContent(_T("  19. t16 = t10 + (t1 - t10) =  t1               ")
         + t16.Format(longDateFmt));
 
-    t16 -= ts;
-    PushContent(_T("  24. t16 -= (t1 - t12) =  t12                   ")
+    t16 -= (t1 - t10);
+    PushContent(_T("  20. t16 -= (t1 - t10) =  t10                   ")
         + t16.Format(longDateFmt));
 
-    t16 += ts;
-    PushContent(_T("  25. t16 += (t1 - t12) =  t1                    ")
+    t16 += (t1 - t10);
+    PushContent(_T("  21. t16 += (t1 - t10) =  t1                    ")
         + t16.Format(longDateFmt));
 
-    t16 = t1 - ts;
-    PushContent(_T("  26. t16 = t1 - (t1 - t12) =  t12               ")
+    t16 = t1 - (t1 - t10);
+    PushContent(_T("  22. t16 = t1 - (t1 - t10) =  t10               ")
         + t16.Format(longDateFmt));
 
-    ts = -ts;
+    ts = -(t1 - t10);
     s = ts.Format(_T("%D days, %H:%M:%S"));
-    PushContent(_T("  27. -(t1 - t12) =                              ")
+    PushContent(_T("  23. -(t1 - t10) =                              ")
         + s);
 
-    PushContent(_T("  28. t8 == t7;                                  ")
-        + Truth(t8 == t7));
+    PushContent(_T("  24. t5 == t6;                                  ")
+        + Truth(t5 == t6));
 
-    PushContent(_T("  29. t8 == t9;                                  ")
-        + Truth(t8 == t9));
+    PushContent(_T("  25. t5 != t6;                                  ")
+        + Truth(t5 != t6));
 
-    PushContent(_T("  30. t8 != t7;                                  ")
-        + Truth(t8 != t7));
+    PushContent(_T("  26. t5 < t6;                                   ")
+        + Truth(t5 < t6));
 
-    PushContent(_T("  31. t8 < t7;                                   ")
-        + Truth(t8 < t7));
-
-    PushContent(_T("  32. t8 > t7;                                   ")
-        + Truth(t8 > t7));
+    PushContent(_T("  27. t5 > t6;                                   ")
+        + Truth(t5 > t6));
 
     PushContent(_T(""));
     s.Format(_T("  -------------------------------------------------------"));
@@ -408,12 +389,20 @@ NewDocument()                                                               /*
     PushContent(_T(""));
     s.Format(_T("  WINVER        = 0x%x"), WINVER);
     PushContent(s);
+
+#ifdef WIN32_WINNT
     s.Format(_T("  WIN32_WINNT   = 0x%x"), _WIN32_WINNT);
     PushContent(s);
+#endif
+
     s.Format(_T("  _WIN32_IE     = 0x%x"), _WIN32_IE);
     PushContent(s);
+
+#ifdef NTDDI_VERSION
     s.Format(_T("  NTDDI_VERSION = 0x%x"), NTDDI_VERSION);
     PushContent(s);
+#endif
+
     PushContent(_T(""));
 
     s = ::GetCommandLine();
@@ -519,7 +508,7 @@ GetTimeFromStr(LPCTSTR szTime, int nDST /* = -1 */) const                   /*
                   _T("Oct"), _T("Nov"), _T("Dec")};
 
     // find  H:M:S values
-    p1 = MIN(timestr.Find(_T(":")), len);
+    p1 = std::min(timestr.Find(_T(":")), len);
     if (p1 >= 0)
     {     // the time of day is present
         p2 = timestr.ReverseFind(_T(':'));
@@ -527,18 +516,18 @@ GetTimeFromStr(LPCTSTR szTime, int nDST /* = -1 */) const                   /*
 
         if (p1 == p2) // H:M only
         {
-            p2 = MAX(timestrLeft.ReverseFind(_T(' ')), 0);
-            p3 = MAX(timestr.Find(_T(" "), p1), static_cast<int>(len));
+            p2 = std::max(timestrLeft.ReverseFind(_T(' ')), 0);
+            p3 = std::max(timestr.Find(_T(" "), p1), len);
             H = _ttoi(timestr.Mid(p2 + 1, p1 - p2).c_str());
             M = _ttoi(timestr.Mid(p1 + 1, p3 - p1).c_str());
             S = 0;
         }
         else // H:M:S
         {
-            p3 = MAX(timestrLeft.ReverseFind(_T(' ')), static_cast<int>(0));
+            p3 = std::max(timestrLeft.ReverseFind(_T(' ')), 0);
             H = _ttoi(timestr.Mid(p3, p1 - p3).c_str());
             M = _ttoi(timestr.Mid(p1 + 1, p2 - p1).c_str());
-            p3 = MAX(timestr.Find(_T(" "), p1), static_cast<int>(len));
+            p3 = std::max(timestr.Find(_T(" "), p1), len);
             S = _ttoi(timestr.Mid(p2 + 1, p3 - p2).c_str());
         }
 
@@ -553,7 +542,7 @@ GetTimeFromStr(LPCTSTR szTime, int nDST /* = -1 */) const                   /*
         p2 = timestr.Find(_T("/"), p1 + 1);
         assert(p2 <= len);  // Invalid time conversion format.
 
-        p3   = MIN(timestr.Find(_T(" "), p2), static_cast<int>(len));
+        p3   = std::min(timestr.Find(_T(" "), p2), len);
         yyyy = _ttoi(timestr.Mid(0, p1).c_str());
         mo   = _ttoi(timestr.Mid(p1 + 1, p2 - p1 - 1).c_str());
         da   = _ttoi(timestr.Mid(p2 + 1, p3 - p2 - 1).c_str());
@@ -567,7 +556,7 @@ GetTimeFromStr(LPCTSTR szTime, int nDST /* = -1 */) const                   /*
         p2 = timestr.Find(_T("-"), p1 + 1);
         assert(p2 <= len);  // Invalid time conversion format.
 
-        p3   = MIN(timestr.Find(_T(" "), p2), static_cast<int>(len));
+        p3   = std::min(timestr.Find(_T(" "), p2), len);
         da   = _ttoi(timestr.Mid(0, p1).c_str());
         CString mon  = timestr.Mid(p1 + 1, p2 - p1 - 1);
         yyyy = _ttoi(timestr.Mid(p2 + 1, p3 - p2).c_str());
@@ -587,7 +576,7 @@ GetTimeFromStr(LPCTSTR szTime, int nDST /* = -1 */) const                   /*
         p1 = timestr.Find(_T(" "));
         assert(p1 <= p2);  // Invalid time conversion format.
 
-        p3   = MIN(timestr.Find(_T(" "), p2 + 2), static_cast<int>(len));
+        p3   = std::min(timestr.Find(_T(" "), p2 + 2), len);
         CString month = timestr.Mid(0, p1);
         da   = _ttoi(timestr.Mid(p1 + 1, p2 - p1 - 1).c_str());
         yyyy = _ttoi(timestr.Mid(p2 + 1, p3 - p2 - 1).c_str());
@@ -605,7 +594,7 @@ GetTimeFromStr(LPCTSTR szTime, int nDST /* = -1 */) const                   /*
     assert(p1 >= 0);  // Invalid time conversion format.
     if (p1 >= 0)  // "yyyy+doy H:M:S"
     {
-        p2 = MIN(timestr.Find(_T(" ")), static_cast<int>(len));
+        p2 = std::min(timestr.Find(_T(" ")), len);
         yyyy = _ttoi(timestr.Mid(0, p1).c_str());
         doy  = _ttoi(timestr.Mid(p1 + 1, p2 - p1 - 1).c_str());
         CTime t(yyyy, doy, H, M, S, nDST);
@@ -624,7 +613,7 @@ PushContent(const CString &s)                                               /*
 *-----------------------------------------------------------------------------*/
 {
     m_docContent.push_back(s);
-    m_docWidth = MAX(m_docWidth, s.GetLength());
+    m_docWidth = std::max(m_docWidth, s.GetLength());
 }
 
 /*============================================================================*/

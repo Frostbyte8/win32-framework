@@ -58,12 +58,6 @@ void CViewClasses::OnAttach()
     Expand(htiCTreeViewApp, TVE_EXPAND);
 }
 
-// Called when the window is destroyed.
-void CViewClasses::OnDestroy()
-{
-    SetImageList(0, LVSIL_SMALL);
-}
-
 // Respond to a mouse click on the window.
 LRESULT CViewClasses::OnMouseActivate(UINT msg, WPARAM wparam, LPARAM lparam)
 {
@@ -81,12 +75,6 @@ LRESULT CViewClasses::OnDpiChangedBeforeParent(UINT msg, WPARAM wparam, LPARAM l
     return FinalWindowProc(msg, wparam, lparam);
 }
 
-// Sets the CREATESTRUCT parameters before the window is created.
-void CViewClasses::PreCreate(CREATESTRUCT& cs)
-{
-    cs.style = TVS_NOTOOLTIPS|WS_CHILD;
-}
-
 // Adjusts the treeview image sizes in response to window DPI changes.
 void CViewClasses::SetDPIImages()
 {
@@ -94,13 +82,24 @@ void CViewClasses::SetDPIImages()
     CBitmap bmImage(IDB_CLASSVIEW);
     bmImage = DpiScaleUpBitmap(bmImage);
     int scale = bmImage.GetSize().cy / 15;
-    m_normalImages.Create(scale * 16, scale * 15, ILC_COLOR32 | ILC_MASK, 1, 0);
-    m_normalImages.Add(bmImage, RGB(255, 0, 0));
-    SetImageList(m_normalImages, LVSIL_NORMAL);
+    CImageList normalImages;
+    normalImages.Create(scale * 16, scale * 15, ILC_COLOR32 | ILC_MASK, 1, 0);
+    normalImages.Add(bmImage, RGB(255, 0, 0));
+    SetImageList(normalImages, TVSIL_NORMAL);
 
     // Reset the item indentation.
-    int imageWidth = m_normalImages.GetIconSize().cx;
+    int imageWidth = normalImages.GetIconSize().cx;
     SetIndent(imageWidth);
+}
+
+void CViewClasses::PreCreate(CREATESTRUCT& cs)
+{
+    // Call base class to set defaults.
+    CTreeView::PreCreate(cs);
+
+    // Add the WS_EX_COMPOSITED to reduce flicker.
+    if (GetWinVersion() >= 3000)  // Windows 10 or later.
+        cs.dwExStyle |= WS_EX_COMPOSITED;
 }
 
 // Processes the tree-view's window messages.
@@ -117,15 +116,28 @@ LRESULT CViewClasses::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
+
 
 ///////////////////////////////////////
 // CContainClasses function definitions
@@ -196,6 +208,37 @@ void CContainClasses::SetupToolBar()
     AddToolBarButton( IDM_HELP_ABOUT       );
 }
 
+// Handle the window's messages.
+LRESULT CContainClasses::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    try
+    {
+        // Pass unhandled messages on for default processing.
+        return WndProcDefault(msg, wparam, lparam);
+    }
+
+    // Catch all unhandled CException types.
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
+    }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
+}
+
 
 ////////////////////////////////////
 // CDockClasses function definitions
@@ -208,4 +251,57 @@ CDockClasses::CDockClasses()
 
     // Set the width of the splitter bar
     SetBarWidth(8);
+}
+
+// This function overrides CDocker::RecalcDockLayout to elimate jitter
+// when the dockers are resized. The technique used here is is most
+// appropriate for a complex arrangement of dockers.  It might not suite
+// other docking applications. To support this technique the
+// WS_EX_COMPOSITED extended style has been added to some view windows.
+void CDockClasses::RecalcDockLayout()
+{
+    if (GetWinVersion() >= 3000)  // Windows 10 or later.
+    {
+        if (GetDockAncestor()->IsWindow())
+        {
+            GetTopmostDocker()->LockWindowUpdate();
+            CRect rc = GetTopmostDocker()->GetViewRect();
+            GetTopmostDocker()->RecalcDockChildLayout(rc);
+            GetTopmostDocker()->UnlockWindowUpdate();
+            GetTopmostDocker()->UpdateWindow();
+        }
+    }
+    else
+        CDocker::RecalcDockLayout();
+}
+
+// Handle the window's messages.
+LRESULT CDockClasses::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    try
+    {
+        // Pass unhandled messages on for default processing.
+        return WndProcDefault(msg, wparam, lparam);
+    }
+
+    // Catch all unhandled CException types.
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
+    }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }

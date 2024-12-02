@@ -18,8 +18,9 @@ public:
     void SetDPIFont();
 
 protected:
-    // Virtual functions that override base class functions
+    // Virtual functions that override base class functions.
     virtual void OnAttach();
+    virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
     CViewText(const CViewText&);               // Disable copy construction
@@ -38,8 +39,12 @@ public:
     CContainText();
     virtual ~CContainText() {}
 
+protected:
+    // Virtual functions that override base class functions.
+    virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
+
 private:
-    CContainText(const CContainText&);                // Disable copy construction
+    CContainText(const CContainText&);              // Disable copy construction
     CContainText& operator=(const CContainText&);   // Disable assignment operator
 
     CViewText m_viewText;
@@ -55,8 +60,12 @@ public:
     CDockText();
     virtual ~CDockText() {}
 
+protected:
+    virtual void RecalcDockLayout();
+    virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
+
 private:
-    CDockText(const CDockText&);                // Disable copy construction
+    CDockText(const CDockText&);              // Disable copy construction
     CDockText& operator=(const CDockText&);   // Disable assignment operator
 
     CContainText m_view;
@@ -64,4 +73,3 @@ private:
 
 
 #endif // TEXT_H
-

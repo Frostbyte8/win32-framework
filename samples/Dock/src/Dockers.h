@@ -16,6 +16,11 @@ public:
     CDockSimple();
     virtual ~CDockSimple() {}
 
+protected:
+    // Virtual functions overriding base class functions.
+    virtual void RecalcDockLayout();
+    virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
+
 private:
     CDockSimple(const CDockSimple&);               // Disable copy construction
     CDockSimple& operator=(const CDockSimple&);    // Disable assignment operator
@@ -25,7 +30,7 @@ private:
 
 
 ///////////////////////////////////////////////////////
-// CDockClasses manages the docker which uses CViewTree
+// CDockClasses manages the docker which uses CViewClasses
 // as its view.
 class CDockClasses : public CDocker
 {
@@ -33,16 +38,21 @@ public:
     CDockClasses();
     virtual ~CDockClasses() {}
 
+protected:
+    // Virtual functions overriding base class functions.
+    virtual void RecalcDockLayout();
+    virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
+
 private:
     CDockClasses(const CDockClasses&);               // Disable copy construction
     CDockClasses& operator=(const CDockClasses&);    // Disable assignment operator
 
-    CViewTree m_view;
+    CViewClasses m_view;
 };
 
 
 /////////////////////////////////////////////////////
-// CDockFiles manages the docker which uses CViewList
+// CDockFiles manages the docker which uses CViewFiles
 // as its view.
 class CDockFiles : public CDocker
 {
@@ -50,11 +60,16 @@ public:
     CDockFiles();
     virtual ~CDockFiles() {}
 
+protected:
+    // Virtual functions overriding base class functions.
+    virtual void RecalcDockLayout();
+    virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
+
 private:
     CDockFiles(const CDockFiles&);               // Disable copy construction
     CDockFiles& operator=(const CDockFiles&);    // Disable assignment operator
 
-    CViewList m_view;
+    CViewFiles m_view;
 };
 
 
@@ -66,6 +81,11 @@ class CDockText : public CDocker
 public:
     CDockText();
     virtual ~CDockText() {}
+
+protected:
+    // Virtual functions overriding base class functions.
+    virtual void RecalcDockLayout();
+    virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
     CDockText(const CDockText&);               // Disable copy construction

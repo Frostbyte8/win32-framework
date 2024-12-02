@@ -1,9 +1,10 @@
-// Win32++   Version 9.5
-// Release Date: TBA
+// Win32++   Version 9.6.1
+// Release Date: 29th July 2024
 //
 //      David Nash
 //      email: dnash@bigpond.net.au
 //      url: https://sourceforge.net/projects/win32-framework
+//           https://github.com/DavidNash2024/Win32xx
 //
 //
 // Copyright (c) 2005-2024  David Nash
@@ -43,8 +44,8 @@
 #ifndef _WIN32XX_WINCORE0_H_
 #define _WIN32XX_WINCORE0_H_
 
-#include "wxx_rect.h"
 #include "wxx_appcore0.h"
+#include "wxx_rect.h"
 
 // Ensure these macros are defined.
 #ifndef BTNS_DROPDOWN
@@ -164,8 +165,8 @@
 namespace Win32xx
 {
 
-    ////////////////////////////////
-    // Registered messages defined by Win32++
+    //////////////////////////////////////////
+    // Registered messages defined by Win32++.
     const UINT UWM_WINDOWCREATED = ::RegisterWindowMessage(_T("UWM_WINDOWCREATED"));    // Posted when a window is created or attached.
 
     ////////////////////////////////////////////////////////////////
@@ -192,14 +193,16 @@ namespace Win32xx
     friend class CWinThread;
 
     public:
-        CWnd();             // Constructor
-        virtual ~CWnd();    // Destructor
+        CWnd();                            // Constructor
+        CWnd(const CWnd& rhs);             // Copy constructor
+        CWnd& operator=(const CWnd& rhs);  // Assignment operator
+        virtual ~CWnd();                   // Destructor
 
         // These virtual functions can be overridden.
         virtual BOOL Attach(HWND wnd);
         virtual BOOL AttachDlgItem(UINT id, HWND parent);
         virtual void CenterWindow() const;
-        virtual HWND Create(HWND parent = 0,  DWORD wsExStyle = 0, DWORD wsStyle = 0);
+        virtual HWND Create(HWND parent = NULL,  DWORD wsExStyle = 0, DWORD wsStyle = 0);
         virtual HWND CreateEx(DWORD exStyle, LPCTSTR className, LPCTSTR windowName,
                               DWORD style, int x, int y, int width, int height, HWND parent,
                               HMENU idOrMenu, LPVOID lparam = NULL);
@@ -318,8 +321,8 @@ namespace Win32xx
         int     ReleaseDC(HDC dc) const;
         BOOL    ScreenToClient(POINT& point) const;
         BOOL    ScreenToClient(RECT& rect) const;
-        BOOL    ScrollWindow(int xAmount, int yAmount, const RECT& scrollRect, LPCRECT pClipRect = 0) const;
-        BOOL    ScrollWindow(int xAmount, int yAmount, LPCRECT pClipRect = 0) const;
+        BOOL    ScrollWindow(int xAmount, int yAmount, const RECT& scrollRect, LPCRECT pClipRect = NULL) const;
+        BOOL    ScrollWindow(int xAmount, int yAmount, LPCRECT pClipRect = NULL) const;
         int     ScrollWindowEx(int dx, int dy, LPCRECT pScrollRect, LPCRECT pClipRect, HRGN updateRgn, LPRECT updateRect, UINT flags) const;
         LRESULT SendDlgItemMessage(UINT dlgItemID, UINT msg, WPARAM wparam, LPARAM lparam) const;
         LRESULT SendMessage(UINT msg, WPARAM wparam = 0, LPARAM lparam = 0) const;
@@ -370,7 +373,7 @@ namespace Win32xx
         operator HWND() const { return GetHwnd(); }
 
     protected:
-        // Override these functions as required
+        // Override these functions as required.
         virtual LRESULT FinalWindowProc(UINT msg, WPARAM wparam, LPARAM lparam);
         virtual void    OnAttach();
         virtual BOOL    OnCommand(WPARAM wparam, LPARAM lparam);
@@ -390,24 +393,22 @@ namespace Win32xx
         virtual BOOL    PreTranslateMessage(MSG& msg);
         virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
-        // Not intended to be overridden
+        // Not intended to be overridden.
         virtual LRESULT WndProcDefault(UINT msg, WPARAM wparam, LPARAM lparam);
 
     private:
-        CWnd(const CWnd&);              // Disable copy construction
-        CWnd& operator=(const CWnd&);   // Disable assignment operator
-        CWnd(HWND wnd);                 // Private constructor used internally
+        CWnd(HWND wnd);                 // Private constructor used internally.
 
         static LRESULT CALLBACK StaticWindowProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam);
 
         void    AddToMap();
         void    Cleanup();
-        LRESULT MessageReflect(UINT msg, WPARAM wparam, LPARAM lparam);
+        LRESULT MessageReflect(UINT msg, WPARAM wparam, LPARAM lparam) const;
         BOOL    RegisterClass(WNDCLASS& wc);
         BOOL    RemoveFromMap();
         void    Subclass(HWND wnd);
 
-        HWND m_wnd;                    // handle to this object's window
+        HWND m_wnd;                    // Handle to this object's window.
         WNDPROC m_prevWindowProc;
     }; // class CWnd
 

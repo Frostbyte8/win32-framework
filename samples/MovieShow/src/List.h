@@ -11,8 +11,6 @@ struct MovieInfo;
 // Struct used by the compare function.
 struct SortViewItems
 {
-    SortViewItems(int column, bool isSortDown) : m_column(column), m_isSortDown(isSortDown)
-    {}
     int m_column;
     bool m_isSortDown;
 };
@@ -30,7 +28,9 @@ class CViewList : public CListView
 {
 public:
     CViewList();
-    virtual ~CViewList();
+    virtual ~CViewList() override;
+    CViewList(const CViewList&) = delete;               // Disable copy construction
+    CViewList& operator=(const CViewList&) = delete;    // Disable assignment operator
 
     void    AddItem(const MovieInfo& mi);
     void    SetDPIImages();
@@ -40,18 +40,14 @@ public:
 
 protected:
     // Virtual functions that override base class functions
-    virtual void    OnAttach();
-    virtual void    OnDestroy();
-    virtual void    OnInitialUpdate();
-    virtual LRESULT OnNotify(WPARAM, LPARAM lparam);
-    virtual LRESULT OnNotifyReflect(WPARAM, LPARAM lparam);
-    virtual void    PreCreate(CREATESTRUCT& cs);
-    virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
+    virtual void    OnAttach() override;
+    virtual void    OnInitialUpdate() override;
+    virtual LRESULT OnNotify(WPARAM, LPARAM lparam) override;
+    virtual LRESULT OnNotifyReflect(WPARAM, LPARAM lparam) override;
+    virtual void    PreCreate(CREATESTRUCT& cs) override;
+    virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam) override;
 
 private:
-    CViewList(const CViewList&);               // Disable copy construction
-    CViewList& operator=(const CViewList&);    // Disable assignment operator
-
     static int CALLBACK CompareFunction(LPARAM lp1, LPARAM lp2, LPARAM pSortViewItems);
 
     // Message handlers
@@ -63,13 +59,12 @@ private:
     LRESULT OnRClick();
     LRESULT OnWindowPosChanged(UINT msg, WPARAM wparam, LPARAM lparam);
 
+    CHeader m_header;
     CString GetFileTime(FILETIME fileTime);
     void    SetColumn();
     BOOL    SetHeaderSortImage(int  columnIndex, int showArrow);
 
     // Member variables
-    CImageList m_normal;
-    CImageList m_small;
     int m_oldDPI;
 };
 

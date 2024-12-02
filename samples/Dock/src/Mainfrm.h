@@ -31,13 +31,14 @@ public:
     virtual HWND Create(HWND parent = 0);
 
 protected:
-    // Virtual functions overriding base class functions
-    virtual CDocker* NewDockerFromID(int id);
+    // Virtual functions overriding base class functions.
+    virtual DockPtr NewDockerFromID(int id);
     virtual BOOL OnCommand(WPARAM wparam, LPARAM lparam);
     virtual int  OnCreate(CREATESTRUCT& cs);
     virtual void OnInitialUpdate();
     virtual void OnMenuUpdate(UINT id);
     virtual void PreCreate(CREATESTRUCT& cs);
+    virtual void RecalcDockLayout();
     virtual BOOL SaveRegistrySettings();
     virtual void SetupMenuIcons();
     virtual void SetupToolBar();
@@ -57,12 +58,14 @@ private:
     BOOL OnNoDockLR();
     BOOL OnNoDockClose();
     BOOL OnNoDockCaption();
+    BOOL OnStylesDefault();
 
     // Message handles
     LRESULT OnGetMinMaxInfo(UINT msg, WPARAM wparam, LPARAM lparam);
 
     void LoadDefaultDockers();
     void SetDockStyles();
+    void SetDockStylesToDefault();
 
     // member variables
     CViewSimple m_view;

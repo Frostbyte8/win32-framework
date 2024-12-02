@@ -13,6 +13,8 @@
 // Constructor.
 CMainFrame::CMainFrame()  : m_pLeftPane(0), m_showHidden(FALSE)
 {
+    // Set m_MainView as the view window of the frame.
+    SetView(m_rightPane);
 }
 
 // Destructor.
@@ -23,23 +25,20 @@ CMainFrame::~CMainFrame()
 // Create the frame window.
 HWND CMainFrame::Create(HWND parent)
 {
-    // Set m_MainView as the view window of the frame
-    SetView(m_rightPane);
-
-    // Set the registry key name, and load the initial window position
-    // Use a registry key name like "CompanyName\\Application"
+    // Set the registry key name, and load the initial window position.
+    // Use a registry key name like "CompanyName\\Application".
     LoadRegistrySettings(_T("Win32++\\Explorer Sample"));
 
     return CFrame::Create(parent);
 }
 
-// Creates the popup menu for the "View Menu" toolbar button
+// Creates the popup menu for the "View Menu" toolbar button.
 void CMainFrame::DoPopupMenu()
 {
     // Position the popup menu
     CToolBar& tb = GetToolBar();
     CRect rc = tb.GetItemRect(tb.CommandToIndex(IDM_VIEWMENU));
-    tb.MapWindowPoints(0, (LPPOINT)&rc, 2);
+    tb.MapWindowPoints(NULL, (LPPOINT)&rc, 2);
 
     TPMPARAMS tpm;
     tpm.cbSize = sizeof(tpm);
@@ -49,7 +48,7 @@ void CMainFrame::DoPopupMenu()
     CMenu topMenu(IDM_VIEWMENU);
     CMenu popupMenu = topMenu.GetSubMenu(0);
 
-    // Put a radio check in the currently checked item
+    // Put a radio check in the currently checked item.
     MENUITEMINFO mii;
     ZeroMemory(&mii, GetSizeofMenuItemInfo());
     for (int i = 3 ; i < 7 ; i++)
@@ -64,7 +63,7 @@ void CMainFrame::DoPopupMenu()
             topMenu.CheckMenuRadioItem(IDM_VIEW_SMALLICON, IDM_VIEW_REPORT, mii.wID, MF_BYCOMMAND);
     }
 
-    // Start the popup menu
+    // Start the popup menu.
     popupMenu.TrackPopupMenuEx(TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_VERTICAL, rc.left, rc.bottom, *this, &tpm);
 }
 
@@ -74,7 +73,8 @@ void CMainFrame::LoadDefaultWindowPanes()
     // Add the right window pane
     int width = GetWindowRect().Width() / 3;
     DWORD dockStyle = DS_DOCKED_LEFT | DS_NO_UNDOCK | DS_NO_CAPTION;
-    m_pLeftPane = static_cast<CLeftPane*>(m_rightPane.AddDockedChild(new CLeftPane, dockStyle, width, ID_DOCK_LEFTPANE));
+    m_pLeftPane = m_rightPane.AddDockedChild(
+        std::make_unique<CLeftPane>(), dockStyle, width, ID_DOCK_LEFTPANE);
 }
 
 // Process input from the menu and toolbar.
@@ -131,7 +131,6 @@ void CMainFrame::LoadListViewRegistrySettings()
 
     if (!appName.IsEmpty())
     {
-        CHeader header;
         CString listViewKeyName = _T("\\ListView Settings");
         try
         {
@@ -154,16 +153,14 @@ void CMainFrame::LoadListViewRegistrySettings()
             if (ERROR_SUCCESS != key.QueryDWORDValue(_T("Column3"), columns[3]))
                 throw CUserException();
 
-            header.Attach(GetListView().GetHeader());
             for (int i = 0; i < 4; i++)
             {
                 HDITEM headerItem;
                 ZeroMemory(&headerItem, sizeof(headerItem));
                 headerItem.mask = HDI_WIDTH;
                 headerItem.cxy = columns[i];
-                header.SetItem(i, headerItem);
+                GetListView().GetListHeader().SetItem(i, headerItem);
             }
-            header.Detach();
         }
 
         catch (const  CUserException&)
@@ -196,7 +193,7 @@ void CMainFrame::OnInitialUpdate()
 {
     if (m_rightPane.LoadDockRegistrySettings(GetRegistryKeyName()))
     {
-        m_pLeftPane = dynamic_cast<CLeftPane*>(m_rightPane.GetDockFromID(ID_DOCK_LEFTPANE));
+        m_pLeftPane = m_rightPane.GetDockFromID(ID_DOCK_LEFTPANE);
         if (m_pLeftPane == 0)
         {
             m_rightPane.CloseAllDockers();
@@ -316,7 +313,6 @@ BOOL CMainFrame::SaveRegistrySettings()
 
             if (!appName.IsEmpty())
             {
-                CHeader header;
                 CString listViewKeyName = _T("\\ListView Settings");
                 try
                 {
@@ -328,17 +324,15 @@ BOOL CMainFrame::SaveRegistrySettings()
                     if (ERROR_SUCCESS != key.Open(HKEY_CURRENT_USER, keyName))
                         throw CUserException(_T("RegCreateKeyEx failed"));
 
-                    header.Attach(GetListView().GetHeader());
                     DWORD columns[4];
                     for (int i = 0; i < 4; i++)
                     {
                         HDITEM headerItem;
                         ZeroMemory(&headerItem, sizeof(headerItem));
                         headerItem.mask = HDI_WIDTH;
-                        header.GetItem(i, headerItem);
+                        GetListView().GetListHeader().GetItem(i, headerItem);
                         columns[i] = headerItem.cxy;
                     }
-                    header.Detach();
 
                     if (ERROR_SUCCESS != key.SetDWORDValue(_T("Column0"), columns[0]))
                         throw CUserException();
@@ -420,13 +414,25 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 

@@ -60,7 +60,7 @@ InitInstance()                                                              /*
       // the document open/save filter
     m_frame.SetDocFilter(LoadString(IDS_FILE_FILTER));
       // the maximum allowed number of MRU entries (limit <= 16 by Win32++)
-    m_frame.SetMaxMRU(MIN(_ttoi(LoadString(IDS_MAX_MRU_ENTRIES)), 16));
+    m_frame.SetMaxMRU(std::min(_ttoi(LoadString(IDS_MAX_MRU_ENTRIES)), 16));
       // make Win32++ version string
     UINT ver = _WIN32XX_VER;
     CString Win32PPVersion;
@@ -106,13 +106,13 @@ MakeAppDataPath(const CString& subpath) const                               /*
     {
         int nextbk = subpath.Find(_T("\\"), from);
         int nextfwd = subpath.Find(_T("/"), from);
-        next = MAX(nextbk, nextfwd);
+        next = std::max(nextbk, nextfwd);
         if (next < 0)
             next = to;
 
         CString add = subpath.Mid(from, next - from);
         app_data_path += _T("\\") + add;
-        if ((::CreateDirectory(app_data_path, 0) == 0) &&
+        if ((::CreateDirectory(app_data_path, NULL) == 0) &&
         GetLastError() != ERROR_ALREADY_EXISTS)
         {
             CString msg = app_data_path + _T("\nDirectory creation error.");

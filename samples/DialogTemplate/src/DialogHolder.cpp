@@ -54,11 +54,11 @@ void CDialogHolder::ShowDialog(CWnd* pFrame, unsigned char* dlgArray)
             SetWindowPos(HWND_TOPMOST, left, top, width, height, SWP_SHOWWINDOW);
 
             // Reposition the dialog at top left corner of the dialog holder.
-            m_dialog.SetWindowPos(0, 0, 0, 0, 0, SWP_NOSIZE);
+            m_dialog.SetWindowPos(HWND_TOP, 0, 0, 0, 0, SWP_NOSIZE);
         }
         else
         {
-            SetWindowPos(0, left, top, width, height, 0);
+            SetWindowPos(HWND_TOP, left, top, width, height, 0);
             m_dialog.SetWindowPos(HWND_TOPMOST, left, top, 0, 0, SWP_NOSIZE | SWP_SHOWWINDOW);
         }
     }
@@ -69,4 +69,34 @@ void CDialogHolder::ShowDialog(CWnd* pFrame, unsigned char* dlgArray)
         error << e.GetErrorString();
         MessageBox(error, _T("Failed to create dialog"), MB_OK);
     }
+}
+
+// All window messages for this window pass through WndProc.
+LRESULT CDialogHolder::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    try
+    {
+        // Pass unhandled messages on for default processing.
+        return WndProcDefault(msg, wparam, lparam);
+    }
+
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
+    }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }

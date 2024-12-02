@@ -1,4 +1,4 @@
-/* (14-Nov-2016) [Tab/Indent: 4/4][Line/Box: 80/74]                 (View.cpp) *
+/* (06-May-2024) [Tab/Indent: 4/4][Line/Box: 80/74]                 (View.cpp) *
 ********************************************************************************
 |                                                                              |
 |               Authors: Robert C. Tausworthe, David Nash, 2020                |
@@ -45,7 +45,7 @@ GetFontSize() const                                                         /*
 *-----------------------------------------------------------------------------*/
 {
       // select the current font into a temporary device context
-    CClientDC dc(0);
+    CClientDC dc(HWND_DESKTOP);
     dc.SelectObject(m_font);
       // measure the font width and height
     TEXTMETRIC tm;
@@ -224,7 +224,7 @@ SetDefaultFont()                                                            /*
 *-----------------------------------------------------------------------------*/
 {
       // compute the logical font height for the nDefaultFontSize
-    CClientDC dc(0);
+    CClientDC dc(HWND_DESKTOP);
       // define default size and face
     int nDefaultFontSize = 10;
     TCHAR lpszFaceDefault[] = _T("Courier New");
@@ -284,6 +284,42 @@ TextLineOut(CDC& dc, UINT leftcol, UINT line, LPCTSTR s) const              /*
     CPoint pt(leftcol * GetFontSize().cx, line * GetFontSize().cy);
       // output the line to the view dc
     TextOut(dc, pt.x - sPos.x, pt.y - sPos.y, s, lstrlen(s));
+}
+
+/*============================================================================*/
+LRESULT CView::
+    WndProc(UINT msg, WPARAM wparam, LPARAM lparam)                             /*
+
+        Handle the window's messages.
+    *-----------------------------------------------------------------------------*/
+
+{
+    try
+    {
+        // Pass unhandled messages on for default processing.
+        return WndProcDefault(msg, wparam, lparam);
+    }
+
+    // Catch all unhandled CException types.
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
+    }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 /*----------------------------------------------------------------------------*/
 

@@ -19,7 +19,7 @@ class CMainFrame : public CFrame
 public:
     CMainFrame();
     virtual ~CMainFrame();
-    virtual HWND Create(HWND parent = 0);
+    virtual HWND Create(HWND parent = NULL);
 
     // Accessors
     CMyListView& GetListView() const { return static_cast<CMyListView&>(m_rightPane.GetView()); }
@@ -58,7 +58,7 @@ private:
     void LoadListViewRegistrySettings();
 
     // Member variables
-    CLeftPane* m_pLeftPane;
+    CDocker* m_pLeftPane;
     CRightPane m_rightPane;
     bool m_showHidden;
 };

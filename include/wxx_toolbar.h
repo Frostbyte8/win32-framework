@@ -1,9 +1,10 @@
-// Win32++   Version 9.5
-// Release Date: TBA
+// Win32++   Version 9.6.1
+// Release Date: 29th July 2024
 //
 //      David Nash
 //      email: dnash@bigpond.net.au
 //      url: https://sourceforge.net/projects/win32-framework
+//           https://github.com/DavidNash2024/Win32xx
 //
 //
 // Copyright (c) 2005-2024  David Nash
@@ -39,15 +40,14 @@
 #define _WIN32XX_TOOLBAR_H_
 
 #include "wxx_wincore.h"
-#include "wxx_gdi.h"
-#include "wxx_controls.h"
 
 
 namespace Win32xx
 {
 
-    ///////////////////////////////////////////////
-    // The CToolBar class provides the functionality a toolbar control.
+    ////////////////////////////////////////////////
+    // The CToolBar class provides the functionality
+    // a toolbar control.
     class CToolBar : public CWnd
     {
     public:
@@ -80,11 +80,11 @@ namespace Win32xx
         BYTE  GetButtonStyle(UINT buttonID) const;
         CString GetButtonText(UINT buttonID) const;
         UINT  GetCommandID(int index) const;
-        CImageList GetDisabledImageList();
+        CImageList GetDisabledImageList() const;
         DWORD GetExtendedStyle() const;
-        CImageList GetHotImageList();
+        CImageList GetHotImageList() const;
         int   GetHotItem() const;
-        CImageList GetImageList();
+        CImageList GetImageList() const;
         CRect GetItemRect(int index) const;
         CSize GetMaxSize() const;
         CSize GetPadding() const;
@@ -114,12 +114,12 @@ namespace Win32xx
         BOOL  SetButtonStyle(UINT buttonID, BYTE style) const;
         BOOL  SetButtonWidth(UINT buttonID, int width) const;
         BOOL  SetCommandID(int index, UINT buttonID) const;
-        HIMAGELIST SetDisableImageList(HIMAGELIST disabledImages);
+        CImageList SetDisableImageList(HIMAGELIST disabledImages);
         DWORD SetDrawTextFlags(DWORD mask, DWORD flags) const;
         DWORD SetExtendedStyle(DWORD exStyle) const;
-        HIMAGELIST SetHotImageList(HIMAGELIST hotImages);
+        CImageList SetHotImageList(HIMAGELIST hotImages);
         int   SetHotItem(int index) const;
-        HIMAGELIST SetImageList(HIMAGELIST normalImages);
+        CImageList SetImageList(HIMAGELIST normalImages);
         BOOL  SetIndent(int indent) const;
         BOOL  SetMaxTextRows(int maxRows) const;
         BOOL  SetPadding(int cx, int cy) const;
@@ -142,9 +142,12 @@ namespace Win32xx
         CToolBar(const CToolBar&);              // Disable copy construction
         CToolBar& operator=(const CToolBar&);   // Disable assignment operator
 
-        std::map<CString, int> m_stringMap;     // a map of strings used in SetButtonText
+        std::map<CString, int> m_stringMap;     // A map of strings used in SetButtonText.
 
-        UINT m_oldBitmapID;                      // Bitmap Resource ID, used in AddBitmap/ReplaceBitmap
+        UINT m_oldBitmapID;                     // Bitmap Resource ID, used in AddBitmap/ReplaceBitmap.
+        CImageList m_normalImages;              // Image-list for normal buttons.
+        CImageList m_hotImages;                 // Image-list for hot buttons.
+        CImageList m_disabledImages;            // Image-list for disabled buttons.
 
     };  // class CToolBar
 
@@ -157,8 +160,8 @@ namespace Win32xx
 namespace Win32xx
 {
 
-    ////////////////////////////////////
-    // Definitions for the CToolBar class
+    //////////////////////////////////////
+    // Definitions for the CToolBar class.
     //
 
     inline CToolBar::CToolBar() : m_oldBitmapID(0)
@@ -181,7 +184,7 @@ namespace Win32xx
         CBitmap bitmap(bitmapID);
         assert (bitmap.GetHandle());
         BITMAP data = bitmap.GetBitmapData();
-        int imageWidth  = MAX(data.bmHeight, 16);
+        int imageWidth  = std::max(static_cast<int>(data.bmHeight), 16);
         int images = data.bmWidth / imageWidth;
 
         TBADDBITMAP tbab;
@@ -206,12 +209,12 @@ namespace Win32xx
     {
         assert(IsWindow());
 
-        // Count toolbar buttons with Command IDs
+        // Count toolbar buttons with Command IDs.
         int nImages = 0;
 
         if (image == -1)
         {
-            // choose the image based on the number of buttons already used
+            // choose the image based on the number of buttons already used.
             for (int i = 0; i < GetButtonCount(); ++i)
             {
                 if (GetCommandID(i) > 0)
@@ -223,7 +226,7 @@ namespace Win32xx
             nImages = image;
         }
 
-        // TBBUTTON structure for each button in the toolbar
+        // TBBUTTON structure for each button in the toolbar.
         TBBUTTON tbb;
         ZeroMemory(&tbb, sizeof(tbb));
 
@@ -239,7 +242,7 @@ namespace Win32xx
             tbb.fsStyle = TBSTYLE_BUTTON;
         }
 
-        // Add the button to the toolbar
+        // Add the button to the toolbar.
         return AddButtons(1, &tbb);
     }
 
@@ -267,9 +270,9 @@ namespace Win32xx
         BITMAP data = bitmap.GetBitmapData();
 
         int imageHeight = data.bmHeight;
-        int imageWidth = MAX(data.bmHeight, 16);
+        int imageWidth = std::max(static_cast<int>(data.bmHeight), 16);
 
-        // Set the bitmap size first
+        // Set the bitmap size first.
         SetBitmapSize(imageWidth, imageHeight);
 
         BOOL succeeded = FALSE;
@@ -328,7 +331,7 @@ namespace Win32xx
         assert(IsWindow());
         WPARAM wparam = static_cast<WPARAM>(buttonID);
 
-        // returns -1 on fail
+        // Returns -1 on fail.
         return static_cast<int>(SendMessage(TB_COMMANDTOINDEX, wparam, 0));
     }
 
@@ -479,7 +482,7 @@ namespace Win32xx
 
     // Retrieves the image list that a ToolBar control uses to display inactive buttons.
     // Refer to TB_GETDISABLEDIMAGELIST in the Windows API documentation for more information.
-    inline CImageList CToolBar::GetDisabledImageList()
+    inline CImageList CToolBar::GetDisabledImageList() const
     {
         assert(IsWindow());
         HIMAGELIST images = reinterpret_cast<HIMAGELIST>(SendMessage(TB_GETDISABLEDIMAGELIST, 0, 0));
@@ -497,7 +500,7 @@ namespace Win32xx
 
     // Retrieves the image list that a ToolBar control uses to display hot buttons.
     // Refer to TB_GETHOTIMAGELIST in the Windows API documentation for more information.
-    inline CImageList CToolBar::GetHotImageList()
+    inline CImageList CToolBar::GetHotImageList() const
     {
         assert(IsWindow());
         HIMAGELIST images = reinterpret_cast<HIMAGELIST>(SendMessage(TB_GETHOTIMAGELIST, 0, 0));
@@ -514,7 +517,7 @@ namespace Win32xx
 
     // Retrieves the image list that a ToolBar control uses to display buttons in their default state.
     // Refer to TB_GETIMAGELIST in the Windows API documentation for more information.
-    inline CImageList CToolBar::GetImageList()
+    inline CImageList CToolBar::GetImageList() const
     {
         assert(IsWindow());
         HIMAGELIST images = reinterpret_cast<HIMAGELIST>(SendMessage(TB_GETIMAGELIST, 0, 0));
@@ -719,7 +722,7 @@ namespace Win32xx
     inline int CToolBar::MapAccelerator(TCHAR accelChar) const
     {
         assert(IsWindow());
-        int idButton;
+        int idButton = -1;
         WPARAM wparam = static_cast<WPARAM>(accelChar);
         LPARAM lparam = reinterpret_cast<LPARAM>(&idButton);
         if (!SendMessage(TB_MAPACCELERATOR, wparam, lparam))
@@ -755,8 +758,9 @@ namespace Win32xx
         // We must send this message before sending the TB_ADDBITMAP or TB_ADDBUTTONS message
         SendMessage(TB_BUTTONSTRUCTSIZE, wparam, 0);
 
-        // allows buttons to have a separate drop-down arrow
-        // Note: TBN_DROPDOWN notification is sent by a ToolBar control when the user clicks a drop-down button
+        // Allows buttons to have a separate drop-down arrow.
+        // Note: TBN_DROPDOWN notification is sent by a ToolBar control,
+        // when the user clicks a drop-down button.
         SendMessage(TB_SETEXTENDEDSTYLE, 0, TBSTYLE_EX_DRAWDDARROWS);
     }
 
@@ -774,7 +778,7 @@ namespace Win32xx
         return FinalWindowProc(msg, wparam, lparam);
     }
 
-    // Sets the CREATESTRUCT parameters prior to window creation
+    // Sets the CREATESTRUCT parameters prior to window creation.
     inline void CToolBar::PreCreate(CREATESTRUCT& cs)
     {
         cs.style = WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | TBSTYLE_TOOLTIPS | TBSTYLE_FLAT;
@@ -807,7 +811,7 @@ namespace Win32xx
         CBitmap Bitmap(newBitmapID);
         assert (Bitmap.GetHandle());
         BITMAP data = Bitmap.GetBitmapData();
-        int imageWidth  = MAX(data.bmHeight, 16);
+        int imageWidth  = std::max(static_cast<int>(data.bmHeight), 16);
         int images = data.bmWidth / imageWidth;
 
         TBREPLACEBITMAP tbrb;
@@ -840,7 +844,7 @@ namespace Win32xx
     }
 
     // Sets the size of the bitmapped images to be added to a ToolBar.
-    // Needs to be used when the image size is not the default 16 x 15
+    // Needs to be used when the image size is not the default 16 x 15.
     // Call this function before using AddBitmap or ReplaceBitmap.
     // Refer to TB_SETBITMAPSIZE in the Windows API documentation for more information.
     inline BOOL CToolBar::SetBitmapSize(int cx, int cy) const
@@ -929,8 +933,8 @@ namespace Win32xx
         tbbi.dwMask = TBIF_STYLE;
         tbbi.fsStyle = style;
 
-        // Note:  TB_SETBUTTONINFO requires comctl32.dll version 4.71 or later
-        //        i.e. Win95 with IE4 / NT with IE4   or later
+        // Note:  TB_SETBUTTONINFO requires comctl32.dll version 4.71 or later.
+        //        i.e. Win95 with IE4 / NT with IE4   or later.
         return SetButtonInfo(buttonID, tbbi);
     }
 
@@ -948,7 +952,7 @@ namespace Win32xx
         std::map<CString, int>::iterator m;
         int stringIndex;
 
-        // Check to see if the string is already added
+        // Check to see if the string is already added.
         m = m_stringMap.find(string);
         if (m_stringMap.end() == m)
         {
@@ -956,21 +960,21 @@ namespace Win32xx
             if (m_stringMap.size() == 0)
             {
                 // Place a blank string first in the string table, in case some
-                // buttons don't have text
+                // buttons don't have text.
 
                 str = _T(" ");
-                str += _T('\0');    // Double-null terminate
+                str += _T('\0');    // Double-null terminate.
                 AddStrings(str);
             }
 
-            // No index for this string exists, so create it now
+            // No index for this string exists, so create it now.
             str = text;
-            str += _T('\0');        // Double-null terminate
+            str += _T('\0');        // Double-null terminate.
 
             stringIndex = AddStrings(str);
             if (stringIndex != -1)
             {
-                // Save the string its index in our map
+                // Save the string its index in our map.
                 m_stringMap.insert(std::make_pair(string, stringIndex));
 
                 succeeded = TRUE;
@@ -978,7 +982,7 @@ namespace Win32xx
         }
         else
         {
-            // String found, use the index from our map
+            // String found, use the index from our map.
             stringIndex = m->second;
             succeeded = TRUE;
         }
@@ -990,21 +994,21 @@ namespace Win32xx
             succeeded = GetButton(index, tbb);
             tbb.iString = stringIndex;
 
-            // Turn off ToolBar drawing
+            // Turn off ToolBar drawing.
             SetRedraw(FALSE);
 
             // Replace the button to resize it to fit the text.
             succeeded = succeeded ? DeleteButton(index) : FALSE;
             succeeded = succeeded ? InsertButton(index, tbb) : FALSE;
 
-            // Ensure the button now includes some text rows
+            // Ensure the button now includes some text rows.
             if (SendMessage(TB_GETTEXTROWS, 0, 0) == 0)
                 SendMessage(TB_SETMAXTEXTROWS, static_cast<WPARAM>(1), 0);
 
-            // Turn on ToolBar drawing
+            // Turn on ToolBar drawing.
             SetRedraw(TRUE);
         }
-        // Redraw button
+        // Redraw button.
         CRect r = GetItemRect(index);
         InvalidateRect(r, TRUE);
 
@@ -1050,11 +1054,12 @@ namespace Win32xx
 
     // Sets the ImageList that the ToolBar control will use to display disabled buttons.
     // Refer to TB_SETDISABLEDIMAGELIST in the Windows API documentation for more information.
-    inline HIMAGELIST CToolBar::SetDisableImageList(HIMAGELIST disabledImages)
+    inline CImageList CToolBar::SetDisableImageList(HIMAGELIST disabledImages)
     {
         assert(IsWindow());
         LPARAM lparam = reinterpret_cast<LPARAM>(disabledImages);
-        HIMAGELIST images = reinterpret_cast<HIMAGELIST>(SendMessage(TB_SETDISABLEDIMAGELIST, 0, lparam));
+        CImageList images = reinterpret_cast<HIMAGELIST>(SendMessage(TB_SETDISABLEDIMAGELIST, 0, lparam));
+        m_disabledImages = disabledImages;
         return images;
     }
 
@@ -1080,11 +1085,12 @@ namespace Win32xx
 
     // Sets the image list that the ToolBar control will use to display hot buttons.
     // Refer to TB_SETHOTIMAGELIST in the Windows API documentation for more information.
-    inline HIMAGELIST CToolBar::SetHotImageList(HIMAGELIST hotImages)
+    inline CImageList CToolBar::SetHotImageList(HIMAGELIST hotImages)
     {
         assert(IsWindow());
         LPARAM lparam = reinterpret_cast<LPARAM>(hotImages);
-        HIMAGELIST images = reinterpret_cast<HIMAGELIST>(SendMessage(TB_SETHOTIMAGELIST, 0, lparam));
+        CImageList images = reinterpret_cast<HIMAGELIST>(SendMessage(TB_SETHOTIMAGELIST, 0, lparam));
+        m_hotImages = hotImages;
         return images;
     }
 
@@ -1099,11 +1105,12 @@ namespace Win32xx
 
     // Sets the image list that the ToolBar will use to display buttons that are in their default state.
     // Refer to TB_SETIMAGELIST in the Windows API documentation for more information.
-    inline HIMAGELIST CToolBar::SetImageList(HIMAGELIST normalImages)
+    inline CImageList CToolBar::SetImageList(HIMAGELIST normalImages)
     {
         assert(IsWindow());
         LPARAM lparam = reinterpret_cast<LPARAM>(normalImages);
-        HIMAGELIST images = reinterpret_cast<HIMAGELIST>(SendMessage(TB_SETIMAGELIST, 0, lparam));
+        CImageList images = reinterpret_cast<HIMAGELIST>(SendMessage(TB_SETIMAGELIST, 0, lparam));
+        m_normalImages = normalImages;
         return images;
     }
 
@@ -1152,7 +1159,7 @@ namespace Win32xx
         case UWM_GETCTOOLBAR:       return reinterpret_cast<LRESULT>(this);
         }
 
-        // pass unhandled messages on for default processing
+        // Pass unhandled messages on for default processing.
         return CWnd::WndProcDefault(msg, wparam, lparam);
     }
 

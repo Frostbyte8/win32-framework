@@ -14,8 +14,11 @@
 //
 
 // Constructor.
-CMainFrame::CMainFrame() : m_pDockDialogsTree(NULL), m_isTemplateShown(false)
+CMainFrame::CMainFrame() : m_preview(m_richView), m_pDockDialogsTree(NULL),
+                           m_isTemplateShown(false)
 {
+    // Set m_view as the view window of the frame.
+    SetView(m_richView);
 }
 
 // Destructor.
@@ -26,18 +29,17 @@ CMainFrame::~CMainFrame()
 // Create the frame window.
 HWND CMainFrame::Create(HWND parent)
 {
-    //Set m_view as the view window of the frame
-    SetView(m_richView);
 
-    // Set the registry key name, and load the initial window position
-    // Use a registry key name like "CompanyName\\Application"
+
+    // Set the registry key name, and load the initial window position.
+    // Use a registry key name like "CompanyName\\Application".
     LoadRegistrySettings(_T("Win32++\\DialogTemplate"));
 
     return CDockFrame::Create(parent);
 }
 
 // Attempts to create the dialog from the template text
-// displayed in the rich edit view.
+// that is displayed in the rich edit view.
 void CMainFrame::DialogFromTemplateText()
 {
     // Retrieve the text from the rich edit window.
@@ -188,7 +190,7 @@ void CMainFrame::OnInitialUpdate()
     DWORD style = DS_DOCKED_LEFT | DS_CLIENTEDGE | DS_NO_CLOSE | DS_NO_UNDOCK | DS_NO_CAPTION;
     const int width = DpiScaleInt(250);
     m_pDockDialogsTree = static_cast<CDockDialogsTree*>
-                         (AddDockedChild(new CDockDialogsTree, style, width));
+                         (AddDockedChild(std::make_unique<CDockDialogsTree>(), style, width));
 
     Reset();
 }
@@ -198,7 +200,7 @@ BOOL CMainFrame::OnFileOpen()
 {
     m_richView.SetWindowText(NULL);
 
-    CString filter = _T("Program Files (*.exe; *.dll)|*.exe; *.dll|All Files (*.*)|*.*||");
+    CString filter = "Program Files (*.exe; *.dll)|*.exe; *.dll|All Files (*.*)|*.*|";
     CFileDialog fileDlg(TRUE);    // TRUE for file open
     fileDlg.SetFilter(filter);
     fileDlg.SetDefExt(_T(".exe"));
@@ -229,9 +231,6 @@ BOOL CMainFrame::OnFilePreview()
         // Create the preview window if required.
         if (!m_preview.IsWindow())
             m_preview.Create(*this);
-
-        // Setup the print preview.
-        m_preview.SetSource(m_richView);   // CPrintPreview calls m_richView::PrintPage
 
         // Set the preview's owner (for messages), and number of pages.
         UINT maxPage = m_richView.CollatePages();
@@ -272,7 +271,7 @@ BOOL CMainFrame::OnFilePrint()
 // Create the File Save dialog to choose the file to save.
 BOOL CMainFrame::OnFileSave()
 {
-    CString filter = _T("Program Files (*.h; *.cpp)|*.h; *.cpp|All Files (*.*)|*.*||");
+    CString filter = "Program Files (*.h; *.cpp)|*.h; *.cpp|All Files (*.*)|*.*|";
     CFileDialog fileDlg(FALSE);    // FALSE for file save
     fileDlg.SetFilter(filter);
     fileDlg.SetDefExt(_T(".h"));
@@ -506,14 +505,25 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 
 // Streams from the rich edit control to the specified file.

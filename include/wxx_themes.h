@@ -1,9 +1,10 @@
-// Win32++   Version 9.5
-// Release Date: TBA
+// Win32++   Version 9.6.1
+// Release Date: 29th July 2024
 //
 //      David Nash
 //      email: dnash@bigpond.net.au
 //      url: https://sourceforge.net/projects/win32-framework
+//           https://github.com/DavidNash2024/Win32xx
 //
 //
 // Copyright (c) 2005-2024  David Nash
@@ -107,29 +108,29 @@ namespace Win32xx
     // Returns TRUE if Aero themes are being used.
     inline BOOL IsAeroThemed()
     {
-        BOOL IsAeroThemed = FALSE;
+        BOOL isAeroThemed = FALSE;
 
-        // Test if Windows version is XP or greater
+        // Test if Windows version is XP or greater.
         if (GetWinVersion() >= 2501)
         {
             HMODULE module = ::GetModuleHandle(_T("uxtheme.dll"));
 
-            if (module != 0)
+            if (module != NULL)
             {
-                // Declare pointers to IsCompositionActive function
+                // Declare pointers to IsCompositionActive function.
                 FARPROC pIsCompositionActive = ::GetProcAddress(module, "IsCompositionActive");
 
                 if (pIsCompositionActive)
                 {
                     if (pIsCompositionActive())
                     {
-                        IsAeroThemed = TRUE;
+                        isAeroThemed = TRUE;
                     }
                 }
             }
         }
 
-        return IsAeroThemed;
+        return isAeroThemed;
     }
 
     // Returns TRUE if XP themes are being used.
@@ -137,11 +138,11 @@ namespace Win32xx
     {
         BOOL isXPThemed = FALSE;
 
-        // Test if Windows version is XP or greater
+        // Test if Windows version is XP or greater.
         if (GetWinVersion() >= 2501)
         {
             HMODULE theme = ::GetModuleHandle(_T("uxtheme.dll"));
-            if (theme != 0)
+            if (theme != NULL)
             {
                 // Declare pointers to functions
                 FARPROC pIsAppThemed   = ::GetProcAddress(theme, "IsAppThemed");
@@ -151,7 +152,7 @@ namespace Win32xx
                 {
                     if (pIsAppThemed() && pIsThemeActive())
                     {
-                        // Test if ComCtl32 dll used is version 6 or later
+                        // Test if ComCtl32 dll used is version 6 or later.
                         isXPThemed = (GetComCtlVersion() >= 600);
                     }
                 }

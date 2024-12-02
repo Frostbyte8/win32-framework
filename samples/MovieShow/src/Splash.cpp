@@ -1,4 +1,4 @@
-/////////////////////////////
+////////////////////////////
 // Splash.cpp
 //
 
@@ -11,7 +11,7 @@
 //
 
 // Constructor.
-CSplash::CSplash() : m_fontHandle(0)
+CSplash::CSplash() : m_fontHandle(nullptr)
 {
     int xImage = DpiScaleInt(256);
     int yImage = DpiScaleInt(256);
@@ -57,10 +57,10 @@ void CSplash::LoadFont()
     if (res)
     {
         HGLOBAL mem = LoadResource(hResInstance, res);
-        if (mem != 0)
+        if (mem != nullptr)
         {
             void* data = LockResource(mem);
-            if (data != 0)
+            if (data != nullptr)
             {
                 DWORD len = SizeofResource(hResInstance, res);
                 DWORD fonts = 0;
@@ -72,7 +72,7 @@ void CSplash::LoadFont()
                     &fonts          // number of fonts installed
                 );
 
-                if (m_fontHandle == 0)
+                if (m_fontHandle == nullptr)
                 {
                     MessageBox(L"Font add fails", L"Error", MB_OK);
                 }
@@ -118,7 +118,7 @@ void CSplash::PreRegisterClass(WNDCLASS& wc)
 {
     wc.lpszClassName = L"Splash Screen";
     wc.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
-    wc.hCursor = ::LoadCursor(0, IDC_ARROW);
+    wc.hCursor = ::LoadCursor(nullptr, IDC_ARROW);
 }
 
 // Removes the progress bar.
@@ -147,4 +147,34 @@ void CSplash::ShowText(LPCTSTR text, CWnd* parent)
 
     UpdateWindow();
     Invalidate();
+}
+
+// Process the messages for the treeview window.
+LRESULT CSplash::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    try
+    {
+        return WndProcDefault(msg, wparam, lparam);
+    }
+
+    // Catch all unhandled CException types.
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(nullptr, str1, str2, MB_ICONERROR);
+    }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(nullptr, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }

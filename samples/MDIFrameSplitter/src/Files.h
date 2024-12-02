@@ -18,7 +18,6 @@ public:
 protected:
     // Virtual functions that override base class functions
     virtual void OnAttach();
-    virtual void OnDestroy();
     virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
@@ -30,9 +29,6 @@ private:
 
     void InsertItems();
     void SetColumns();
-
-    // Member variables
-    CImageList m_smallImages;
 };
 
 
@@ -44,6 +40,9 @@ class CContainFiles : public CDockContainer
 public:
     CContainFiles();
     virtual ~CContainFiles() {}
+
+protected:
+    virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
     CContainFiles(const CContainFiles&);                // Disable copy construction
@@ -64,6 +63,7 @@ public:
 
 protected:
     virtual int OnCreate(CREATESTRUCT& cs);
+    virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
     CDockFiles(const CDockFiles&);                // Disable copy construction

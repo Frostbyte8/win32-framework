@@ -12,6 +12,8 @@
 #include "MDIChildListView.h"
 #include "resource.h"
 
+using namespace std;
+
 /////////////////////////////////////
 // CMainMDIFrame function definitions
 //
@@ -106,7 +108,7 @@ BOOL CMainMDIFrame::OnFileNew()
     // Position the popup menu
     CToolBar& tb = GetToolBar();
     RECT rc = tb.GetItemRect(tb.CommandToIndex(IDM_FILE_NEW));
-    tb.MapWindowPoints(0, (LPPOINT)&rc, 2);
+    tb.MapWindowPoints(HWND_DESKTOP, (LPPOINT)&rc, 2);
 
     TPMPARAMS tpm;
     tpm.cbSize = sizeof(tpm);
@@ -140,42 +142,42 @@ BOOL CMainMDIFrame::OnFileExit()
 // Adds a MDI child with a list view.
 BOOL CMainMDIFrame::OnFileNewList()
 {
-    AddMDIChild(new CMDIChildList); // This pointer is stored in a Shared_Ptr
+    AddMDIChild(make_unique<CMDIChildList>());
     return TRUE;
 }
 
 // Adds a maximised MDI child.
 BOOL CMainMDIFrame::OnFileNewMax()
 {
-    AddMDIChild(new CMDIChildMax);  // This pointer is stored in a Shared_Ptr
+    AddMDIChild(make_unique<CMDIChildMax>());
     return TRUE;
 }
 
 // Adds a MDI child displaying random rectangles.
 BOOL CMainMDIFrame::OnFileNewRect()
 {
-    AddMDIChild(new CMDIChildRect); // This pointer is stored in a Shared_Ptr
+    AddMDIChild(make_unique<CMDIChildRect>());
     return TRUE;
 }
 
 // Adds a MDI child with a text view.
 BOOL CMainMDIFrame::OnFileNewText()
 {
-    AddMDIChild(new CMDIChildText); // This pointer is stored in a Shared_Ptr
+    AddMDIChild(make_unique<CMDIChildText>());
     return TRUE;
 }
 
 // Adds a MDI child with a tree view.
 BOOL CMainMDIFrame::OnFileNewTree()
 {
-    AddMDIChild(new CMDIChildTree); // This pointer is stored in a Shared_Ptr
+    AddMDIChild(make_unique<CMDIChildTree>());
     return TRUE;
 }
 
 // Adds a MDI child with a simple view.
 BOOL CMainMDIFrame::OnFileNewView()
 {
-    AddMDIChild(new CMDIChildSimple);   // This pointer is stored in a Shared_Ptr
+    AddMDIChild(make_unique<CMDIChildSimple>());
     return TRUE;
 }
 
@@ -268,7 +270,7 @@ void CMainMDIFrame::SetupToolBar()
     // Use larger buttons with separate imagelists for normal, hot and disabled buttons.
     SetToolBarImages(RGB(192,192,192), IDW_MAIN, IDB_TOOLBAR24_HOT, IDB_TOOLBAR24_DIS);
 
-    // Configure the "New" toolbar button to bring up a menu
+    // Configure the "New" toolbar button to bring up a menu.
     GetToolBar().SetButtonStyle(IDM_FILE_NEW, BTNS_WHOLEDROPDOWN);
 }
 
@@ -287,13 +289,25 @@ LRESULT CMainMDIFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 

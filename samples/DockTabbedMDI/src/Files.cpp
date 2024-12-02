@@ -57,12 +57,13 @@ void CViewFiles::OnAttach()
 
     SetColumns();
     InsertItems();
-}
 
-// Called when the window is destroyed.
-void CViewFiles::OnDestroy()
-{
-    SetImageList(0, LVSIL_SMALL);
+#ifndef LVS_EX_DOUBLEBUFFER
+  #define LVS_EX_DOUBLEBUFFER     0x00010000
+#endif
+
+    // Set the extended style to double buffer.
+    SetExtendedStyle(LVS_EX_DOUBLEBUFFER);
 }
 
 // Respond to a mouse click on the window
@@ -111,9 +112,10 @@ void CViewFiles::SetDPIImages()
     CBitmap bmImage(IDB_FILEVIEW);
     bmImage = DpiScaleUpBitmap(bmImage);
     int scale = bmImage.GetSize().cy / 15;
-    m_smallImages.Create(scale * 16, scale * 15, ILC_COLOR32 | ILC_MASK, 1, 0);
-    m_smallImages.Add(bmImage, RGB(255, 0, 255));
-    SetImageList(m_smallImages, LVSIL_SMALL);
+    CImageList smallImages;
+    smallImages.Create(scale * 16, scale * 15, ILC_COLOR32 | ILC_MASK, 1, 0);
+    smallImages.Add(bmImage, RGB(255, 0, 255));
+    SetImageList(smallImages, LVSIL_SMALL);
 }
 
 // Process the list-view's window messages.
@@ -130,14 +132,26 @@ LRESULT CViewFiles::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 
 
@@ -154,6 +168,38 @@ CContainFiles::CContainFiles()
     SetView(m_viewFiles);
 }
 
+// Handle the window's messages.
+LRESULT CContainFiles::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    try
+    {
+        // Pass unhandled messages on for default processing.
+        return WndProcDefault(msg, wparam, lparam);
+    }
+
+    // Catch all unhandled CException types.
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
+    }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
+}
+
+
 //////////////////////////////////
 // CDockFiles function definitions
 //
@@ -165,4 +211,57 @@ CDockFiles::CDockFiles()
 
     // Set the width of the splitter bar.
     SetBarWidth(8);
+}
+
+// This function overrides CDocker::RecalcDockLayout to elimate jitter
+// when the dockers are resized. The technique used here is is most
+// appropriate for a complex arrangement of dockers.  It might not suite
+// other docking applications. To support this technique the
+// WS_EX_COMPOSITED extended style has been added to some view windows.
+void CDockFiles::RecalcDockLayout()
+{
+    if (GetWinVersion() >= 3000)  // Windows 10 or later.
+    {
+        if (GetDockAncestor()->IsWindow())
+        {
+            GetTopmostDocker()->LockWindowUpdate();
+            CRect rc = GetTopmostDocker()->GetViewRect();
+            GetTopmostDocker()->RecalcDockChildLayout(rc);
+            GetTopmostDocker()->UnlockWindowUpdate();
+            GetTopmostDocker()->UpdateWindow();
+        }
+    }
+    else
+        CDocker::RecalcDockLayout();
+}
+
+// Handle the window's messages.
+LRESULT CDockFiles::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    try
+    {
+        // Pass unhandled messages on for default processing.
+        return WndProcDefault(msg, wparam, lparam);
+    }
+
+    // Catch all unhandled CException types.
+    catch (const CException& e)
+    {
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
+    }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }

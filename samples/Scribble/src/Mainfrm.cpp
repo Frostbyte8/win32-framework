@@ -7,8 +7,10 @@
 
 
 // Constructor.
-CMainFrame::CMainFrame() : m_isToolbarShown(true)
+CMainFrame::CMainFrame() : m_preview(m_view), m_isToolbarShown(true)
 {
+    // Set m_view as the view window of the frame.
+    SetView(m_view);
 }
 
 // Destructor.
@@ -19,9 +21,6 @@ CMainFrame::~CMainFrame()
 // Create the frame window.
 HWND CMainFrame::Create(HWND parent)
 {
-    // Set m_view as the view window of the frame
-    SetView(m_view);
-
     // Set the registry key name, and load the initial window position.
     // Use a registry key name like "CompanyName\\Application".
     LoadRegistrySettings(_T("Win32++\\Scribble Sample"));
@@ -184,7 +183,7 @@ BOOL CMainFrame::OnFileNew()
 // Load the PlotPoint data from the file.
 BOOL CMainFrame::OnFileOpen()
 {
-    CFileDialog fileDlg(TRUE, _T("dat"), 0, OFN_FILEMUSTEXIST, _T("Scribble Files (*.dat)\0*.dat\0\0"));
+    CFileDialog fileDlg(TRUE, _T("dat"), NULL, OFN_FILEMUSTEXIST, _T("Scribble Files (*.dat)\0*.dat\0\0"));
     fileDlg.SetTitle(_T("Open File"));
 
     try
@@ -233,7 +232,7 @@ BOOL CMainFrame::OnFileSave()
 // Save the PlotPoint data to a specified file.
 BOOL CMainFrame::OnFileSaveAs()
 {
-    CFileDialog fileDlg(FALSE, _T("dat"), 0, OFN_OVERWRITEPROMPT, _T("Scribble Files (*.dat)\0*.dat\0\0"));
+    CFileDialog fileDlg(FALSE, _T("dat"), NULL, OFN_OVERWRITEPROMPT, _T("Scribble Files (*.dat)\0*.dat\0\0"));
     fileDlg.SetTitle(_T("Save File"));
 
     try
@@ -276,9 +275,6 @@ BOOL CMainFrame::OnFilePreview()
         if (!m_preview.IsWindow())
             m_preview.Create(*this);
 
-        // Specify the source of the PrintPage function.
-        m_preview.SetSource(m_view);
-
         // Set the preview's owner for notification messages.
         m_preview.DoPrintPreview(*this);
 
@@ -299,7 +295,7 @@ BOOL CMainFrame::OnFilePreview()
         // An exception occurred. Display the relevant information.
         MessageBox(e.GetText(), _T("Print Preview Failed"), MB_ICONWARNING);
         SetView(m_view);
-        ShowMenu(GetFrameMenu() != 0);
+        ShowMenu(GetFrameMenu() != NULL);
         ShowToolBar(m_isToolbarShown);
     }
 
@@ -371,7 +367,7 @@ LRESULT CMainFrame::OnPreviewClose()
     SetView(m_view);
 
     // Show the menu and toolbar
-    ShowMenu(GetFrameMenu() != 0);
+    ShowMenu(GetFrameMenu() != NULL);
     ShowToolBar(m_isToolbarShown);
     UpdateSettings();
 
@@ -472,13 +468,25 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }
 

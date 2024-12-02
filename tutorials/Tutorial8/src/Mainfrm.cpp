@@ -9,20 +9,13 @@
 // Constructor.
 CMainFrame::CMainFrame()
 {
+    // Set m_view as the view window of the frame.
+    SetView(m_view);
 }
 
 // Destructor.
 CMainFrame::~CMainFrame()
 {
-}
-
-// Create the frame window.
-HWND CMainFrame::Create(HWND parent)
-{
-    // Set m_view as the view window of the frame
-    SetView(m_view);
-
-    return CFrame::Create(parent);
 }
 
 // Process the messages from the Menu and Tool Bar.
@@ -131,7 +124,7 @@ BOOL CMainFrame::OnFileOpen()
 {
     try
     {
-        CFileDialog fileDlg(TRUE, _T("dat"), 0, OFN_FILEMUSTEXIST, _T("Scribble Files (*.dat)\0*.dat\0\0"));
+        CFileDialog fileDlg(TRUE, _T("dat"), NULL, OFN_FILEMUSTEXIST, _T("Scribble Files (*.dat)\0*.dat\0\0"));
         fileDlg.SetTitle(_T("Open File"));
 
         // Bring up the file open dialog retrieve the selected filename
@@ -184,7 +177,7 @@ BOOL CMainFrame::OnFileSaveAs()
 {
     try
     {
-        CFileDialog fileDlg(FALSE, _T("dat"), 0, OFN_OVERWRITEPROMPT, _T("Scribble Files (*.dat)\0*.dat\0\0"));
+        CFileDialog fileDlg(FALSE, _T("dat"), NULL, OFN_OVERWRITEPROMPT, _T("Scribble Files (*.dat)\0*.dat\0\0"));
         fileDlg.SetTitle(_T("Save File"));
 
         // Bring up the file open dialog retrieve the selected filename

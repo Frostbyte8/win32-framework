@@ -6,6 +6,8 @@
 #include "Mainfrm.h"
 #include "resource.h"
 
+using namespace std;
+
 //////////////////////////////////
 // CMainFrame function definitions
 //
@@ -13,6 +15,8 @@
 // Constructor.
 CMainFrame::CMainFrame()
 {
+    // Set m_view as the view window of the frame.
+    SetView(m_view);
 }
 
 // Destructor.
@@ -23,11 +27,8 @@ CMainFrame::~CMainFrame()
 // Create the frame window.
 HWND CMainFrame::Create(HWND parent)
 {
-    //Set m_view as the view window of the frame
-    SetView(m_view);
-
-    // Set the registry key name, and load the initial window position
-    // Use a registry key name like "CompanyName\\Application"
+    // Set the registry key name, and load the initial window position.
+    // Use a registry key name like "CompanyName\\Application".
     LoadRegistrySettings(_T("Win32++\\PropertySheet Sample"));
 
     return CFrame::Create(parent);
@@ -70,14 +71,36 @@ int CMainFrame::OnCreate(CREATESTRUCT& cs)
     // UseThemes(FALSE);             // Don't use themes.
     // UseToolBar(FALSE);            // Don't use a ToolBar.
 
-    // call the base class function
+    // Call the base class function.
     return CFrame::OnCreate(cs);
 }
 
-// Issue a close request to the frame to end the application
+// Issue a close request to the frame to end the application.
 BOOL CMainFrame::OnFileExit()
 {
     Close();
+    return TRUE;
+}
+
+// Creates the popup menu when the "New" toolbar button is pressed.
+BOOL CMainFrame::OnNewMenu()
+{
+    // Position the popup menu
+    CToolBar& tb = GetToolBar();
+    RECT rc = tb.GetItemRect(tb.CommandToIndex(IDM_NEW_MENU));
+    tb.MapWindowPoints(HWND_DESKTOP, (LPPOINT)&rc, 2);
+
+    TPMPARAMS tpm;
+    tpm.cbSize = sizeof(tpm);
+    tpm.rcExclude = rc;
+
+    // Load the popup menu.
+    CMenu topMenu(IDM_NEW_MENU);
+    CMenu popupMenu = topMenu.GetSubMenu(0);
+
+    // Start the popup menu.
+    popupMenu.TrackPopupMenuEx(TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_VERTICAL, rc.left, rc.bottom, *this, &tpm);
+
     return TRUE;
 }
 
@@ -94,11 +117,11 @@ void CMainFrame::OnInitialUpdate()
 // Create a modeless property sheet.
 BOOL CMainFrame::OnModeless()
 {
-    // Permit only one Modeless property sheet
+    // Permit only one Modeless property sheet.
     if (!m_modelessPS.IsWindow())
     {
-        m_modelessPS.AddPage(new CButtonPage(IDD_BUTTONS, _T("Buttons")));
-        m_modelessPS.AddPage(new CComboPage(IDD_COMBOBOXES, _T("Combo Boxes")));
+        m_modelessPS.AddPage(make_unique<CButtonPage>(IDD_BUTTONS, _T("Buttons")));
+        m_modelessPS.AddPage(make_unique<CComboPage>(IDD_COMBOBOXES, _T("Combo Boxes")));
         m_modelessPS.SetTitle(_T("Modeless Property Sheet"));
         m_modelessPS.Create(*this);
     }
@@ -115,19 +138,38 @@ BOOL CMainFrame::OnModal()
         m_modelessPS.Destroy();
 
     CMyPropertySheet mps(_T("Modal Property Sheet"), *this);
-    mps.AddPage(new CButtonPage(IDD_BUTTONS, _T("Buttons")));
-    mps.AddPage(new CComboPage(IDD_COMBOBOXES, _T("Combo Boxes")));
+    mps.AddPage(make_unique<CButtonPage>(IDD_BUTTONS, _T("Buttons")));
+    mps.AddPage(make_unique<CComboPage>(IDD_COMBOBOXES, _T("Combo Boxes")));
     mps.DoModal();
 
     return TRUE;
 }
 
+// Process notification messages (WM_NOTIFY) from child windows.
+LRESULT CMainFrame::OnNotify(WPARAM wparam, LPARAM lparam)
+{
+    LPNMHDR pHeader = reinterpret_cast<LPNMHDR>(lparam);
+    switch (pHeader->code)
+    {
+    // Process toolbar dropdown button notification.
+    case TBN_DROPDOWN:
+    {
+        if (pHeader->hwndFrom == GetToolBar())
+            OnNewMenu();
+    }
+    break;
+    }
+
+    return CFrame::OnNotify(wparam, lparam);
+}
+
+
 // Create a wizard. A wizard displays a series of property sheets.
 BOOL CMainFrame::OnWizard()
 {
     CMyPropertySheet mps(NULL, *this);
-    mps.AddPage(new CButtonPage(IDD_BUTTONS, _T("Buttons")));
-    mps.AddPage(new CComboPage(IDD_COMBOBOXES, _T("Combo Boxes")));
+    mps.AddPage(make_unique<CButtonPage>(IDD_BUTTONS, _T("Buttons")));
+    mps.AddPage(make_unique<CComboPage>(IDD_COMBOBOXES, _T("Combo Boxes")));
     mps.SetWizardMode(TRUE);
     mps.DoModal();
     return TRUE;
@@ -147,18 +189,21 @@ void CMainFrame::SetupMenuIcons()
 // Sets the resource IDs and images for the toolbar buttons.
 void CMainFrame::SetupToolBar()
 {
-    // Set the Resource IDs for the toolbar buttons
-    AddToolBarButton( IDM_FILE_NEW   );
-    AddToolBarButton( IDM_FILE_OPEN  );
-    AddToolBarButton( IDM_FILE_SAVE  );
-    AddToolBarButton( 0 );              // Separator
-    AddToolBarButton( IDM_EDIT_CUT   );
-    AddToolBarButton( IDM_EDIT_COPY  );
-    AddToolBarButton( IDM_EDIT_PASTE );
-    AddToolBarButton( 0 );              // Separator
-    AddToolBarButton( IDM_FILE_PRINT );
-    AddToolBarButton( 0 );              // Separator
-    AddToolBarButton( IDM_HELP_ABOUT );
+    // Set the Resource IDs for the toolbar buttons.
+    AddToolBarButton(IDM_NEW_MENU);
+    AddToolBarButton(IDM_FILE_OPEN, FALSE);
+    AddToolBarButton(IDM_FILE_SAVE, FALSE);
+    AddToolBarButton(0);                     // Separator
+    AddToolBarButton(IDM_EDIT_CUT, FALSE);
+    AddToolBarButton(IDM_EDIT_COPY, FALSE);
+    AddToolBarButton(IDM_EDIT_PASTE, FALSE);
+    AddToolBarButton(0);                     // Separator
+    AddToolBarButton(IDM_FILE_PRINT, FALSE);
+    AddToolBarButton(0);                     // Separator
+    AddToolBarButton(IDM_HELP_ABOUT);
+
+    // Configure the "New" toolbar button to bring up a menu.
+    GetToolBar().SetButtonStyle(IDM_NEW_MENU, BTNS_WHOLEDROPDOWN);
 }
 
 // Process the frame's window messages.
@@ -176,12 +221,24 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
-    // Catch all CException types.
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
         // Display the exception and continue.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-
-        return 0;
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }

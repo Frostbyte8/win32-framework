@@ -9,6 +9,8 @@
 #include "MyDialog.h"
 #include "resource.h"
 
+using namespace std;
+
 ///////////////////////////////////
 // CMainFrame function definitions.
 //
@@ -16,6 +18,8 @@
 // Constructor for CMainFrame.
 CMainFrame::CMainFrame()
 {
+    // Set the tab control as the frame's view window.
+    SetView(m_view);
 }
 
 // Destructor for CMainFrame.
@@ -26,9 +30,6 @@ CMainFrame::~CMainFrame()
 // Create the frame window.
 HWND CMainFrame::Create(HWND parent)
 {
-    // Set the tab control as the frame's view window.
-    SetView(m_view);
-
     // Set the registry key name, and load the initial window position.
     // Use a registry key name like "CompanyName\\Application".
     LoadRegistrySettings(_T("Win32++\\Tab Demo"));
@@ -100,12 +101,12 @@ BOOL CMainFrame::OnFileExit()
 // Called after the frame is created.
 void CMainFrame::OnInitialUpdate()
 {
-    // Add some tabs to the tab control
-    m_view.AddTabPage(new CViewClasses, _T("Classes"), IDI_CLASSVIEW);
-    m_view.AddTabPage(new CViewFiles, _T("Files"), IDI_FILEVIEW);
-    m_view.AddTabPage(new CViewClasses, _T("Classes"), IDI_CLASSVIEW);
-    m_view.AddTabPage(new CViewFiles, _T("Files"), IDI_FILEVIEW);
-    m_view.AddTabPage(new CViewDialog(IDD_MYDIALOG), _T("Dialog"), IDI_DIALOGVIEW);
+    // Add some tabs to the tab control.
+    m_view.AddTabPage(make_unique<CViewClasses>(), _T("Classes"), IDI_CLASSVIEW);
+    m_view.AddTabPage(make_unique<CViewFiles>(), _T("Files"), IDI_FILEVIEW);
+    m_view.AddTabPage(make_unique<CViewClasses>(), _T("Classes"), IDI_CLASSVIEW);
+    m_view.AddTabPage(make_unique<CViewFiles>(), _T("Files"), IDI_FILEVIEW);
+    m_view.AddTabPage(make_unique<CViewDialog>(IDD_MYDIALOG), _T("Dialog"), IDI_DIALOGVIEW);
 
     m_view.SelectPage(0);
 
@@ -185,7 +186,7 @@ BOOL CMainFrame::OnNewTab()
     // Position the popup menu.
     CToolBar& tb = GetToolBar();
     RECT rc = tb.GetItemRect(tb.CommandToIndex(IDM_NEW_TAB));
-    tb.MapWindowPoints(0, (LPPOINT)&rc, 2);
+    tb.MapWindowPoints(HWND_DESKTOP, (LPPOINT)&rc, 2);
 
     TPMPARAMS tpm;
     tpm.cbSize = sizeof(TPMPARAMS);
@@ -301,10 +302,24 @@ LRESULT CMainFrame::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
         return WndProcDefault(msg, wparam, lparam);
     }
 
+    // Catch all unhandled CException types.
     catch (const CException& e)
     {
-        // Display the exception.
-        ::MessageBox(0, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-        return 0;
+        // Display the exception and continue.
+        CString str1;
+        str1 << e.GetText() << _T("\n") << e.GetErrorString();
+        CString str2;
+        str2 << "Error: " << e.what();
+        ::MessageBox(NULL, str1, str2, MB_ICONERROR);
     }
+
+    // Catch all unhandled std::exception types.
+    catch (const std::exception& e)
+    {
+        // Display the exception and continue.
+        CString str1 = e.what();
+        ::MessageBox(NULL, str1, _T("Error: std::exception"), MB_ICONERROR);
+    }
+
+    return 0;
 }

@@ -1,9 +1,10 @@
-// Win32++   Version 9.5
-// Release Date: TBA
+// Win32++   Version 9.6.1
+// Release Date: 29th July 2024
 //
 //      David Nash
 //      email: dnash@bigpond.net.au
 //      url: https://sourceforge.net/projects/win32-framework
+//           https://github.com/DavidNash2024/Win32xx
 //
 //
 // Copyright (c) 2005-2024  David Nash
@@ -102,12 +103,12 @@ namespace Win32xx
         CRibbon& operator=(const CRibbon&);   // Disable assignment operator
 
         IUIFramework* m_pRibbonFramework;
-        LONG m_count;                            // Reference count.
+        LONG m_count;                         // Reference count.
 
     };
 
-    //////////////////////////////////////////////
-    // Declaration of the CRibbonFrameT class template
+    ///////////////////////////////////////////////////
+    // Declaration of the CRibbonFrameT class template.
     //
 
     // The CRibbonFrameT is the base class for frames that support the Ribbon Framework.
@@ -137,9 +138,7 @@ namespace Win32xx
             WCHAR m_fullPath[MAX_PATH];
         };
 
-        // Note: Modern C++ compilers can use this typedef instead.
-        // typedef std::shared_ptr<CRecentFiles> RecentFilesPtr;
-        typedef Shared_Ptr<CRecentFiles> RecentFilesPtr;
+        typedef std::unique_ptr<CRecentFiles> RecentFilesPtr;
 
         CRibbonFrameT() {}
         virtual ~CRibbonFrameT() {}
@@ -153,7 +152,7 @@ namespace Win32xx
         virtual void UpdateMRUMenu();
 
     private:
-        CRibbonFrameT(const CRibbonFrameT&);              // Disable copy construction
+        CRibbonFrameT(const CRibbonFrameT&);            // Disable copy construction
         CRibbonFrameT& operator=(const CRibbonFrameT&); // Disable assignment operator
 
         std::vector<RecentFilesPtr> m_recentFiles;
@@ -168,7 +167,7 @@ namespace Win32xx
         virtual ~CRibbonFrame() {}
 
     private:
-        CRibbonFrame(const CRibbonFrame&);              // Disable copy construction
+        CRibbonFrame(const CRibbonFrame&);            // Disable copy construction
         CRibbonFrame& operator=(const CRibbonFrame&); // Disable assignment operator
     };
 
@@ -182,7 +181,7 @@ namespace Win32xx
         virtual ~CRibbonDockFrame() {}
 
     private:
-        CRibbonDockFrame(const CRibbonDockFrame&);              // Disable copy construction
+        CRibbonDockFrame(const CRibbonDockFrame&);            // Disable copy construction
         CRibbonDockFrame& operator=(const CRibbonDockFrame&); // Disable assignment operator
     };
 
@@ -196,7 +195,7 @@ namespace Win32xx
         virtual ~CRibbonMDIFrame() {}
 
     private:
-        CRibbonMDIFrame(const CRibbonMDIFrame&);              // Disable copy construction
+        CRibbonMDIFrame(const CRibbonMDIFrame&);            // Disable copy construction
         CRibbonMDIFrame& operator=(const CRibbonMDIFrame&); // Disable assignment operator
     };
 
@@ -211,7 +210,7 @@ namespace Win32xx
         virtual ~CRibbonMDIDockFrame() {}
 
     private:
-        CRibbonMDIDockFrame(const CRibbonMDIDockFrame&);              // Disable copy construction
+        CRibbonMDIDockFrame(const CRibbonMDIDockFrame&);            // Disable copy construction
         CRibbonMDIDockFrame& operator=(const CRibbonMDIDockFrame&); // Disable assignment operator
     };
 
@@ -371,7 +370,7 @@ namespace Win32xx
     // Definitions for the CRibbonFrameT class template
     //
 
-    // Get the frame's client area
+    // Get the frame's client area.
     template <class T>
     inline CRect CRibbonFrameT<T>::GetViewRect() const
     {
@@ -402,12 +401,12 @@ namespace Win32xx
         {
             if (SUCCEEDED(CreateRibbon(*this)))
             {
-                T::UseReBar(FALSE);     // Don't use a ReBar
-                T::UseToolBar(FALSE);   // Don't use a ToolBar
+                T::UseReBar(FALSE);     // Don't use a ReBar.
+                T::UseToolBar(FALSE);   // Don't use a ToolBar.
             }
             else
             {
-                TRACE("Failed to create Ribbon\n");
+                TRACE("\n*** WARNING Failed to create Ribbon. ***\n\n");
                 DestroyRibbon();
             }
         }
@@ -415,8 +414,8 @@ namespace Win32xx
         T::OnCreate(cs);
         if (GetRibbonFramework())
         {
-            T::SetMenu(0);              // Disable the window menu
-            T::SetFrameMenu(reinterpret_cast<HMENU>(0));
+            T::SetMenu(NULL);              // Disable the window menu.
+            T::SetFrameMenu(reinterpret_cast<HMENU>(NULL));
         }
 
         return 0;
@@ -478,9 +477,9 @@ namespace Win32xx
                 WCHAR curFileName[MAX_PATH] = {0};
                 StrCopyW(curFileName, TtoW(*iter), MAX_PATH);
 
-                RecentFilesPtr pRecentFiles(new CRecentFiles(curFileName));
-                m_recentFiles.push_back(pRecentFiles);
-                result = SafeArrayPutElement(psa, &currentFile, static_cast<void*>(pRecentFiles.get()));
+                RecentFilesPtr recentFiles(std::make_unique<CRecentFiles>(curFileName));
+                result = SafeArrayPutElement(psa, &currentFile, static_cast<void*>(recentFiles.get()));
+                m_recentFiles.push_back(std::move(recentFiles));
                 ++currentFile;
             }
 
